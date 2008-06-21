@@ -9,11 +9,11 @@ adding few convenience commands like ``longlist``, ``interact`` or
 
 import sys
 import os.path
-import rlcompleter
 import readline
 import inspect
 import code
 import types
+from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
 
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
@@ -24,24 +24,6 @@ def import_from_stdlib(name):
     return result
 
 pdb = import_from_stdlib('pdb')
-
-class colors:
-    black = '30'
-    darkred = '31'
-    darkgreen = '32'    
-    brown = '33'
-    darkblue = '34'
-    purple = '35'
-    teal = '36'
-    lightgray = '37'
-    darkgray = '30;01'
-    red = '31;01'
-    green = '32;01'
-    yellow = '33;01'
-    blue = '34;01'
-    fuchsia = '35;01'
-    turquoise = '36;01'
-    white = '37;01'
 
 
 class DefaultConfig:
@@ -55,32 +37,8 @@ class DefaultConfig:
     current_line_color = 44 # blue
 
     # WARNING: for this option to work properly, you need to patch readline with this:
-    # http://codespeak.net/svn/user/antocuni/readline-escape.patch
+    # http://codespeak.net/svn/user/antocuni/hack/readline-escape.patch
     color_complete = False
-
-    color_by_type = {
-        types.BuiltinMethodType: colors.turquoise,
-        types.BuiltinMethodType: colors.turquoise,
-        types.MethodType: colors.turquoise,
-        type((42).__add__): colors.turquoise,
-        type(int.__add__): colors.turquoise,
-        type(str.replace): colors.turquoise,
-
-        types.FunctionType: colors.blue,
-        types.BuiltinFunctionType: colors.blue,
-        
-        types.ClassType: colors.fuchsia,
-        type: colors.fuchsia,
-        types.ModuleType: colors.teal,
-
-        types.NoneType: colors.lightgray,
-        str: colors.green,
-        unicode: colors.green,
-        int: colors.yellow,
-        float: colors.yellow,
-        complex: colors.yellow,
-        bool: colors.yellow,
-        }
 
 def getsourcelines(obj):
     try:
@@ -96,9 +54,6 @@ def getsourcelines(obj):
             return lines, first
     raise IOError('could not get source code')
 
-def setcolor(s, color):
-    return '\x1b[%sm%s\x1b[00m' % (color, s)
-
 def setbgcolor(line, color):
     # hack hack hack
     # add a bgcolor attribute to all escape sequences found
@@ -106,102 +61,6 @@ def setbgcolor(line, color):
     setbg = '\x1b[%dm' % color
     regexbg = '\\1;%dm' % color
     return setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
-
-# stolen from rlcompleter2
-def commonprefix(names, base = ''):
-    """ return the common prefix of all 'names' starting with 'base'
-    """
-    def commonfunc(s1,s2):
-        while not s2.startswith(s1): 
-            s1=s1[:-1]
-        return s1
-
-    if base:
-        names = filter(lambda x, base=base: x.startswith(base), names)
-        if not names:
-            return ''
-    return reduce(commonfunc,names)
-
-class FancyCompleter(rlcompleter.Completer):
-    """
-    When doing someting like a.b.<TAB>, display only the attributes of
-    b instead of the full a.b.attr string.
-    
-    Optionally, display the various completions in different colors
-    depending on the type.
-    """
-
-    def __init__(self, namespace = None, config=None):
-        rlcompleter.Completer.__init__(self, namespace)
-        self.config = config
-        if self.config:
-            self.use_colors = config.color_complete
-        else:
-            self.use_colors = False
-
-    def complete(self, text, state):
-        """
-        stolen from:
-        http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496812
-        """
-        if text == "":
-            return ['\t',None][state]
-        else:
-            return rlcompleter.Completer.complete(self,text,state)
-
-    def global_matches(self, text):
-        import keyword
-        from itertools import izip, count
-        names = rlcompleter.Completer.global_matches(self, text)
-        prefix = commonprefix(names)
-        if prefix and prefix != text:
-            return [prefix]
-
-        names.sort()
-        values = []
-        for name in names:
-            if name in keyword.kwlist:
-                values.append(None)
-            else:
-                values.append(eval(name, self.namespace))
-        matches = [self.color_for_obj(i, name, obj)
-                   for i, name, obj
-                   in izip(count(), names, values)]
-        return matches + [' ']
-
-    def attr_matches(self, text):
-        import re
-        from itertools import izip, count
-        m = re.match(r"(\w+(\.\w+)*)\.(\w*)", text)
-        if not m:
-            return
-        expr, attr = m.group(1, 3)
-        object = eval(expr, self.namespace)
-        names = []
-        values = []
-        n = len(attr)
-        for word in dir(object):
-            if word[:n] == attr and word != "__builtins__":
-                names.append(word)
-                values.append(getattr(object, word))
-                
-        prefix = commonprefix(names)
-        if prefix and prefix != attr:
-            return ['%s.%s' % (expr, prefix)] # autocomplete prefix
-
-        matches = [self.color_for_obj(i, name, value)
-                   for i, name, value
-                   in izip(count(), names, values)]
-        return matches + [' ']
-
-    def color_for_obj(self, i, name, value):
-        if not self.use_colors:
-            return name
-        t = type(value)
-        color = self.config.color_by_type.get(t, '00')
-        # hack hack hack
-        # prepend a fake escape sequence, so that readline can sort the matches correctly
-        return '\x1b[%03d;00m' % i + setcolor(name, color)
 
 CLEARSCREEN = '\033[2J\033[1;1H'
 
@@ -214,11 +73,14 @@ def lasti2lineno(code, lasti):
             return lineno
     assert False, 'Invalid instruction number: %s' % lasti
 
-class Pdb(pdb.Pdb):
+class Pdb(pdb.Pdb, ConfigurableClass):
+
+    DefaultConfig = DefaultConfig
+    config_filename = '.pdbrc.py'
 
     def __init__(self, Config=None):
         pdb.Pdb.__init__(self)
-        self.config = self._get_config(Config)
+        self.config = self.get_config(Config)
         self.prompt = self.config.prompt
         self.completekey = self.config.completekey
         if self.config.color_complete:
@@ -228,20 +90,6 @@ class Pdb(pdb.Pdb):
         self.watching = {} # frame --> (name --> last seen value)
         self.sticky = False
         self.tb_lineno = {} # frame --> lineno where the exception raised
-
-    def _get_config(self, Config):
-        if Config is not None:
-            return Config()
-        # try to load config from the ~/.pdbrc.py file
-        rcfile = os.path.expanduser('~/.pdbrc.py')
-        if os.path.exists(rcfile):
-            mydict = {}
-            try:
-                execfile(rcfile, mydict)
-                return mydict['Config']()
-            except Exception, e:
-                print '** error when importing ~/.pdbrc.py: %s **' % e
-        return DefaultConfig()
 
     def interaction(self, frame, traceback, orig_traceback=None):
         self.setup(frame, traceback, orig_traceback)
@@ -265,7 +113,7 @@ class Pdb(pdb.Pdb):
         if state == 0:
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe.f_locals)
-            self.mycompleter = FancyCompleter(mydict, self.config)
+            self.mycompleter = rlcompleter_ng.Completer(mydict)
         return self.mycompleter.complete(text, state)
 
     def _init_pygments(self): 
