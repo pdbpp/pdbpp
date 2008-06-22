@@ -1,19 +1,45 @@
 """
-A fancier version of pdb.
+Pdb++, a fancier version of pdb
+===============================
 
 This module extends the stdlib pdb in numerous ways, e.g. by providing
 real completion of Python values instead of pdb's own commands, or by
 adding few convenience commands like ``longlist``, ``interact`` or
 ``watch``.
+
+For a full explanation of each command, refer to the docstring or type
+help <command> at the prompt.
+
+Installation
+------------
+
+This module is meant to replace stdlib's pdb.py from the outsite;
+simply put it in a directory in your PYTHONPATH, and you can start
+using it immediately.  Since it's named pdb.py, every place which
+imports pdb will now find the new module.
+
+Dependencies
+------------
+
+To work properly, this module needs `rlcompleter_ng`_ to be installed.
+
+To enable syntax highlighting, you must install `pygments`.
+
+.. _pygments: http://pygments.org/
+.. _`rlcompleter_ng`: http://codespeak.net/svn/user/antocuni/hack/rlcompleter_ng.py
 """
+
+__version__='0.1'
+__author__ ='Antonio Cuni <anto.cuni@gmail.com'
+__url__='http://codespeak.net/svn/user/antocuni/hack/pdb.py'
 
 import sys
 import os.path
-import readline
 import inspect
 import code
 import types
 from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
+
 
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
@@ -35,10 +61,6 @@ class DefaultConfig:
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
-
-    # WARNING: for this option to work properly, you need to patch readline with this:
-    # http://codespeak.net/svn/user/antocuni/hack/readline-escape.patch
-    color_complete = False
 
 def getsourcelines(obj):
     try:
@@ -83,8 +105,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.config = self.get_config(Config)
         self.prompt = self.config.prompt
         self.completekey = self.config.completekey
-        if self.config.color_complete:
-            readline.parse_and_bind('set dont-escape-ctrl-chars on')
 
         self.mycompleter = None
         self.watching = {} # frame --> (name --> last seen value)
@@ -158,6 +178,18 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return cmd, arg, newline
 
     def do_longlist(self, arg):
+        """
+        {longlist|ll}
+        List source code for the current function.
+        
+        Differently that list, the whole function is displayed; the
+        current line is marked with '->'.  In case of post-mortem
+        debugging, the line which effectively raised the exception is
+        marked with '>>'.
+
+        If the 'highlight' config option is set and pygments is
+        installed, the source code is colorized.
+        """
         self.lastcmd = 'longlist'
         self._printlonglist()
 
@@ -187,13 +219,25 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     do_ll = do_longlist
 
-
     def do_interact(self, arg):
+        """
+        interact
+
+        Start an interative interpreter whose global namespace
+        contains all the names found in the current scope.
+        """
         ns = self.curframe.f_globals.copy()
         ns.update(self.curframe.f_locals)
         code.interact("*interactive*", local=ns)
 
     def do_track(self, arg):
+        """
+        track expression
+
+        Display a graph showing which objects are referred by the
+        value of the expression.  This command requires pypy to be in
+        the current PYTHONPATH.
+        """
         try:
             from pypy.translator.tool.reftracker import track
         except ImportError:
@@ -206,6 +250,17 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return self.watching.setdefault(self.curframe, {})
 
     def do_watch(self, arg):
+        """
+        watch expression
+
+        Add expression to the watching list; expressions in this list
+        are evaluated at each step, and printed every time its value
+        changes.
+
+        WARNING: since the expressions is evaluated multiple time, pay
+        attention not to put expressions with side-effects in the
+        watching list.
+        """
         try:
             value = self._getval(arg)
         except:
@@ -213,6 +268,11 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self._get_watching()[arg] = value
 
     def do_unwatch(self, arg):
+        """
+        unwatch expression
+
+        Remove expression from the watching list.
+        """
         try:
             del self._get_watching()[arg]
         except KeyError:
@@ -229,6 +289,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self._printlonglist()
 
     def do_sticky(self, arg):
+        """
+        sticky
+
+        Toggle sticky mode. When in sticky mode, it clear the screen
+        and longlist the current functions, making the source
+        appearing always in the same position. Useful to follow the
+        flow control of a function when doing step-by-step execution.
+        """
         self.sticky = not self.sticky
         self._print_if_sticky()
 
@@ -269,28 +337,3 @@ def xpm(Pdb=Pdb):
     related to the just catched exception.
     """
     post_mortem(sys.exc_info()[2], Pdb)
-
-def main():
-    bar = 53
-    foobar = 12
-    foo()
-
-def foo():
-    class MyClass:
-        def method(self):
-            pass
-    x = MyClass()
-    foobar = int(42)
-    foobaz = "foo"
-    c = 42
-    i = 0
-    j = 0
-    set_trace()
-    for i in range(10):
-        if i == 5:
-            j = 42
-
-if __name__ == '__main__':
-    Pdb.do_l = Pdb.do_longlist # for my personal convenience
-    main()
-
