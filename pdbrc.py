@@ -6,8 +6,6 @@ pdb.Pdb.do_l = pdb.Pdb.do_longlist
 
 class Config(pdb.DefaultConfig):
 
-    color_complete = True
-
     def __init__(self):
         readline.parse_and_bind('set convert-meta on')
         readline.parse_and_bind('Meta-/: complete')

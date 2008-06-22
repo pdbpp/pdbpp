@@ -27,10 +27,24 @@ To enable syntax highlighting, you must install `pygments`.
 
 .. _pygments: http://pygments.org/
 .. _`rlcompleter_ng`: http://codespeak.net/svn/user/antocuni/hack/rlcompleter_ng.py
+
+Configuration
+-------------
+
+To customize the configuration of Pdb++, you need to put a file named
+.pdbrc.py in your home directory.  The file must contain a class named
+``Config`` inheriting from ``DefaultConfig`` and overridding the
+desired values.
+
+To know which options are available, look at the comment in the
+source.
+
+You can find a sample configuration file, here:
+http://codespeak.net/svn/user/antocuni/hack/pdbrc.py
 """
 
 __version__='0.1'
-__author__ ='Antonio Cuni <anto.cuni@gmail.com'
+__author__ ='Antonio Cuni <anto.cuni@gmail.com>'
 __url__='http://codespeak.net/svn/user/antocuni/hack/pdb.py'
 
 import sys
@@ -138,7 +152,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if state == 0:
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe.f_locals)
-            self.mycompleter = rlcompleter_ng.Completer(mydict)
+            self.mycompleter = Completer(mydict)
         return self.mycompleter.complete(text, state)
 
     def _init_pygments(self): 
