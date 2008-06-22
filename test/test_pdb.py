@@ -142,11 +142,28 @@ def test_watch():
 # n
 > .*fn()
 -> a = 3
-a = 2
+a: 1 --> 2
 # unwatch a
 # n
 > .*fn()
 -> return a
+# c
+""")
+
+def test_watch_undefined():
+    def fn():
+        set_trace()
+        b = 42
+        return b
+
+    check(fn, """
+> .*fn()
+-> b = 42
+# watch b
+# n
+> .*fn()
+-> return b
+b: <undefined> --> 42
 # c
 """)
 

@@ -95,6 +95,11 @@ def lasti2lineno(code, lasti):
             return lineno
     assert False, 'Invalid instruction number: %s' % lasti
 
+class Undefined:
+    def __repr__(self):
+        return '<undefined>'
+undefined = Undefined()
+
 class Pdb(pdb.Pdb, ConfigurableClass):
 
     DefaultConfig = DefaultConfig
@@ -249,6 +254,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def _get_watching(self):
         return self.watching.setdefault(self.curframe, {})
 
+    def _getval_or_undefined(self, arg):
+        try:
+            return eval(arg, self.curframe.f_globals,
+                        self.curframe.f_locals)
+        except NameError:
+            return undefined
+
     def do_watch(self, arg):
         """
         watch expression
@@ -262,7 +274,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         watching list.
         """
         try:
-            value = self._getval(arg)
+            value = self._getval_or_undefined(arg)
         except:
             return
         self._get_watching()[arg] = value
@@ -304,13 +316,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self._print_if_sticky()
         watching = self._get_watching()
         for expr, oldvalue in watching.iteritems():
-            newvalue = self._getval(expr)
+            newvalue = self._getval_or_undefined(expr)
             # check for identity first; this prevents custom __eq__ to
             # be called at every loop, and also prevents instances
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
                 watching[expr] = newvalue
-                print '%s = %r' % (expr, newvalue)
+                print '%s: %r --> %r' % (expr, oldvalue, newvalue)
 
 # Simplified interface
 
