@@ -245,7 +245,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         pdb.Pdb.do_list(self, arg)
         src = self.format_source(sys.stdout.getvalue())
         sys.stdout = oldstdout
-        print src
+        print src,
+
+    do_l = do_list
 
     def do_interact(self, arg):
         """
