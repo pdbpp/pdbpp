@@ -3,6 +3,7 @@ import pdb
 
 # make 'l' an alias to 'longlist'
 pdb.Pdb.do_l = pdb.Pdb.do_longlist
+pdb.Pdb.do_st = pdb.Pdb.do_sticky
 
 class Config(pdb.DefaultConfig):
 

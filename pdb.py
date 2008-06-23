@@ -238,6 +238,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     do_ll = do_longlist
 
+    def do_list(self, arg):
+        from StringIO import StringIO
+        oldstdout = sys.stdout
+        sys.stdout = StringIO()
+        pdb.Pdb.do_list(self, arg)
+        src = self.format_source(sys.stdout.getvalue())
+        sys.stdout = oldstdout
+        print src
+
     def do_interact(self, arg):
         """
         interact
