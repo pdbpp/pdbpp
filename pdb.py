@@ -218,7 +218,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         except IOError, e:
             print '** Error: %s **' % e
             return
+        self._print_lines(lines, lineno)
 
+    def _print_lines(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
         if self.config.highlight:
@@ -228,9 +230,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             lines = src.splitlines()
         for i, line in enumerate(lines):
             marker = ''
-            if lineno == self.curframe.f_lineno:
+            if lineno == self.curframe.f_lineno and print_markers:
                 marker = '->'
-            elif lineno == exc_lineno:
+            elif lineno == exc_lineno and print_markers:
                 marker = '>>'
             lines[i] = self.format_line(lineno, marker, line)
             lineno += 1
@@ -348,6 +350,18 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             if newvalue is not oldvalue or newvalue != oldvalue:
                 watching[expr] = newvalue
                 print '%s: %r --> %r' % (expr, oldvalue, newvalue)
+
+    def do_source(self, arg):
+        try:
+            obj = self._getval(arg)
+        except:
+            return
+        try:
+            lines, lineno = getsourcelines(obj)
+        except IOError, e:
+            print '** Error: %s **' % e
+            return
+        self._print_lines(lines, lineno, print_markers=False)
 
 # Simplified interface
 

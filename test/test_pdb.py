@@ -252,3 +252,19 @@ NUM         set_trace()
 NUM  ->     return x
 # c
 """)
+
+def test_source():
+    def bar():
+        return 42
+    def fn():
+        set_trace()
+        return bar()
+
+    check(fn, """
+> .*fn()
+-> return bar()
+# source bar
+NUM         def bar():
+NUM             return 42
+# c
+""")
