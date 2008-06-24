@@ -268,3 +268,16 @@ NUM         def bar():
 NUM             return 42
 # c
 """)
+
+def test_bad_source():
+    def fn():
+        set_trace()
+        return 42
+
+    check(fn, r"""
+> .*fn()
+-> return 42
+# source 42
+\*\* Error: arg is not a module, class, method, function, traceback, frame, or code object \*\*
+# c
+""")

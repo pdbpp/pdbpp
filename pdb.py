@@ -358,7 +358,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return
         try:
             lines, lineno = getsourcelines(obj)
-        except IOError, e:
+        except (IOError, TypeError), e:
             print '** Error: %s **' % e
             return
         self._print_lines(lines, lineno, print_markers=False)
