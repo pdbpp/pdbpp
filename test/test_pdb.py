@@ -205,6 +205,31 @@ NUM             return a
 # c
 """)
 
+def test_sticky_range():
+    import inspect
+    def fn():
+        set_trace()
+        a = 1
+        b = 2
+        c = 3
+        return a
+    _, lineno = inspect.getsourcelines(fn)
+    start = lineno + 1
+    end = lineno + 3
+
+    check(fn, """
+> .*fn()
+-> a = 1
+# sticky %d %d
+CLEAR>.*
+
+ %d             set_trace()
+NUM  ->         a = 1
+NUM             b = 2
+# c
+""" % (start, end, start))
+
+
 def test_exception_lineno():
     def bar():
         assert False

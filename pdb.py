@@ -128,6 +128,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.mycompleter = None
         self.watching = {} # frame --> (name --> last seen value)
         self.sticky = False
+        self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
 
     def interaction(self, frame, traceback, orig_traceback=None):
@@ -212,12 +213,18 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.lastcmd = 'longlist'
         self._printlonglist()
 
-    def _printlonglist(self):
+    def _printlonglist(self, linerange=None):
         try:
             lines, lineno = getsourcelines(self.curframe)
         except IOError, e:
             print '** Error: %s **' % e
             return
+        if linerange:
+            start, end = linerange
+            start = max(start, lineno)
+            end = min(end, lineno+len(lines))
+            lines = lines[start-lineno:end-lineno]
+            lineno = start
         self._print_lines(lines, lineno)
 
     def _print_lines(self, lines, lineno, print_markers=True):
@@ -325,18 +332,33 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             s = '> %s(%r)' % (filename, lineno)
             print s
             print
-            self._printlonglist()
+            sticky_range = self.sticky_ranges.get(self.curframe, None)
+            self._printlonglist(sticky_range)
 
     def do_sticky(self, arg):
         """
-        sticky
+        sticky [start end]
 
         Toggle sticky mode. When in sticky mode, it clear the screen
         and longlist the current functions, making the source
         appearing always in the same position. Useful to follow the
         flow control of a function when doing step-by-step execution.
+
+        If ``start`` and ``end`` are given, sticky mode is enabled and
+        only lines within that range (extremes included) will be
+        displayed.
         """
-        self.sticky = not self.sticky
+        if arg:
+            try:
+                start, end = map(int, arg.split())
+            except ValueError:
+                print '** Error when parsing argument: %s **' % arg
+                return
+            self.sticky = True
+            self.sticky_ranges[self.curframe] = start, end+1
+        else:
+            self.sticky = not self.sticky
+            self.sticky_range = None
         self._print_if_sticky()
 
     def preloop(self):
