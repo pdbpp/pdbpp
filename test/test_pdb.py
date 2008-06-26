@@ -25,7 +25,7 @@ class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
     def __init__(self):
-        pdb.Pdb.__init__(self, ConfigTest)
+        pdb.Pdb.__init__(self, Config=ConfigTest)
 
 def set_trace():
     PdbTest().set_trace(sys._getframe().f_back)

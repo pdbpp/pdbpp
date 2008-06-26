@@ -119,8 +119,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     DefaultConfig = DefaultConfig
     config_filename = '.pdbrc.py'
 
-    def __init__(self, Config=None):
-        pdb.Pdb.__init__(self)
+    def __init__(self, *args, **kwds):
+        Config = kwds.pop('Config', None)
+        pdb.Pdb.__init__(self, *args, **kwds)
         self.config = self.get_config(Config)
         self.prompt = self.config.prompt
         self.completekey = self.config.completekey
