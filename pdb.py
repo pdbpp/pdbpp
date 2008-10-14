@@ -76,6 +76,9 @@ class DefaultConfig:
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
 
+    def setup(self, pdb):
+        pass
+
 def getsourcelines(obj):
     try:
         return inspect.getsourcelines(obj)
@@ -123,6 +126,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         Config = kwds.pop('Config', None)
         pdb.Pdb.__init__(self, *args, **kwds)
         self.config = self.get_config(Config)
+        self.config.setup(self)
         self.prompt = self.config.prompt
         self.completekey = self.config.completekey
 

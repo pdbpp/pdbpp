@@ -1,10 +1,6 @@
 import readline
 import pdb
 
-# make 'l' an alias to 'longlist'
-pdb.Pdb.do_l = pdb.Pdb.do_longlist
-pdb.Pdb.do_st = pdb.Pdb.do_sticky
-
 class Config(pdb.DefaultConfig):
 
     def __init__(self):
@@ -25,4 +21,8 @@ class Config(pdb.DefaultConfig):
                 terminal.Name.Namespace:     ('teal',        'turquoise'),
                 })
 
-
+    def setup(self, pdb):
+        # make 'l' an alias to 'longlist'
+        Pdb = pdb.__class__
+        Pdb.do_l = Pdb.do_longlist
+        Pdb.do_st = Pdb.do_sticky
