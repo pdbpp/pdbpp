@@ -72,6 +72,7 @@ class DefaultConfig:
     highlight = True
     bg = 'dark'
     colorscheme = None
+    editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
@@ -389,6 +390,16 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             print '** Error: %s **' % e
             return
         self._print_lines(lines, lineno, print_markers=False)
+
+    def do_edit(self, arg):
+        "Open an editor visiting the current file at the current line"
+        editor = self.config.editor
+        frame, lineno = self.stack[-1]
+        filename = os.path.abspath(frame.f_code.co_filename)
+        filename = filename.replace("'", "\\'")
+        os.system("%s +%d '%s'" % (editor, lineno, filename))
+
+    do_ed = do_edit
 
 # Simplified interface
 

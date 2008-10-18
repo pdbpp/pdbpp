@@ -3,6 +3,8 @@ import pdb
 
 class Config(pdb.DefaultConfig):
 
+    editor = 'e'
+
     def __init__(self):
         readline.parse_and_bind('set convert-meta on')
         readline.parse_and_bind('Meta-/: complete')
