@@ -73,6 +73,7 @@ class DefaultConfig:
     bg = 'dark'
     colorscheme = None
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
+    truncate_long_lines = True
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
@@ -244,7 +245,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
         width, height = self.get_terminal_size()
-        maxlength = max(width - 9, 16)
+
+        if self.config.truncate_long_lines:
+            maxlength = max(width - 9, 16)
+            lines = [line[:maxlength] for line in lines]
+        else:
+            maxlength = max(map(len, lines))
+
         if self.config.highlight:
             lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
@@ -257,7 +264,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                     lines = lines[:maxlines]
                     lines.append('...')
         for i, line in enumerate(lines):
-            line = line[:maxlength]
             marker = ''
             if lineno == self.curframe.f_lineno and print_markers:
                 marker = '->'
