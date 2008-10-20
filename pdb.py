@@ -137,19 +137,26 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
 
-    def interaction(self, frame, traceback, orig_traceback=None):
-        self.setup(frame, traceback, orig_traceback)
+    def interaction(self, frame, traceback):
+        self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         self.cmdloop()
         self.forget()
 
-    def setup(self, frame, tb, orig_tb=None):
+    def setup(self, frame, tb):
         pdb.Pdb.setup(self, frame, tb)
-        tb = orig_tb
         while tb:
             lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
             self.tb_lineno[tb.tb_frame] = lineno
             tb = tb.tb_next
+
+    def get_stack(self, f, t):
+        # Modified from bdb.py to be able to walk the stack beyond generators,
+        # which does not work in the normal pdb :-(
+        stack, i = pdb.Pdb.get_stack(self, f, t)
+        if f is None:
+            i = max(0, len(stack) - 1)
+        return stack, i
 
     def forget(self):
         pdb.Pdb.forget(self)
@@ -489,10 +496,7 @@ del name, func, newfunc
 def post_mortem(t, Pdb=Pdb):
     p = Pdb()
     p.reset()
-    orig_tb = t
-    while t.tb_next is not None:
-        t = t.tb_next
-    p.interaction(t.tb_frame, t, orig_tb)
+    p.interaction(None, t)
 
 # pdb++ specific interface
 

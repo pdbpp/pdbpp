@@ -246,7 +246,7 @@ def test_exception_lineno():
 -> assert False
 # u
 > .*fn()
--> xpm()
+-> bar()
 # ll
 NUM         def fn():
 NUM             try:
@@ -255,6 +255,26 @@ NUM  >>             bar()
 NUM                 b = 2
 NUM             except AssertionError:
 NUM  ->             xpm()
+# c
+""")
+
+def test_exception_through_generator():
+    def gen():
+        yield 5
+        assert False
+    def fn():
+        try:
+            for i in gen():
+                pass
+        except AssertionError:
+            xpm()
+
+    check(fn, """
+> .*gen()
+-> assert False
+# u
+> .*fn()
+-> for i in gen():
 # c
 """)
 
