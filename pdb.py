@@ -512,3 +512,6 @@ def xpm(Pdb=Pdb):
     related to the just catched exception.
     """
     post_mortem(sys.exc_info()[2], Pdb)
+
+def set_tracex():
+    print 'PDB!'
