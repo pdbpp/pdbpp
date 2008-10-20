@@ -236,12 +236,21 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def _print_lines(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
+        width, height = self.get_terminal_size()
+        maxlength = max(width - 9, 16)
         if self.config.highlight:
-            maxlength = max(map(len, lines))
             lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
+        if height >= 6:
+            last_marker_line = max(self.curframe.f_lineno, exc_lineno) - lineno
+            if last_marker_line >= 0:
+                maxlines = last_marker_line + height * 2 // 3
+                if len(lines) > maxlines:
+                    lines = lines[:maxlines]
+                    lines.append('...')
         for i, line in enumerate(lines):
+            line = line[:maxlength]
             marker = ''
             if lineno == self.curframe.f_lineno and print_markers:
                 marker = '->'
@@ -341,6 +350,35 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             sticky_range = self.sticky_ranges.get(self.curframe, None)
             self._printlonglist(sticky_range)
 
+            if '__exception__' in frame.f_locals:
+                exc = frame.f_locals['__exception__']
+                if len(exc) == 2:
+                    exc_type, exc_value = exc
+                    s = ''
+                    try:
+                        try:
+                            s = exc_type.__name__
+                        except AttributeError:
+                            s = str(exc_type)
+                        if exc_value is not None:
+                            s += ': '
+                            s += str(exc_value)
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        s += '(unprintable exception)'
+                    print setcolor(' ' + s, self.config.line_number_color)
+                    return
+            if '__return__' in frame.f_locals:
+                rv = frame.f_locals['__return__']
+                try:
+                    s = repr(rv)
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    s = '(unprintable return value)'
+                print setcolor(' return ' + s, self.config.line_number_color)
+
     def do_sticky(self, arg):
         """
         sticky [start end]
@@ -367,6 +405,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self.sticky_range = None
         self._print_if_sticky()
 
+    def print_current_stack_entry(self):
+        if self.sticky:
+            self._print_if_sticky()
+        else:
+            self.print_stack_entry(self.stack[self.curindex])
+
     def preloop(self):
         self._print_if_sticky()
         watching = self._get_watching()
@@ -390,6 +434,38 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             print '** Error: %s **' % e
             return
         self._print_lines(lines, lineno, print_markers=False)
+
+    def do_up(self, arg):
+        if self.curindex == 0:
+            print '*** Oldest frame'
+        else:
+            self.curindex = self.curindex - 1
+            self.curframe = self.stack[self.curindex][0]
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_u = do_up
+
+    def do_down(self, arg):
+        if self.curindex + 1 == len(self.stack):
+            print '*** Newest frame'
+        else:
+            self.curindex = self.curindex + 1
+            self.curframe = self.stack[self.curindex][0]
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_d = do_down
+
+    def get_terminal_size(self):
+        try:
+            import termios, fcntl, struct
+            call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00"*8)
+            height, width = struct.unpack("hhhh", call)[:2]
+        except (SystemExit, KeyboardInterrupt), e:
+            raise
+        except:
+            width = int(os.environ.get('COLUMNS', 80))
+            height = int(os.environ.get('COLUMNS', 24))
+        return width, height
 
     def do_edit(self, arg):
         "Open an editor visiting the current file at the current line"
