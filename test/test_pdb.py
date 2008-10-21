@@ -1,3 +1,5 @@
+import inspect
+import os.path
 import sys
 import pdb
 import re
@@ -19,6 +21,7 @@ class FakeStdin:
 class ConfigTest(pdb.DefaultConfig):
     highlight = False
     prompt = '# ' # because + has a special meaning in the regexp
+    editor = 'emacs'
 
 
 class PdbTest(pdb.Pdb):
@@ -26,6 +29,10 @@ class PdbTest(pdb.Pdb):
 
     def __init__(self):
         pdb.Pdb.__init__(self, Config=ConfigTest)
+
+    def _open_editor(self, editor, lineno, filename):
+        print "RUN %s +%d '%s'" % (editor, lineno, filename)
+
 
 def set_trace():
     PdbTest().set_trace(sys._getframe().f_back)
@@ -326,3 +333,38 @@ def test_bad_source():
 \*\* Error: arg is not a module, class, method, function, traceback, frame, or code object \*\*
 # c
 """)
+
+def test_edit():
+    def fn():
+        set_trace()
+        return 42
+    def bar():
+        fn()
+        return 100
+
+    _, lineno = inspect.getsourcelines(fn)
+    return42_lineno = lineno + 2
+    call_fn_lineno = lineno + 4
+    filename = os.path.abspath(__file__)
+    if filename.endswith('.pyc'):
+        filename = filename[:-1]
+    
+    check(fn, r"""
+> .*fn()
+-> return 42
+# edit
+RUN emacs \+%d '%s'
+# c
+""" % (return42_lineno, filename))
+
+    check(bar, r"""
+> .*fn()
+-> return 42
+# up
+> .*bar()
+-> fn()
+# edit
+RUN emacs \+%d '%s'
+# c
+""" % (call_fn_lineno, filename))
+

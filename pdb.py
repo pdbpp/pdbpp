@@ -480,13 +480,17 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             height = int(os.environ.get('COLUMNS', 24))
         return width, height
 
+    def _open_editor(self, editor, lineno, filename):
+        os.system("%s +%d '%s'" % (editor, lineno, filename))
+        
     def do_edit(self, arg):
         "Open an editor visiting the current file at the current line"
         editor = self.config.editor
-        frame, lineno = self.stack[-1]
+        frame = self.curframe
+        lineno = frame.f_lineno
         filename = os.path.abspath(frame.f_code.co_filename)
         filename = filename.replace("'", "\\'")
-        os.system("%s +%d '%s'" % (editor, lineno, filename))
+        self._open_editor(editor, lineno, filename)
 
     do_ed = do_edit
 
