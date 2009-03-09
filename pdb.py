@@ -112,7 +112,7 @@ def lasti2lineno(code, lasti):
     for i, lineno in linestarts:
         if lasti >= i:
             return lineno
-    assert False, 'Invalid instruction number: %s' % lasti
+    return 0
 
 class Undefined:
     def __repr__(self):
