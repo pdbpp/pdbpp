@@ -418,3 +418,34 @@ RUN epaste \+%d
 
 # c
 """ % start_lineno)
+
+def test_side_effects_free():
+    r = pdb.side_effects_free
+    assert r.match('  x')
+    assert r.match('x.y[12]')
+    assert not r.match('x(10)')
+    assert not r.match('  x = 10')
+    assert not r.match('x = 10')
+
+def test_put_side_effects_free():
+    def fn():
+        x = 10
+        set_trace()
+        return 42
+    _, lineno = inspect.getsourcelines(fn)
+    start_lineno = lineno + 2
+
+    check(fn, r"""
+> .*fn()
+-> return 42
+# x
+10
+# x.__add__
+.*
+# y = 12
+# put
+RUN epaste \+%d
+        y = 12
+
+# c
+""" % start_lineno)

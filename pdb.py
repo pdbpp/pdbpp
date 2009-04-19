@@ -54,8 +54,12 @@ import code
 import types
 import traceback
 import subprocess
+import re
 from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
 
+# if it contains only _, digits, letters, [] or dots, it's probably side effects
+# free
+side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
@@ -518,12 +522,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     do_ed = do_edit
 
+    def _get_history(self):
+        return [s for s in self.history if not side_effects_free.match(s)]
+
     def _get_history_text(self):
         import linecache
         line = linecache.getline(self.start_filename, self.start_lineno)
         nspaces = len(line) - len(line.lstrip())
         indent = ' ' * nspaces
-        history = [indent + s for s in self.history]
+        history = [indent + s for s in self._get_history()]
         return '\n'.join(history) + '\n'
 
     def _open_stdin_paste(self, stdin_paste, lineno, filename, text):
