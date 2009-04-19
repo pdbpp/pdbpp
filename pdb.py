@@ -52,6 +52,8 @@ import os.path
 import inspect
 import code
 import types
+import traceback
+import subprocess
 from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
 
 
@@ -73,7 +75,9 @@ class DefaultConfig:
     bg = 'dark'
     colorscheme = None
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
+    stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
+    ring_if_not_active = False
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
@@ -126,6 +130,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def __init__(self, *args, **kwds):
         Config = kwds.pop('Config', None)
+        self.start_lineno = kwds.pop('start_lineno', None)
+        self.start_filename = kwds.pop('start_filename', None)
         pdb.Pdb.__init__(self, *args, **kwds)
         self.config = self.get_config(Config)
         self.config.setup(self)
@@ -137,12 +143,26 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.sticky = False
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
+        self.history = []
 
     def interaction(self, frame, traceback):
+        if self.config.ring_if_not_active:
+            self.ring_if_not_active()
         self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         self.cmdloop()
         self.forget()
+
+    def ring_if_not_active(self):
+        import os
+        import wmctrl
+        try:
+            winid = int(os.getenv('WINDOWID'))
+        except (TypeError, ValueError):
+            return # cannot find WINDOWID of the terminal
+        active_win = wmctrl.get_active_window()
+        if int(active_win.id, 16) != winid:
+            os.system("playsound /usr/share/sounds/ekiga/dialtone.wav > /dev/null &")
 
     def setup(self, frame, tb):
         pdb.Pdb.setup(self, frame, tb)
@@ -210,6 +230,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
+
+    def default(self, line):
+        self.history.append(line)
+        return pdb.Pdb.default(self, line)
 
     def do_longlist(self, arg):
         """
@@ -482,7 +506,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _open_editor(self, editor, lineno, filename):
         os.system("%s +%d '%s'" % (editor, lineno, filename))
-        
+    
     def do_edit(self, arg):
         "Open an editor visiting the current file at the current line"
         editor = self.config.editor
@@ -494,10 +518,34 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     do_ed = do_edit
 
-# Simplified interface
+    def _get_history_text(self):
+        import linecache
+        line = linecache.getline(self.start_filename, self.start_lineno)
+        nspaces = len(line) - len(line.lstrip())
+        indent = ' ' * nspaces
+        history = [indent + s for s in self.history]
+        return '\n'.join(history) + '\n'
+
+    def _open_stdin_paste(self, stdin_paste, lineno, filename, text):
+        proc = subprocess.Popen([stdin_paste, '+%d' % lineno, filename],
+                                stdin = subprocess.PIPE)
+        proc.stdin.write(text)
+        proc.stdin.close()
+
+    def do_put(self, arg):
+        stdin_paste = self.config.stdin_paste
+        if stdin_paste is None:
+            print '** Error: the "stdin_paste" option is not configure **'
+        filename = self.start_filename
+        lineno = self.start_lineno + 1
+        text = self._get_history_text()
+        self._open_stdin_paste(stdin_paste, lineno, filename, text)
+
+
+# simplified interface
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall set_trace pm'.split():
+for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
     newfunc = types.FunctionType(func.func_code, globals(), func.func_name)
     globals()[name] = newfunc
@@ -507,6 +555,13 @@ def post_mortem(t, Pdb=Pdb):
     p = Pdb()
     p.reset()
     p.interaction(None, t)
+
+def set_trace(frame=None, Pdb=Pdb):
+    if frame is None:
+        frame = sys._getframe().f_back
+    filename = frame.f_code.co_filename
+    lineno = frame.f_lineno
+    Pdb(start_lineno=lineno, start_filename=filename).set_trace(frame)
 
 # pdb++ specific interface
 
@@ -519,3 +574,7 @@ def xpm(Pdb=Pdb):
 
 def set_tracex():
     print 'PDB!'
+set_tracex._dont_inline_ = True
+
+if __name__=='__main__':
+    main()

@@ -4,6 +4,8 @@ import pdb
 class Config(pdb.DefaultConfig):
 
     editor = 'e'
+    stdin_paste = 'epaste'
+    ring_if_not_active = True
 
     def __init__(self):
         readline.parse_and_bind('set convert-meta on')

@@ -22,20 +22,26 @@ class ConfigTest(pdb.DefaultConfig):
     highlight = False
     prompt = '# ' # because + has a special meaning in the regexp
     editor = 'emacs'
+    stdin_paste = 'epaste'
 
 
 class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
-    def __init__(self):
-        pdb.Pdb.__init__(self, Config=ConfigTest)
+    def __init__(self, **kwds):
+        pdb.Pdb.__init__(self, Config=ConfigTest, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
         print "RUN %s +%d '%s'" % (editor, lineno, filename)
 
+    def _open_stdin_paste(self, cmd, lineno, filename, text):
+        print "RUN %s +%d" % (cmd, lineno)
+        print text
+
 
 def set_trace():
-    PdbTest().set_trace(sys._getframe().f_back)
+    frame = sys._getframe().f_back
+    pdb.set_trace(frame, PdbTest)
 
 def xpm():
     pdb.xpm(PdbTest)
@@ -368,3 +374,47 @@ RUN emacs \+%d '%s'
 # c
 """ % (call_fn_lineno, filename))
 
+
+
+def test_put():
+    def fn():
+        set_trace()
+        return 42
+    _, lineno = inspect.getsourcelines(fn)
+    return42_lineno = lineno + 2
+
+    check(fn, r"""
+> .*fn()
+-> return 42
+# x = 10
+# y = 12
+# put
+RUN epaste \+%d
+        x = 10
+        y = 12
+
+# c
+""" % return42_lineno)
+
+
+def test_put_if():
+    def fn():
+        x = 0
+        if x < 10:
+            set_trace()
+        return x
+    _, lineno = inspect.getsourcelines(fn)
+    return_x_lineno = lineno + 4
+
+    check(fn, r"""
+> .*fn()
+-> return x
+# x = 10
+# y = 12
+# put
+RUN epaste \+%d
+            x = 10
+            y = 12
+
+# c
+""" % return_x_lineno)
