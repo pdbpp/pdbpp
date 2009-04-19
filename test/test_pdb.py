@@ -381,7 +381,7 @@ def test_put():
         set_trace()
         return 42
     _, lineno = inspect.getsourcelines(fn)
-    return42_lineno = lineno + 2
+    start_lineno = lineno + 1
 
     check(fn, r"""
 > .*fn()
@@ -394,7 +394,7 @@ RUN epaste \+%d
         y = 12
 
 # c
-""" % return42_lineno)
+""" % start_lineno)
 
 
 def test_put_if():
@@ -404,7 +404,7 @@ def test_put_if():
             set_trace()
         return x
     _, lineno = inspect.getsourcelines(fn)
-    return_x_lineno = lineno + 4
+    start_lineno = lineno + 3
 
     check(fn, r"""
 > .*fn()
@@ -417,4 +417,4 @@ RUN epaste \+%d
             y = 12
 
 # c
-""" % return_x_lineno)
+""" % start_lineno)

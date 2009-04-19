@@ -537,7 +537,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if stdin_paste is None:
             print '** Error: the "stdin_paste" option is not configure **'
         filename = self.start_filename
-        lineno = self.start_lineno + 1
+        lineno = self.start_lineno
         text = self._get_history_text()
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
 
