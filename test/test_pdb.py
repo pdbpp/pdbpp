@@ -119,6 +119,20 @@ def test_parseline():
 # c
 """)
 
+def test_args_name():
+    def fn():
+        args = 42
+        set_trace()
+        return args
+
+    check(fn, """
+> .*fn()
+-> return args
+# args
+42
+# c
+""")
+
 def test_longlist():
     def fn():
         a = 1

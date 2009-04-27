@@ -229,8 +229,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         # don't execute short disruptive commands if a variable with
         # the name exits in the current contex; this prevents pdb to
         # quit if you type e.g. 'r[0]' by mystake.
-        if cmd in ['c', 'r', 'q'] and (cmd in self.curframe.f_globals or
-                                       cmd in self.curframe.f_locals):
+        if cmd in ['c', 'r', 'q', 'args'] and (cmd in self.curframe.f_globals or
+                                               cmd in self.curframe.f_locals):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
