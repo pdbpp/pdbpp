@@ -579,6 +579,16 @@ def xpm(Pdb=Pdb):
     """
     post_mortem(sys.exc_info()[2], Pdb)
 
+def enable():
+    global set_trace
+    set_trace = enable.set_trace
+enable.set_trace = set_trace
+
+def disable():
+    global set_trace
+    set_trace = disable.set_trace
+disable.set_trace = lambda frame=None, Pdb=Pdb: None
+
 def set_tracex():
     print 'PDB!'
 set_tracex._dont_inline_ = True

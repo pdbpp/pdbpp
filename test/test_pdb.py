@@ -463,3 +463,21 @@ RUN epaste \+%d
 
 # c
 """ % start_lineno)
+
+def test_enable_disable():
+    def fn():
+        x = 1
+        pdb.disable()
+        set_trace()
+        x = 2
+        pdb.enable()
+        set_trace()
+        return x
+
+    check(fn, """
+> .*fn()
+-> return x
+# x
+2
+# c
+""")
