@@ -77,6 +77,7 @@ class DefaultConfig:
     completekey = 'tab'
     highlight = True
     bg = 'dark'
+    use_pygments = True
     colorscheme = None
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
     stdin_paste = None       # for emacs, you can use my bin/epaste script
@@ -195,6 +196,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return self.mycompleter.complete(text, state)
 
     def _init_pygments(self): 
+        if not self.config.use_pygments:
+            return False
         try:
             from pygments.lexers import PythonLexer
             from pygments.formatters import TerminalFormatter
