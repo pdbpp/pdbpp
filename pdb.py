@@ -167,7 +167,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return # cannot find WINDOWID of the terminal
         active_win = wmctrl.get_active_window()
         if not active_win or (int(active_win.id, 16) != winid):
-            os.system("playsound /usr/share/sounds/ekiga/dialtone.wav > /dev/null &")
+            os.system("play ~/sounds/dialtone.wav 2> /dev/null &")
 
     def setup(self, frame, tb):
         pdb.Pdb.setup(self, frame, tb)
