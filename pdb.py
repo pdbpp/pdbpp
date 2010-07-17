@@ -54,6 +54,7 @@ import code
 import types
 import traceback
 import subprocess
+import pprint
 import re
 from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
 
@@ -545,11 +546,18 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def do_put(self, arg):
         stdin_paste = self.config.stdin_paste
         if stdin_paste is None:
-            print '** Error: the "stdin_paste" option is not configure **'
+            print '** Error: the "stdin_paste" option is not configured **'
         filename = self.start_filename
         lineno = self.start_lineno
         text = self._get_history_text()
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
+
+    def do_pp(self, arg):
+        try:
+            out = pprint.pformat(self._getval(arg))
+            print self.format_source(out),
+        except:
+            pass
 
 
 # simplified interface
