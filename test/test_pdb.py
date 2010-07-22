@@ -316,8 +316,8 @@ def test_py_code_source():
     exec src.compile()
     check(fn, """
 > .*fn()
+-> return x
 # ll
-NUM     
 NUM     def fn():
 NUM         x = 42
 NUM         set_trace()
