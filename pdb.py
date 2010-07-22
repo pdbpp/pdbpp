@@ -28,6 +28,11 @@ To enable syntax highlighting, you must install `pygments`.
 .. _pygments: http://pygments.org/
 .. _`rlcompleter_ng`: http://codespeak.net/svn/user/antocuni/hack/rlcompleter_ng.py
 
+To use the ``exec_if_unfocused`` option, you need to install ``wmctrl`` and my
+`wmctrl.py` module.
+
+.. _wmctrl.py: http://codespeak.net/svn/user/antocuni/hack/wmctrl.py
+
 Configuration
 -------------
 
@@ -83,7 +88,7 @@ class DefaultConfig:
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
-    ring_if_not_active = False
+    exec_if_unfocused = None
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
@@ -152,14 +157,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
 
     def interaction(self, frame, traceback):
-        if self.config.ring_if_not_active:
-            self.ring_if_not_active()
+        if self.config.exec_if_unfocused:
+            self.exec_if_unfocused()
         self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         self.cmdloop()
         self.forget()
 
-    def ring_if_not_active(self):
+    def exec_if_unfocused(self):
         import os
         import wmctrl
         try:
@@ -168,7 +173,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return # cannot find WINDOWID of the terminal
         active_win = wmctrl.get_active_window()
         if not active_win or (int(active_win.id, 16) != winid):
-            os.system("play ~/sounds/dialtone.wav 2> /dev/null &")
+            os.system(self.config.exec_if_unfocused)
 
     def setup(self, frame, tb):
         pdb.Pdb.setup(self, frame, tb)
@@ -233,7 +238,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         # don't execute short disruptive commands if a variable with
         # the name exits in the current contex; this prevents pdb to
         # quit if you type e.g. 'r[0]' by mystake.
-        if cmd in ['c', 'r', 'q', 'args'] and (cmd in self.curframe.f_globals or
+        if cmd in ['a', 'b', 'c', 'r', 'q', 'args'] and (cmd in self.curframe.f_globals or
                                                cmd in self.curframe.f_locals):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
