@@ -170,7 +170,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             winid = int(os.getenv('WINDOWID'))
         except (TypeError, ValueError):
             return # cannot find WINDOWID of the terminal
-        active_win = wmctrl.get_active_window()
+        active_win = wmctrl.Window.get_active()
         if not active_win or (int(active_win.id, 16) != winid):
             os.system(self.config.exec_if_unfocused)
 
