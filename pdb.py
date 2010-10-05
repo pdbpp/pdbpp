@@ -139,6 +139,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     config_filename = '.pdbrc.py'
 
     def __init__(self, *args, **kwds):
+        self._disable_pytest_capture_maybe()
         Config = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
@@ -154,6 +155,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
         self.history = []
+
+    def _disable_pytest_capture_maybe(self):
+        import py
+        try:
+            capman = py.test.config.pluginmanager.getplugin('capturemanager')
+        except KeyError:
+            pass
+        else:
+            capman.suspendcapture()
 
     def interaction(self, frame, traceback):
         if self.config.exec_if_unfocused:
