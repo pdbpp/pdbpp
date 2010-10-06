@@ -54,7 +54,7 @@ __url__='http://codespeak.net/svn/user/antocuni/hack/pdb.py'
 
 import sys
 import os.path
-import inspect
+from inspect import getsourcelines
 import code
 import types
 import traceback
@@ -95,20 +95,6 @@ class DefaultConfig:
 
     def setup(self, pdb):
         pass
-
-def getsourcelines(obj):
-    try:
-        return inspect.getsourcelines(obj)
-    except IOError:
-        pass
-
-    if isinstance(obj, types.FrameType):
-        filename = obj.f_code.co_filename
-        if hasattr(filename, '__source__'):
-            first = max(1, obj.f_lineno - 5)
-            lines = [line + '\n' for line in filename.__source__.lines]
-            return lines, first
-    raise IOError('could not get source code')
 
 def setbgcolor(line, color):
     # hack hack hack
