@@ -23,6 +23,7 @@ class ConfigTest(pdb.DefaultConfig):
     prompt = '# ' # because + has a special meaning in the regexp
     editor = 'emacs'
     stdin_paste = 'epaste'
+    disable_pytest_capturing = False
 
 
 class PdbTest(pdb.Pdb):

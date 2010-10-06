@@ -88,6 +88,7 @@ class DefaultConfig:
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
     exec_if_unfocused = None
+    disable_pytest_capturing = True
 
     line_number_color = colors.turquoise
     current_line_color = 44 # blue
@@ -139,13 +140,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     config_filename = '.pdbrc.py'
 
     def __init__(self, *args, **kwds):
-        self._disable_pytest_capture_maybe()
         Config = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
-        pdb.Pdb.__init__(self, *args, **kwds)
         self.config = self.get_config(Config)
         self.config.setup(self)
+        if self.config.disable_pytest_capturing:
+            self._disable_pytest_capture_maybe()
+        pdb.Pdb.__init__(self, *args, **kwds)
         self.prompt = self.config.prompt
         self.completekey = self.config.completekey
 
