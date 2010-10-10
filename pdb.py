@@ -54,7 +54,7 @@ __url__='http://codespeak.net/svn/user/antocuni/hack/pdb.py'
 
 import sys
 import os.path
-from inspect import getsourcelines
+import inspect
 import code
 import types
 import traceback
@@ -263,7 +263,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _printlonglist(self, linerange=None):
         try:
-            lines, lineno = getsourcelines(self.curframe)
+            lines, lineno = inspect.getsourcelines(self.curframe)
         except IOError, e:
             print '** Error: %s **' % e
             return
@@ -470,15 +470,23 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                 watching[expr] = newvalue
                 print '%s: %r --> %r' % (expr, oldvalue, newvalue)
 
-    def do_source(self, arg):
+
+    def _get_position_of_arg(self, arg):
         try:
             obj = self._getval(arg)
         except:
-            return
+            return None, None, None
         try:
-            lines, lineno = getsourcelines(obj)
+            filename = inspect.getabsfile(obj)
+            lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError), e:
             print '** Error: %s **' % e
+            return None, None, None
+        return filename, lineno, lines
+
+    def do_source(self, arg):
+        _, lineno, lines = self._get_position_of_arg(arg)
+        if lineno is None:
             return
         self._print_lines(lines, lineno, print_markers=False)
 
@@ -515,15 +523,24 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return width, height
 
     def _open_editor(self, editor, lineno, filename):
+        filename = filename.replace("'", "\\'")
         os.system("%s +%d '%s'" % (editor, lineno, filename))
-    
-    def do_edit(self, arg):
-        "Open an editor visiting the current file at the current line"
-        editor = self.config.editor
+
+    def _get_current_position(self):
         frame = self.curframe
         lineno = frame.f_lineno
         filename = os.path.abspath(frame.f_code.co_filename)
-        filename = filename.replace("'", "\\'")
+        return filename, lineno
+
+    def do_edit(self, arg):
+        "Open an editor visiting the current file at the current line"
+        if arg == '':
+            filename, lineno = self._get_current_position()
+        else:
+            filename, lineno, _ = self._get_position_of_arg(arg)
+            if filename is None:
+                return
+        editor = self.config.editor
         self._open_editor(editor, lineno, filename)
 
     do_ed = do_edit
