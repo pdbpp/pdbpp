@@ -263,7 +263,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _printlonglist(self, linerange=None):
         try:
-            lines, lineno = inspect.getsourcelines(self.curframe)
+            if self.curframe.f_code.co_name == '<module>':
+                # inspect.getsourcelines is buggy in this case: if we just
+                # pass the frame, it returns the source for the first function
+                # defined in the module.  Instead, we want the full source
+                # code of the module
+                lines, _ = inspect.findsource(self.curframe)
+                lineno = 1
+            else:
+                lines, lineno = inspect.getsourcelines(self.curframe)
         except IOError, e:
             print '** Error: %s **' % e
             return
