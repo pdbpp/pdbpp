@@ -410,6 +410,30 @@ RUN emacs \+%d '%s'
 # c
 """ % (bar_lineno, filename))
 
+def test_edit_py_code_source():
+    src = py.code.Source("""
+    def bar():
+        set_trace()
+        return 42
+    """)
+    _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
+    dic = {'set_trace': set_trace}
+    exec src.compile() in dic # 8th line from the beginning of the function
+    bar = dic['bar']
+    src_compile_lineno = base_lineno + 8
+    #
+    filename = os.path.abspath(__file__)
+    if filename.endswith('.pyc'):
+        filename = filename[:-1]
+    #
+    check(bar, """
+> .*bar()
+-> return 42
+# edit bar
+RUN emacs \+%d '%s'
+# c
+""" % (src_compile_lineno, filename)) 
+
 
 def test_put():
     def fn():
