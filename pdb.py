@@ -145,7 +145,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
 
     def _disable_pytest_capture_maybe(self):
-        import py
+        try:
+            import py
+        except ImportError:
+            return
         try:
             capman = py.test.config.pluginmanager.getplugin('capturemanager')
         except KeyError:
