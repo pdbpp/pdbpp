@@ -591,6 +591,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
 # simplified interface
 
+Restart = pdb.Restart
+
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
@@ -634,7 +636,8 @@ def set_tracex():
 set_tracex._dont_inline_ = True
 
 if __name__=='__main__':
-    main()
+    import pdb
+    pdb.main()
 
 
 # XXX todo:
