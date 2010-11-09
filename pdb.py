@@ -591,7 +591,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
 # simplified interface
 
-Restart = pdb.Restart
+if hasattr(pdb, 'Restart'):
+    Restart = pdb.Restart
 
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
