@@ -636,6 +636,21 @@ def set_tracex():
     print 'PDB!'
 set_tracex._dont_inline_ = True
 
+def always(obj, value):
+    return True
+
+def break_on_setattr(attrname, condition=always, set_trace=set_trace):
+    def decorator(cls):
+        old___setattr__ = cls.__setattr__
+        def __setattr__(self, attr, value):
+            if attr == attrname and condition(self, value):
+                set_trace()
+            old___setattr__(self, attr, value)
+        assert '__setattr__' not in cls.__dict__
+        cls.__setattr__ = __setattr__
+        return cls
+    return decorator
+
 if __name__=='__main__':
     import pdb
     pdb.main()

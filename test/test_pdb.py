@@ -526,3 +526,45 @@ def test_enable_disable():
 2
 # c
 """)
+
+
+def test_break_on_setattr():
+    @pdb.break_on_setattr('x', set_trace=set_trace)
+    class Foo(object):
+        pass
+    def fn():
+        obj = Foo()
+        obj.x = 0
+        return obj.x
+
+    check(fn, """
+> .*__setattr__()
+-> old___setattr__(self, attr, value)
+# print attr
+x
+# print value
+0
+# c
+""")
+
+def test_break_on_setattr_condition():
+    def mycond(obj, value):
+        return value == 42
+    @pdb.break_on_setattr('x', condition=mycond, set_trace=set_trace)
+    class Foo(object):
+        pass
+    def fn():
+        obj = Foo()
+        obj.x = 0
+        obj.x = 42
+        return obj.x
+
+    check(fn, """
+> .*__setattr__()
+-> old___setattr__(self, attr, value)
+# print attr
+x
+# print value
+42
+# c
+""")
