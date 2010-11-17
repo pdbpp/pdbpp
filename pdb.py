@@ -48,9 +48,9 @@ You can find a sample configuration file, here:
 http://codespeak.net/svn/user/antocuni/hack/pdbrc.py
 """
 
-__version__='0.1'
+__version__='0.6'
 __author__ ='Antonio Cuni <anto.cuni@gmail.com>'
-__url__='http://codespeak.net/svn/user/antocuni/hack/pdb.py'
+__url__='http://bitbucket.org/antocuni/pdb'
 
 import sys
 import os.path
