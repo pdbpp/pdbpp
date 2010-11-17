@@ -183,11 +183,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             tb = tb.tb_next
 
     def get_stack(self, f, t):
-        # Modified from bdb.py to be able to walk the stack beyond generators,
-        # which does not work in the normal pdb :-(
+        # show all the frames, except the ones that explicitly ask to be hidden
         stack, i = pdb.Pdb.get_stack(self, f, t)
-        if f is None:
-            i = max(0, len(stack) - 1)
+        newstack = []
+        for frame, lineno in stack:
+            if not frame.f_locals.get('__pdb_hide_frame__', False):
+                newstack.append((frame, lineno))
+        stack = newstack
+        i = max(0, len(stack) - 1)
         return stack, i
 
     def forget(self):
@@ -643,6 +646,7 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
     def decorator(cls):
         old___setattr__ = cls.__setattr__
         def __setattr__(self, attr, value):
+            __pdb_hide_frame__ = True # don't show this frame in pdb
             if attr == attrname and condition(self, value):
                 set_trace()
             old___setattr__(self, attr, value)

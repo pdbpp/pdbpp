@@ -538,11 +538,14 @@ def test_break_on_setattr():
         return obj.x
 
     check(fn, """
-> .*__setattr__()
--> old___setattr__(self, attr, value)
-# print attr
-x
-# print value
+> .*fn()
+-> obj.x = 0
+# hasattr(obj, 'x')
+False
+# n
+> .*fn()
+-> return obj.x
+# print obj.x
 0
 # c
 """)
@@ -560,11 +563,14 @@ def test_break_on_setattr_condition():
         return obj.x
 
     check(fn, """
-> .*__setattr__()
--> old___setattr__(self, attr, value)
-# print attr
-x
-# print value
+> .*fn()
+-> obj.x = 42
+# obj.x
+0
+# n
+> .*fn()
+-> return obj.x
+# obj.x
 42
 # c
 """)
