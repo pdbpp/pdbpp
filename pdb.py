@@ -60,7 +60,7 @@ import types
 import traceback
 import subprocess
 import re
-from rlcompleter_ng import Completer, ConfigurableClass, setcolor, colors
+from fancycompleter import Completer, ConfigurableClass, Color
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
@@ -90,7 +90,7 @@ class DefaultConfig:
     exec_if_unfocused = None
     disable_pytest_capturing = True
 
-    line_number_color = colors.turquoise
+    line_number_color = Color.turquoise
     current_line_color = 44 # blue
 
     def setup(self, pdb):
@@ -230,7 +230,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def format_line(self, lineno, marker, line):
         lineno = '%4d' % lineno
         if self.config.highlight:
-            lineno = setcolor(lineno, self.config.line_number_color)
+            lineno = Color.set(self.config.line_number_color, lineno)
         line = '%s  %2s %s' % (lineno, marker, line)
         if self.config.highlight and marker == '->':
             line = setbgcolor(line, self.config.current_line_color)
@@ -428,7 +428,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                         raise
                     except:
                         s += '(unprintable exception)'
-                    print setcolor(' ' + s, self.config.line_number_color)
+                    print Color.set(self.config.line_number_color, ' ' + s)
                     return
             if '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -438,7 +438,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                     raise
                 except:
                     s = '(unprintable return value)'
-                print setcolor(' return ' + s, self.config.line_number_color)
+                print Color.set(self.config.line_number_color, ' return ' + s)
 
     def do_sticky(self, arg):
         """
