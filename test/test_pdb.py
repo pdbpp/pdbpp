@@ -1,10 +1,13 @@
 import inspect
 import os.path
 import sys
-import pdb
 import re
 from cStringIO import StringIO
 import py
+
+# make sure that we are really import our pdb
+sys.modules.pop('pdb')
+import pdb
 
 class FakeStdin:
     def __init__(self, lines):
