@@ -530,6 +530,29 @@ def test_enable_disable():
 # c
 """)
 
+def test_hideframe(): 
+    @pdb.hideframe
+    def g():
+        pass
+    assert g.func_code.co_consts[-1] is pdb._HIDE_FRAME
+
+def test_hide_hidden_frames():
+    @pdb.hideframe
+    def g():
+        set_trace()
+        return 'foo'
+    def fn():
+        g()
+        return 1
+
+    check(fn, """
+> .*fn()
+-> g()
+# down
+... Newest frame
+# c
+""")
+
 
 def test_break_on_setattr():
     @pdb.break_on_setattr('x', set_trace=set_trace)

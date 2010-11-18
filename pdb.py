@@ -184,12 +184,16 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self.tb_lineno[tb.tb_frame] = lineno
             tb = tb.tb_next
 
+    def _is_hidden(self, frame):
+        consts = frame.f_code.co_consts
+        return consts and consts[-1] is _HIDE_FRAME
+
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
         stack, i = pdb.Pdb.get_stack(self, f, t)
         newstack = []
         for frame, lineno in stack:
-            if not frame.f_locals.get('__pdb_hide_frame__', False):
+            if not self._is_hidden(frame):
                 newstack.append((frame, lineno))
         stack = newstack
         i = max(0, len(stack) - 1)
@@ -641,14 +645,29 @@ def set_tracex():
     print 'PDB!'
 set_tracex._dont_inline_ = True
 
+_HIDE_FRAME = object()
+
+def hideframe(func):
+    import new
+    c = func.func_code
+    c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
+                 c.co_flags, c.co_code,
+                 c.co_consts+(_HIDE_FRAME,),
+                 c.co_names, c.co_varnames, c.co_filename,
+                 c.co_name, c.co_firstlineno, c.co_lnotab,
+                 c.co_freevars, c.co_cellvars)
+    func.func_code = c
+    return func
+
+
 def always(obj, value):
     return True
 
 def break_on_setattr(attrname, condition=always, set_trace=set_trace):
     def decorator(cls):
         old___setattr__ = cls.__setattr__
+        @hideframe
         def __setattr__(self, attr, value):
-            __pdb_hide_frame__ = True # don't show this frame in pdb
             if attr == attrname and condition(self, value):
                 set_trace()
             old___setattr__(self, attr, value)
