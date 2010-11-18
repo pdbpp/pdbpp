@@ -153,6 +153,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             capman = py.test.config.pluginmanager.getplugin('capturemanager')
         except KeyError:
             pass
+        except AttributeError:
+            pass # newer py.test with support ready
         else:
             capman.suspendcapture()
 
