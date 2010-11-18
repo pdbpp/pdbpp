@@ -143,6 +143,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
         self.history = []
+        self.show_hidden_frames = False
+        self.hidden_frames = 0
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -162,6 +164,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
         self.setup(frame, traceback)
+        if self.hidden_frames:
+            print "%d frames hidden" % self.hidden_frames
         self.print_stack_entry(self.stack[self.curindex])
         self.cmdloop()
         self.forget()
@@ -191,9 +195,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
         stack, i = pdb.Pdb.get_stack(self, f, t)
+        self.hidden_frames = 0
         newstack = []
         for frame, lineno in stack:
-            if not self._is_hidden(frame):
+            if self._is_hidden(frame) and not self.show_hidden_frames:
+                self.hidden_frames += 1
+            else:
                 newstack.append((frame, lineno))
         stack = newstack
         i = max(0, len(stack) - 1)
