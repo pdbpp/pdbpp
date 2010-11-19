@@ -168,7 +168,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if self.hidden_frames:
             print "%d frames hidden" % self.hidden_frames
         self.print_stack_entry(self.stack[self.curindex])
-        fancycompleter.setup()
+        completer = fancycompleter.setup()
+        completer.config.readline.set_completer(self.complete)
         self.cmdloop()
         self.forget()
 
