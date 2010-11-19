@@ -272,7 +272,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         {longlist|ll}
         List source code for the current function.
         
-        Differently that list, the whole function is displayed; the
+        Differently than list, the whole function is displayed; the
         current line is marked with '->'.  In case of post-mortem
         debugging, the line which effectively raised the exception is
         marked with '>>'.
