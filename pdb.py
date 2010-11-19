@@ -61,6 +61,7 @@ import traceback
 import subprocess
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
+import fancycompleter
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
@@ -167,6 +168,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if self.hidden_frames:
             print "%d frames hidden" % self.hidden_frames
         self.print_stack_entry(self.stack[self.curindex])
+        fancycompleter.setup()
         self.cmdloop()
         self.forget()
 
