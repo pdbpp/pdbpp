@@ -53,8 +53,7 @@ The following are new commands that you can use from the interative
 ``(Pdb++)`` prompt.
 
 .. _`sticky mode`:
-
-.. image:: img/sticky.gif
+.. image:: http://bitbucket.org/antocuni/pdb/raw/9eb08f1273ed/img/sticky.gif
    :align: right
 
 ``sticky [start end]``
