@@ -54,6 +54,9 @@ The following are new commands that you can use from the interative
 
 .. _`sticky mode`:
 
+.. image:: img/sticky.gif
+   :align: right
+
 ``sticky [start end]``
   toggle **sticky mode**.  When in this mode, every time the current position
   change, the screen is repainted and the whole function shown.  Thus, when
