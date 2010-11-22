@@ -55,23 +55,20 @@ The following are new commands that you can use from the interative
 .. _`sticky mode`:
 
 ``sticky [start end]``
-  toggle **sticky mode**. 
-
-  When in this mode, every time the current position change, the screen is
-  repainted and the whole function shown.  Thus, when doing step-by-step
-  execution you can easily follow the flow of the execution.  If ``start`` and
-  ``end`` are given, sticky mode is enabled and only lines within that range
-  (extremes included) will be displayed.
+  toggle **sticky mode**.  When in this mode, every time the current position
+  change, the screen is repainted and the whole function shown.  Thus, when
+  doing step-by-step execution you can easily follow the flow of the
+  execution.  If ``start`` and ``end`` are given, sticky mode is enabled and
+  only lines within that range (extremes included) will be displayed.
 
 
 ``longlist`` (``ll``)
-  List source code for the current function.
-
-  Differently than the normal pdb ``list`` command, ``longlist`` displays the
-  whole function.  The current line is marked with ``->``.  In case of
-  post-mortem debugging, the line which effectively raised the exception is
-  marked with ``>>``.  If the ``highlight`` `config option`_ is set and
-  pygments_ is installed, the source code is highlighted.
+  List source code for the current function.  Differently than the normal pdb
+  ``list`` command, ``longlist`` displays the whole function.  The current
+  line is marked with ``->``.  In case of post-mortem debugging, the line
+  which effectively raised the exception is marked with ``>>``.  If the
+  ``highlight`` `config option`_ is set and pygments_ is installed, the source
+  code is highlighted.
 
 
 ``interact``
@@ -87,13 +84,11 @@ The following are new commands that you can use from the interative
 ``watch EXPRESSION``
   add an expression to the **watching list**; expressions in this list are
   evaluated at each step, and printed every time its value changes.
-
   **WARNING**: since the expressions is evaluated multiple time, pay attention
   not to put expressions with side-effects in the watching list.
 
 ``unwatch EXPRESSION``:
   remove ``EXPRESSION`` from the watching list.
-
 
 ``source EXPRESSION``
   show the source code for the given function/method/class.
