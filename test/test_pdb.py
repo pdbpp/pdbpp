@@ -546,6 +546,7 @@ def test_hide_hidden_frames():
         return 1
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> g()
 # down
@@ -564,6 +565,7 @@ def test_break_on_setattr():
         return obj.x
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> obj.x = 0
 # hasattr(obj, 'x')
@@ -589,6 +591,7 @@ def test_break_on_setattr_condition():
         return obj.x
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> obj.x = 42
 # obj.x
