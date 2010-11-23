@@ -80,7 +80,6 @@ pdb = import_from_stdlib('pdb')
 
 class DefaultConfig:
     prompt = '(Pdb++) '
-    completekey = 'tab'
     highlight = True
     bg = 'dark'
     use_pygments = True
@@ -136,7 +135,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self._disable_pytest_capture_maybe()
         pdb.Pdb.__init__(self, *args, **kwds)
         self.prompt = self.config.prompt
-        self.completekey = self.config.completekey
 
         self.mycompleter = None
         self.display_list = {} # frame --> (name --> last seen value)
