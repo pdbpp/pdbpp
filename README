@@ -23,7 +23,7 @@ of new features to make your debugging experience as nice as possible.
   - additional convenience functions in the ``pdb`` module, to be used from
     your program
 
-  - user friendlier user interface (hint: have you ever typed ``r`` at the
+  - friendlier user interface (hint: have you ever typed ``r`` at the
     prompt to print the value of some variable?)
 
 .. _pdb: http://docs.python.org/library/pdb.html
@@ -96,6 +96,62 @@ The following are new commands that you can use from the interative
   open the editor in the right position to edit the given
   function/method/class.  The editor to use is specified through a `config
   option`_.
+
+
+Additional functions in the ``pdb module
+-----------------------------------------
+
+The ``pdb`` module that comes with pdb++ includes all the functions and
+classes that are in the module from the standard lib.  If you find any
+difference, please report it as a bug.
+
+In addition, there are some new convenience functions that are unique to
+pdb++.
+
+``pdb.xpm()``
+  eXtended Post Mortem: it is equivalent to
+  ``pdb.post_morted(sys.exc_info()[2])``.  If used inside an ``except``
+  clause, it will start a post-mortem pdb prompt from the line that raised the
+  exception being caught.
+
+``pdb.disable()``
+  disable ``pdb.set_trace()``: any subsequent call to it will be ignored.
+
+``pdb.enable()``
+  re-enable ``pdb.set_trace()``, in the case it was disabled by ``pdb.disable()``.
+
+``@pdb.hideframe``
+  function decorator to tells pdb++ to hide the frame corresponding to the
+  function.  Hidden frames do not show up when using interactive commands such
+  as ``up``, ``down`` or ``where``.
+
+``@pdb.break_on_setattr(attrname, condition=always)``
+
+  class decorator: break the execution of program every time that the
+  attribute ``attrname`` is set on any instance of the class. ``condition`` is
+  a callable taking the target object of the ``setattr`` and the actual value;
+  by default, it breaks every time the attribute is set. E.g.::
+
+      @break_on_setattr('bar')
+      class Foo(object):
+          pass
+      f = Foo()
+      f.bar = 42    # the program breaks here
+
+  If can be used also after the class has already been created, e.g. if we
+  want to break when some attribute of a particular object is set::
+
+      class Foo(object):
+          pass
+      a = Foo()
+      b = Foo()
+      
+      def break_if_a(obj, value):
+          return obj is a
+
+      break_on_setattr('bar', condition=break_if_a)(Foo)
+      b.bar = 10   # no break
+      a.bar = 42   # the program breaks here
 
 
 Configuration and customization

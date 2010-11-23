@@ -603,3 +603,23 @@ def test_break_on_setattr_condition():
 42
 # c
 """)
+
+def test_break_on_setattr_non_decorator():
+    class Foo(object):
+        pass
+
+    def fn():
+        a = Foo()
+        b = Foo()
+        def break_if_a(obj, value):
+            return obj is a
+        pdb.break_on_setattr('bar', condition=break_if_a, set_trace=set_trace)(Foo)
+        b.bar = 10
+        a.bar = 42
+
+    check(fn, """
+1 frames hidden
+> .*fn()
+-> a.bar = 42
+# c
+""")
