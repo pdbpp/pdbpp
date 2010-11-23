@@ -52,6 +52,7 @@ New interactive commands
 The following are new commands that you can use from the interative
 ``(Pdb++)`` prompt.
 
+.. _`sticky mode`:
 
 ``sticky [start end]``
   toggle **sticky mode**.  When in this mode, every time the current position
@@ -98,8 +99,8 @@ The following are new commands that you can use from the interative
   option`_.
 
 
-Additional functions in the ``pdb module
------------------------------------------
+Additional functions in the ``pdb`` module
+------------------------------------------
 
 The ``pdb`` module that comes with pdb++ includes all the functions and
 classes that are in the module from the standard lib.  If you find any
@@ -220,3 +221,7 @@ default value:
 ``def setup(self, pdb): pass``
   this method is called during the initialization of the ``Pdb`` class. Useful
   to do complex setup.
+
+
+.. _wmctrl: http://bitbucket.org/antocuni/wmctrl
+.. _`py.test`: http://pytest.org
