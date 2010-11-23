@@ -154,7 +154,7 @@ NUM  ->         return a
 # c
 """.replace('NUM', ' *[0-9]*'))
 
-def test_watch():
+def test_display():
     def fn():
         a = 1
         set_trace()
@@ -166,7 +166,7 @@ def test_watch():
     check(fn, """
 > .*fn()
 -> b = 1
-# watch a
+# display a
 # n
 > .*fn()
 -> a = 2
@@ -174,14 +174,14 @@ def test_watch():
 > .*fn()
 -> a = 3
 a: 1 --> 2
-# unwatch a
+# undisplay a
 # n
 > .*fn()
 -> return a
 # c
 """)
 
-def test_watch_undefined():
+def test_display_undefined():
     def fn():
         set_trace()
         b = 42
@@ -190,7 +190,7 @@ def test_watch_undefined():
     check(fn, """
 > .*fn()
 -> b = 42
-# watch b
+# display b
 # n
 > .*fn()
 -> return b

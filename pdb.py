@@ -5,7 +5,7 @@ Pdb++, a fancier version of pdb
 This module extends the stdlib pdb in numerous ways, e.g. by providing
 real completion of Python values instead of pdb's own commands, or by
 adding few convenience commands like ``longlist``, ``interact`` or
-``watch``.
+``display``.
 
 For a full explanation of each command, refer to the docstring or type
 help <command> at the prompt.
@@ -139,7 +139,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.completekey = self.config.completekey
 
         self.mycompleter = None
-        self.watching = {} # frame --> (name --> last seen value)
+        self.display_list = {} # frame --> (name --> last seen value)
         self.sticky = False
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
@@ -377,8 +377,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         val = self._getval(arg)
         track(val)
 
-    def _get_watching(self):
-        return self.watching.setdefault(self.curframe, {})
+    def _get_display_list(self):
+        return self.display_list.setdefault(self.curframe, {})
 
     def _getval_or_undefined(self, arg):
         try:
@@ -387,34 +387,34 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         except NameError:
             return undefined
 
-    def do_watch(self, arg):
+    def do_display(self, arg):
         """
-        watch expression
+        display expression
 
-        Add expression to the watching list; expressions in this list
+        Add expression to the display list; expressions in this list
         are evaluated at each step, and printed every time its value
         changes.
 
         WARNING: since the expressions is evaluated multiple time, pay
         attention not to put expressions with side-effects in the
-        watching list.
+        display list.
         """
         try:
             value = self._getval_or_undefined(arg)
         except:
             return
-        self._get_watching()[arg] = value
+        self._get_display_list()[arg] = value
 
-    def do_unwatch(self, arg):
+    def do_undisplay(self, arg):
         """
-        unwatch expression
+        undisplay expression
 
-        Remove expression from the watching list.
+        Remove expression from the display list.
         """
         try:
-            del self._get_watching()[arg]
+            del self._get_display_list()[arg]
         except KeyError:
-            print '** not watching %s **' % arg
+            print '** %s not in the display list **' % arg
 
     def _print_if_sticky(self):
         if self.sticky:
@@ -490,14 +490,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def preloop(self):
         self._print_if_sticky()
-        watching = self._get_watching()
-        for expr, oldvalue in watching.iteritems():
+        display_list = self._get_display_list()
+        for expr, oldvalue in display_list.iteritems():
             newvalue = self._getval_or_undefined(expr)
             # check for identity first; this prevents custom __eq__ to
             # be called at every loop, and also prevents instances
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
-                watching[expr] = newvalue
+                display_list[expr] = newvalue
                 print '%s: %r --> %r' % (expr, oldvalue, newvalue)
 
 

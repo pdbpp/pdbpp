@@ -52,9 +52,6 @@ New interactive commands
 The following are new commands that you can use from the interative
 ``(Pdb++)`` prompt.
 
-.. _`sticky mode`:
-.. image:: http://bitbucket.org/antocuni/pdb/raw/9eb08f1273ed/img/sticky.gif
-   :align: right
 
 ``sticky [start end]``
   toggle **sticky mode**.  When in this mode, every time the current position
@@ -83,14 +80,14 @@ The following are new commands that you can use from the interative
   to and are referred by.  This command requires the ``pypy`` source code to
   be importable.
 
-``watch EXPRESSION``
-  add an expression to the **watching list**; expressions in this list are
+``display EXPRESSION``
+  add an expression to the **display list**; expressions in this list are
   evaluated at each step, and printed every time its value changes.
   **WARNING**: since the expressions is evaluated multiple time, pay attention
-  not to put expressions with side-effects in the watching list.
+  not to put expressions with side-effects in the display list.
 
-``unwatch EXPRESSION``:
-  remove ``EXPRESSION`` from the watching list.
+``undisplay EXPRESSION``:
+  remove ``EXPRESSION`` from the display list.
 
 ``source EXPRESSION``
   show the source code for the given function/method/class.
