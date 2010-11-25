@@ -614,7 +614,8 @@ if hasattr(pdb, 'Restart'):
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
-    newfunc = types.FunctionType(func.func_code, globals(), func.func_name)
+    newfunc = types.FunctionType(func.func_code, globals(), func.func_name,
+                                 func.func_defaults)
     globals()[name] = newfunc
 del name, func, newfunc
 
@@ -691,5 +692,3 @@ if __name__=='__main__':
 
 # XXX todo:
 # get_terminal_size inside emacs returns 0,0
-# copy func_defaults when "cloning" functions, else you can't use
-# e.g. pdb.run(code)
