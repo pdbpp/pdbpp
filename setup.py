@@ -25,4 +25,5 @@ setup(
         "Operating System :: POSIX",
         "Topic :: Utilities",
         ],
+    install_requires=["fancycompleter>=0.2"],
 )
