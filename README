@@ -179,7 +179,7 @@ default value:
 
 ``current_line_color = 44``
   the background color to use to highlight the current line; the background
-  color is set by using the ANSI escape sequence ``^[Xm`` when ``^`` is the
+  color is set by using the ANSI escape sequence ``^[Xm`` where ``^`` is the
   ESC character and ``X`` is the background color. 44 corresponds to "blue".
 
 ``use_pygments = True``
