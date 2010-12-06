@@ -631,3 +631,31 @@ def test_break_on_setattr_non_decorator():
 -> a.bar = 42
 # c
 """)
+
+def test_break_on_setattr_overridden():
+    @pdb.break_on_setattr('x', set_trace=set_trace)
+    class Foo(object):
+        def __setattr__(self, attr, value):
+            object.__setattr__(self, attr, value+1)
+
+    def fn():
+        obj = Foo()
+        obj.y = 41
+        obj.x = 0
+        return obj.x
+
+    check(fn, """
+1 frames hidden
+> .*fn()
+-> obj.x = 0
+# obj.y
+42
+# hasattr(obj, 'x')
+False
+# n
+> .*fn()
+-> return obj.x
+# print obj.x
+1
+# c
+""")
