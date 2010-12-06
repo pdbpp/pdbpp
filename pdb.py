@@ -1,51 +1,9 @@
 """
-Pdb++, a fancier version of pdb
-===============================
+pdb++, a drop-in replacement for pdb
+====================================
 
-This module extends the stdlib pdb in numerous ways, e.g. by providing
-real completion of Python values instead of pdb's own commands, or by
-adding few convenience commands like ``longlist``, ``interact`` or
-``display``.
-
-For a full explanation of each command, refer to the docstring or type
-help <command> at the prompt.
-
-Installation
-------------
-
-This module is meant to replace stdlib's pdb.py from the outsite;
-simply put it in a directory in your PYTHONPATH, and you can start
-using it immediately.  Since it's named pdb.py, every place which
-imports pdb will now find the new module.
-
-Dependencies
-------------
-
-To work properly, this module needs `rlcompleter_ng`_ to be installed.
-
-To enable syntax highlighting, you must install `pygments`.
-
-.. _pygments: http://pygments.org/
-.. _`rlcompleter_ng`: http://codespeak.net/svn/user/antocuni/hack/rlcompleter_ng.py
-
-To use the ``exec_if_unfocused`` option, you need to install ``wmctrl`` and my
-`wmctrl.py` module.
-
-.. _wmctrl.py: http://codespeak.net/svn/user/antocuni/hack/wmctrl.py
-
-Configuration
--------------
-
-To customize the configuration of Pdb++, you need to put a file named
-.pdbrc.py in your home directory.  The file must contain a class named
-``Config`` inheriting from ``DefaultConfig`` and overridding the
-desired values.
-
-To know which options are available, look at the comment in the
-source.
-
-You can find a sample configuration file, here:
-http://codespeak.net/svn/user/antocuni/hack/pdbrc.py
+This module extends the stdlib pdb in numerous ways: look at the README for
+more details on pdb++ features.
 """
 
 __version__='0.6'
