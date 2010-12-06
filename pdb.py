@@ -359,11 +359,11 @@ prints a list of hidden frames.
 
     def do_list(self, arg):
         from StringIO import StringIO
-        oldstdout = sys.stdout
-        sys.stdout = StringIO()
+        oldstdout = self.stdout
+        self.stdout = StringIO()
         pdb.Pdb.do_list(self, arg)
-        src = self.format_source(sys.stdout.getvalue())
-        sys.stdout = oldstdout
+        src = self.format_source(self.stdout.getvalue())
+        self.stdout = oldstdout
         print >> self.stdout, src,
 
     do_l = do_list
@@ -436,7 +436,7 @@ prints a list of hidden frames.
 
     def _print_if_sticky(self):
         if self.sticky:
-            sys.stdout.write(CLEARSCREEN)
+            self.stdout.write(CLEARSCREEN)
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)
