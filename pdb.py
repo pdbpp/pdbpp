@@ -154,12 +154,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return
         try:
             capman = py.test.config.pluginmanager.getplugin('capturemanager')
+            capman.suspendcapture()
         except KeyError:
             pass
         except AttributeError:
-            pass # newer py.test with support ready
-        else:
-            capman.suspendcapture()
+            pass # newer py.test with support ready, or very oldd py.test for
+                 # which this hack does not work
 
     def interaction(self, frame, traceback):
         if self.config.exec_if_unfocused:
