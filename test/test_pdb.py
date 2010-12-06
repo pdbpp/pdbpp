@@ -595,7 +595,30 @@ def test_hide_current_frame():
 # c
 """)
 
+def test_list_hidden_frames():
+    @pdb.hideframe
+    def g():
+        set_trace()
+        return 'foo'
+    @pdb.hideframe
+    def k():
+        return g()
+    def fn():
+        k()
+        return 1
 
+    check(fn, """
+> .*fn()
+-> k()
+   2 frames hidden .*
+# hf_list
+.*k()
+-> return g()
+.*g()
+-> return 'foo'
+# c
+""")
+    
 
 def test_break_on_setattr():
     @pdb.break_on_setattr('x', set_trace=set_trace)
