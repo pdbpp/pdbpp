@@ -153,10 +153,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
-        stack, i = pdb.Pdb.get_stack(self, f, t)
+        fullstack, _ = pdb.Pdb.get_stack(self, f, t)
+        self.fullstack = fullstack
+        return self.compute_stack(fullstack)
+
+    def compute_stack(self, fullstack):
         self.hidden_frames = 0
         newstack = []
-        for frame, lineno in stack:
+        for frame, lineno in fullstack:
             if self._is_hidden(frame) and not self.show_hidden_frames:
                 self.hidden_frames += 1
             else:
@@ -164,6 +168,21 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         stack = newstack
         i = max(0, len(stack) - 1)
         return stack, i
+
+    def refresh_stack(self):
+        """
+        Recompute the stack after e.g. show_hidden_frames has been modified
+        """
+        self.stack, _ = self.compute_stack(self.fullstack)
+        # find the current frame in the new stack
+        for i, (frame, _) in enumerate(self.stack):
+            if frame is self.curframe:
+                self.curindex = i
+                break
+        else:
+            self.curindex = len(self.stack)-1
+            self.curframe = self.stack[-1][0]
+            self.print_current_stack_entry()
 
     def forget(self):
         pdb.Pdb.forget(self)
@@ -227,6 +246,22 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def default(self, line):
         self.history.append(line)
         return pdb.Pdb.default(self, line)
+
+    def do_hf_unhide(self, arg):
+        """
+        {hf_show}
+        unhide hidden frames
+        """
+        self.show_hidden_frames = True
+        self.refresh_stack()
+
+    def do_hf_hide(self, arg):
+        """
+        {hf_hide}
+        hide hidden frames
+        """
+        self.show_hidden_frames = False
+        self.refresh_stack()
 
     def do_longlist(self, arg):
         """
