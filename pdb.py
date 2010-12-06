@@ -643,7 +643,6 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
             if attr == attrname and condition(self, value):
                 set_trace()
             old___setattr__(self, attr, value)
-        assert '__setattr__' not in cls.__dict__
         cls.__setattr__ = __setattr__
         return cls
     return decorator
