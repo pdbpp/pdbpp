@@ -154,7 +154,7 @@ NUM  ->         return a
 # c
 """.replace('NUM', ' *[0-9]*'))
 
-def test_watch():
+def test_display():
     def fn():
         a = 1
         set_trace()
@@ -166,7 +166,7 @@ def test_watch():
     check(fn, """
 > .*fn()
 -> b = 1
-# watch a
+# display a
 # n
 > .*fn()
 -> a = 2
@@ -174,14 +174,14 @@ def test_watch():
 > .*fn()
 -> a = 3
 a: 1 --> 2
-# unwatch a
+# undisplay a
 # n
 > .*fn()
 -> return a
 # c
 """)
 
-def test_watch_undefined():
+def test_display_undefined():
     def fn():
         set_trace()
         b = 42
@@ -190,7 +190,7 @@ def test_watch_undefined():
     check(fn, """
 > .*fn()
 -> b = 42
-# watch b
+# display b
 # n
 > .*fn()
 -> return b
@@ -546,6 +546,7 @@ def test_hide_hidden_frames():
         return 1
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> g()
 # down
@@ -564,6 +565,7 @@ def test_break_on_setattr():
         return obj.x
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> obj.x = 0
 # hasattr(obj, 'x')
@@ -589,6 +591,7 @@ def test_break_on_setattr_condition():
         return obj.x
 
     check(fn, """
+1 frames hidden
 > .*fn()
 -> obj.x = 42
 # obj.x
@@ -598,5 +601,25 @@ def test_break_on_setattr_condition():
 -> return obj.x
 # obj.x
 42
+# c
+""")
+
+def test_break_on_setattr_non_decorator():
+    class Foo(object):
+        pass
+
+    def fn():
+        a = Foo()
+        b = Foo()
+        def break_if_a(obj, value):
+            return obj is a
+        pdb.break_on_setattr('bar', condition=break_if_a, set_trace=set_trace)(Foo)
+        b.bar = 10
+        a.bar = 42
+
+    check(fn, """
+1 frames hidden
+> .*fn()
+-> a.bar = 42
 # c
 """)
