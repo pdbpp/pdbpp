@@ -98,6 +98,14 @@ The following are new commands that you can use from the interative
   function/method/class.  The editor to use is specified through a `config
   option`_.
 
+``hf_unhide``, ``hf_hide``, ``hf_list``
+  some frames might be marked as "hidden" by e.g. using the `@pdb.hideframe`_
+  function decorator.  By default, hidden frames are not shown in the stack
+  trace, and cannot be reached using ``up`` and ``down``.  You can use
+  ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
+  frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
+  prints a list of hidden frames.
+
 
 Smart command parsing
 ----------------------
@@ -160,10 +168,12 @@ pdb++.
 ``pdb.enable()``
   re-enable ``pdb.set_trace()``, in the case it was disabled by ``pdb.disable()``.
 
+.. _`@pdb.hideframe`:
+
 ``@pdb.hideframe``
   function decorator to tells pdb++ to hide the frame corresponding to the
   function.  Hidden frames do not show up when using interactive commands such
-  as ``up``, ``down`` or ``where``.
+  as ``up``, ``down`` or ``where``, unless ``hf_unhide`` is invoked.
 
 ``@pdb.break_on_setattr(attrname, condition=always)``
 
@@ -215,6 +225,9 @@ default value:
 
 ``line_number_color = Color.turquoise``
   the color to use for line numbers.
+
+``filename_color = Color.yellow``
+  the color to use for file names when printing the stack entries
 
 ``current_line_color = 44``
   the background color to use to highlight the current line; the background
