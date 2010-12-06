@@ -556,7 +556,7 @@ def test_hide_hidden_frames():
     check(fn, """
 > .*fn()
 -> g()
-1 frame hidden
+   1 frame hidden .*
 # down           # cannot go down because the frame is hidden
 ... Newest frame
 # hf_unhide
@@ -584,7 +584,7 @@ def test_hide_current_frame():
     check(fn, """
 > .*fn()
 -> g()
-1 frame hidden
+   1 frame hidden .*
 # hf_unhide
 # down           # now the frame is no longer hidden
 > .*g()
@@ -609,7 +609,7 @@ def test_break_on_setattr():
     check(fn, """
 > .*fn()
 -> obj.x = 0
-1 frame hidden
+   1 frame hidden .*
 # hasattr(obj, 'x')
 False
 # n
@@ -635,7 +635,7 @@ def test_break_on_setattr_condition():
     check(fn, """
 > .*fn()
 -> obj.x = 42
-1 frame hidden
+   1 frame hidden .*
 # obj.x
 0
 # n
@@ -662,7 +662,7 @@ def test_break_on_setattr_non_decorator():
     check(fn, """
 > .*fn()
 -> a.bar = 42
-1 frame hidden
+   1 frame hidden .*
 # c
 """)
 
@@ -681,7 +681,7 @@ def test_break_on_setattr_overridden():
     check(fn, """
 > .*fn()
 -> obj.x = 0
-1 frame hidden
+   1 frame hidden .*
 # obj.y
 42
 # hasattr(obj, 'x')
