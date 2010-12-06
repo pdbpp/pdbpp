@@ -20,11 +20,11 @@ of new features to make your debugging experience as nice as possible.
 
   - several new commands to be used from the interactive ``(Pdb++)`` prompt
 
+  - `smart command parsing`_ (hint: have you ever typed ``r`` or ``c`` at the
+    prompt to print the value of some variable?)
+
   - additional convenience functions in the ``pdb`` module, to be used from
     your program
-
-  - friendlier user interface (hint: have you ever typed ``r`` at the
-    prompt to print the value of some variable?)
 
 .. _pdb: http://docs.python.org/library/pdb.html
 .. _fancycompleter: http://bitbucket.org/antocuni/fancycompleter
@@ -98,6 +98,45 @@ The following are new commands that you can use from the interative
   function/method/class.  The editor to use is specified through a `config
   option`_.
 
+
+Smart command parsing
+----------------------
+
+By default, pdb tries hard to interpret what you enter at the command prompt
+as one of its builtin commands.  However, this is unconvenient if you want to
+just print the value of a local variable which happens to have the same name
+as one of such commands. E.g.::
+
+    (Pdb) list
+      1  	
+      2     def fn():
+      3         c = 42
+      4         import pdb;pdb.set_trace()
+      5  ->     return c
+    (Pdb) c
+
+In the example above, instead of printing 42 pdb interprets the command as
+``continue``, and then you loose your prompt.  This is even worse because it
+happens even if you type e.g. ``c.__class__``.
+
+pdb++ fixes this unfriendly (from the author's point of view, of course :-))
+behavior by always giving the precedence to printing the value of the given
+variable, if it exists.  If you really want to execute the corresponding
+command, you can prefix it with ``!!``.  Thus, the example above becomes::
+
+    (Pdb++) list
+      1  	
+      2     def fn():
+      3         c = 42
+      4         import pdb;pdb.set_trace()
+      5  ->     return c
+    (Pdb++) c
+    42
+    (Pdb++) !!c
+
+Note that the "smart" behavior takes place only when there is ambiguity,
+i.e. if it exists a variable with the same name of a command: in all the other
+cases, everything works as usual.
 
 Additional functions in the ``pdb`` module
 ------------------------------------------
