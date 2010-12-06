@@ -9,7 +9,7 @@ def skip_if_oldpy():
     if py.version == '1.1.1':
         py.test.skip('old py lib')
 
-# make sure that we are really import our pdb
+# make sure that we are really importing our pdb
 sys.modules.pop('pdb')
 import pdb
 
