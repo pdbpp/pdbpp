@@ -121,13 +121,18 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
         self.setup(frame, traceback)
-        if self.hidden_frames:
-            print "%d frames hidden" % self.hidden_frames
         self.print_stack_entry(self.stack[self.curindex])
+        self.print_hidden_frames_count()
         completer = fancycompleter.setup()
         completer.config.readline.set_completer(self.complete)
         self.cmdloop()
         self.forget()
+
+    def print_hidden_frames_count(self):
+        n = self.hidden_frames
+        if n:
+            plural = n>1 and 's' or ''
+            print "%d frame%s hidden" % (n, plural)
 
     def exec_if_unfocused(self):
         import os
@@ -250,7 +255,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def do_hf_unhide(self, arg):
         """
         {hf_show}
-        unhide hidden frames
+        unhide hidden frames, i.e. make it possible to ``up`` or ``down``
+        there
         """
         self.show_hidden_frames = True
         self.refresh_stack()
@@ -258,7 +264,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def do_hf_hide(self, arg):
         """
         {hf_hide}
-        hide hidden frames
+        (re)hide hidden frames, if they have been unhidden by ``hf_unhide``
         """
         self.show_hidden_frames = False
         self.refresh_stack()
