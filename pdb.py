@@ -114,7 +114,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         except KeyError:
             pass
         except AttributeError:
-            pass # newer py.test with support ready, or very oldd py.test for
+            pass # newer py.test with support ready, or very old py.test for
                  # which this hack does not work
 
     def interaction(self, frame, traceback):
