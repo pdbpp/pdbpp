@@ -5,6 +5,10 @@ import re
 from cStringIO import StringIO
 import py
 
+def skip_if_oldpy():
+    if py.version == '1.1.1':
+        py.test.skip('old py lib')
+
 # make sure that we are really import our pdb
 sys.modules.pop('pdb')
 import pdb
@@ -310,6 +314,7 @@ def test_exception_through_generator():
 """)
 
 def test_py_code_source():
+    skip_if_oldpy()
     src = py.code.Source("""
     def fn():
         x = 42
@@ -414,6 +419,7 @@ RUN emacs \+%d '%s'
 """ % (bar_lineno, filename))
 
 def test_edit_py_code_source():
+    skip_if_oldpy()
     src = py.code.Source("""
     def bar():
         set_trace()
