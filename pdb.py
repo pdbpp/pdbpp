@@ -132,7 +132,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         n = self.hidden_frames
         if n:
             plural = n>1 and 's' or ''
-            print "%d frame%s hidden" % (n, plural)
+            print "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
 
     def exec_if_unfocused(self):
         import os
@@ -251,6 +251,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def default(self, line):
         self.history.append(line)
         return pdb.Pdb.default(self, line)
+
+    def help_hidden_frames(self):
+        print """\
+Some frames might be marked as "hidden" by e.g. using the pdb.hideframe
+function decorator.  By default, hidden frames are not shown in the stack
+trace, and cannot be reached using ``up`` and ``down``.  You can use
+``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
+frames as normal ones), and ``hf_hide`` to hide them again.
+"""
 
     def do_hf_unhide(self, arg):
         """
