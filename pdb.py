@@ -101,7 +101,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.tb_lineno = {} # frame --> lineno where the exception raised
         self.history = []
         self.show_hidden_frames = False
-        self.hidden_frames = 0
+        self.hidden_frames = []
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -129,7 +129,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.forget()
 
     def print_hidden_frames_count(self):
-        n = self.hidden_frames
+        n = len(self.hidden_frames)
         if n:
             plural = n>1 and 's' or ''
             print "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
@@ -163,11 +163,11 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return self.compute_stack(fullstack)
 
     def compute_stack(self, fullstack):
-        self.hidden_frames = 0
+        self.hidden_frames = []
         newstack = []
         for frame, lineno in fullstack:
             if self._is_hidden(frame) and not self.show_hidden_frames:
-                self.hidden_frames += 1
+                self.hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
         stack = newstack
@@ -258,7 +258,8 @@ Some frames might be marked as "hidden" by e.g. using the pdb.hideframe
 function decorator.  By default, hidden frames are not shown in the stack
 trace, and cannot be reached using ``up`` and ``down``.  You can use
 ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
-frames as normal ones), and ``hf_hide`` to hide them again.
+frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
+prints a list of hidden frames.
 """
 
     def do_hf_unhide(self, arg):
@@ -277,6 +278,10 @@ frames as normal ones), and ``hf_hide`` to hide them again.
         """
         self.show_hidden_frames = False
         self.refresh_stack()
+
+    def do_hf_list(self, arg):
+        for frame_lineno in self.hidden_frames:
+            print self.format_stack_entry(frame_lineno, pdb.line_prefix)
 
     def do_longlist(self, arg):
         """
