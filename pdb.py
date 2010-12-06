@@ -209,12 +209,17 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return line
 
     def parseline(self, line):
+        if line.startswith('!!'):
+            # force the "standard" behaviour, i.e. first check for the
+            # command, then for the variable name to display
+            line = line[2:]
+            return pdb.Pdb.parseline(self, line)
+        # pdb++ "smart command mode": don't execute commands if a variable
+        # with the name exits in the current contex; this prevents pdb to quit
+        # if you type e.g. 'r[0]' by mystake.
         cmd, arg, newline = pdb.Pdb.parseline(self, line)
-        # don't execute short disruptive commands if a variable with
-        # the name exits in the current contex; this prevents pdb to
-        # quit if you type e.g. 'r[0]' by mystake.
-        if cmd in ['a', 'b', 'c', 'r', 'q', 'args'] and (cmd in self.curframe.f_globals or
-                                               cmd in self.curframe.f_locals):
+        if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
+                                                 cmd in self.curframe.f_locals):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline

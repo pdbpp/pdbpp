@@ -115,16 +115,18 @@ def test_runpdb():
 
 def test_parseline():
     def fn():
-        r = 42
+        c = 42
         set_trace()
-        return r
+        return c
 
     check(fn, """
 > .*fn()
--> return r
-# r
-42
+-> return c
 # c
+42
+# !c
+42
+# !!c
 """)
 
 def test_args_name():
