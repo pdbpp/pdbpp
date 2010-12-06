@@ -557,10 +557,44 @@ def test_hide_hidden_frames():
 1 frames hidden
 > .*fn()
 -> g()
+# down           # cannot go down because the frame is hidden
+... Newest frame
+# hf_unhide
+# down           # now the frame is no longer hidden
+> .*g()
+-> return 'foo'
+# up
+> .*fn()
+-> g()
+# hf_hide        # hide the frame again
 # down
 ... Newest frame
 # c
 """)
+
+def test_hide_current_frame():
+    @pdb.hideframe
+    def g():
+        set_trace()
+        return 'foo'
+    def fn():
+        g()
+        return 1
+
+    check(fn, """
+1 frames hidden
+> .*fn()
+-> g()
+# hf_unhide
+# down           # now the frame is no longer hidden
+> .*g()
+-> return 'foo'
+# hf_hide        # hide the current frame, go to the top of the stack
+> .*fn()
+-> g()
+# c
+""")
+
 
 
 def test_break_on_setattr():
