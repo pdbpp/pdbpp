@@ -49,6 +49,7 @@ class DefaultConfig:
     disable_pytest_capturing = True
 
     line_number_color = Color.turquoise
+    filename_color = Color.yellow
     current_line_color = 44 # blue
 
     def setup(self, pdb):
@@ -217,6 +218,20 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                                       colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
         return True
+
+
+    stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
+    #
+    def format_stack_entry(self, frame_lineno, lprefix=': '):
+        entry = pdb.Pdb.format_stack_entry(self, frame_lineno, lprefix)
+        if self.config.highlight:
+            match = self.stack_entry_regexp.match(entry)
+            if match:
+                filename, lineno, other = match.groups()
+                filename = Color.set(self.config.filename_color, filename)
+                lineno = Color.set(self.config.line_number_color, lineno)
+                entry = '%s(%s)%s' % (filename, lineno, other)
+        return entry
 
     def format_source(self, src):
         if not self._init_pygments():
