@@ -132,7 +132,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         n = len(self.hidden_frames)
         if n:
             plural = n>1 and 's' or ''
-            print "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
+            print >> self.stdout, \
+                "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
 
     def exec_if_unfocused(self):
         import os
@@ -253,7 +254,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         return pdb.Pdb.default(self, line)
 
     def help_hidden_frames(self):
-        print """\
+        print >> self.stdout, """\
 Some frames might be marked as "hidden" by e.g. using the pdb.hideframe
 function decorator.  By default, hidden frames are not shown in the stack
 trace, and cannot be reached using ``up`` and ``down``.  You can use
@@ -281,7 +282,8 @@ prints a list of hidden frames.
 
     def do_hf_list(self, arg):
         for frame_lineno in self.hidden_frames:
-            print self.format_stack_entry(frame_lineno, pdb.line_prefix)
+            print >> self.stdout, \
+                self.format_stack_entry(frame_lineno, pdb.line_prefix)
 
     def do_longlist(self, arg):
         """
@@ -311,7 +313,7 @@ prints a list of hidden frames.
             else:
                 lines, lineno = inspect.getsourcelines(self.curframe)
         except IOError, e:
-            print '** Error: %s **' % e
+            print >> self.stdout, '** Error: %s **' % e
             return
         if linerange:
             start, end = linerange
@@ -351,7 +353,7 @@ prints a list of hidden frames.
                 marker = '>>'
             lines[i] = self.format_line(lineno, marker, line)
             lineno += 1
-        print '\n'.join(lines)
+        print >> self.stdout, '\n'.join(lines)
 
     do_ll = do_longlist
 
@@ -362,7 +364,7 @@ prints a list of hidden frames.
         pdb.Pdb.do_list(self, arg)
         src = self.format_source(sys.stdout.getvalue())
         sys.stdout = oldstdout
-        print src,
+        print >> self.stdout, src,
 
     do_l = do_list
 
@@ -388,7 +390,7 @@ prints a list of hidden frames.
         try:
             from pypy.translator.tool.reftracker import track
         except ImportError:
-            print '** cannot import pypy.translator.tool.reftracker **'
+            print >> self.stdout, '** cannot import pypy.translator.tool.reftracker **'
             return
         val = self._getval(arg)
         track(val)
@@ -430,7 +432,7 @@ prints a list of hidden frames.
         try:
             del self._get_display_list()[arg]
         except KeyError:
-            print '** %s not in the display list **' % arg
+            print >> self.stdout, '** %s not in the display list **' % arg
 
     def _print_if_sticky(self):
         if self.sticky:
@@ -438,8 +440,8 @@ prints a list of hidden frames.
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)
-            print s
-            print
+            print >> self.stdout, s
+            print >> self.stdout
             sticky_range = self.sticky_ranges.get(self.curframe, None)
             self._printlonglist(sticky_range)
 
@@ -460,7 +462,8 @@ prints a list of hidden frames.
                         raise
                     except:
                         s += '(unprintable exception)'
-                    print Color.set(self.config.line_number_color, ' ' + s)
+                    print >> self.stdout, \
+                        Color.set(self.config.line_number_color, ' ' + s)
                     return
             if '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -470,7 +473,8 @@ prints a list of hidden frames.
                     raise
                 except:
                     s = '(unprintable return value)'
-                print Color.set(self.config.line_number_color, ' return ' + s)
+                print >> self.stdout, \
+                    Color.set(self.config.line_number_color, ' return ' + s)
 
     def do_sticky(self, arg):
         """
@@ -489,7 +493,7 @@ prints a list of hidden frames.
             try:
                 start, end = map(int, arg.split())
             except ValueError:
-                print '** Error when parsing argument: %s **' % arg
+                print >> self.stdout, '** Error when parsing argument: %s **' % arg
                 return
             self.sticky = True
             self.sticky_ranges[self.curframe] = start, end+1
@@ -514,7 +518,7 @@ prints a list of hidden frames.
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
                 display_list[expr] = newvalue
-                print '%s: %r --> %r' % (expr, oldvalue, newvalue)
+                print >> self.stdout, '%s: %r --> %r' % (expr, oldvalue, newvalue)
 
 
     def _get_position_of_arg(self, arg):
@@ -526,7 +530,7 @@ prints a list of hidden frames.
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError), e:
-            print '** Error: %s **' % e
+            print >> self.stdout, '** Error: %s **' % e
             return None, None, None
         return filename, lineno, lines
 
@@ -538,7 +542,7 @@ prints a list of hidden frames.
 
     def do_up(self, arg):
         if self.curindex == 0:
-            print '*** Oldest frame'
+            print >> self.stdout, '*** Oldest frame'
         else:
             self.curindex = self.curindex - 1
             self.curframe = self.stack[self.curindex][0]
@@ -548,7 +552,7 @@ prints a list of hidden frames.
 
     def do_down(self, arg):
         if self.curindex + 1 == len(self.stack):
-            print '*** Newest frame'
+            print >> self.stdout, '*** Newest frame'
         else:
             self.curindex = self.curindex + 1
             self.curframe = self.stack[self.curindex][0]
@@ -617,7 +621,7 @@ prints a list of hidden frames.
     def do_put(self, arg):
         stdin_paste = self.config.stdin_paste
         if stdin_paste is None:
-            print '** Error: the "stdin_paste" option is not configure **'
+            print >> self.stdout, '** Error: the "stdin_paste" option is not configure **'
         filename = self.start_filename
         lineno = self.start_lineno
         text = self._get_history_text()
