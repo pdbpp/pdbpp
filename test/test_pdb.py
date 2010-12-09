@@ -6,7 +6,7 @@ from cStringIO import StringIO
 import py
 
 # make sure that we are really importing our pdb
-sys.modules.pop('pdb')
+sys.modules.pop('pdb', None)
 import pdb
 
 class FakeStdin:
