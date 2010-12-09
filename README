@@ -10,7 +10,7 @@ This module is an extension of the pdb_ module of the standard library.  It is
 meant to be fully compatible with its predecessor, yet it introduces a number
 of new features to make your debugging experience as nice as possible.
 
-.. image:: http://bitbucket.org/antocuni/fancycompleter/raw/0c86c93cee41/screenshot.png
+.. image:: http://bitbucket.org/antocuni/pdb/raw/0c86c93cee41/screenshot.png
 
 ``pdb++`` features include:
 
