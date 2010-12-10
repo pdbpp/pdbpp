@@ -12,12 +12,13 @@ long_description = open(readme).read()
 
 setup(
     name='pdbpp',
-    version='0.6',
+    version='0.6rc1',
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb'],
     url='http://bitbucket.org/antocuni/pdb',
     license='BSD',
+    platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
     description='pdb++, a drop-in replacement for pdb',
     long_description=long_description,
     keywords='pdb debugger tab color completion',
