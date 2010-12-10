@@ -28,6 +28,9 @@ of new features to make your debugging experience as nice as possible.
   - additional convenience functions in the ``pdb`` module, to be used from
     your program
 
+``pdb++`` is meant to be a drop-in replacement for ``pdb``. If you find some
+unexpected behavior, please report it as a bug.
+
 .. _pdb: http://docs.python.org/library/pdb.html
 .. _fancycompleter: http://bitbucket.org/antocuni/fancycompleter
 .. _pygments: http://pygments.org/
@@ -35,18 +38,22 @@ of new features to make your debugging experience as nice as possible.
 Installation
 -------------
 
-Unfortunately, ``pdb++`` is not a valid identifier for ``pip`` and
-``easy_install``, so you have to install ``pdbpp`` instead::
+Since ``pdb++`` is not a valid identifier for ``pip`` and ``easy_install``,
+you have to install ``pdbpp`` instead::
 
     $ pip install pdbpp
+    
+    -- OR --
 
-Note that the Python name of the module is ``pdb``. The intention is to
-transparently substitute the ``pdb`` module in the standard library: this way,
-every program and library which calls ``pdb`` will automatically use ``pdb++``
-(e.g., ``py.test --pdb``).
+    $ easy_install pdbpp
 
-The old ``pdb`` module is still available by doing e.g. ``import pdb;
-pdb.pdb.set_trace()``
+Alternatively, you can just put ``pdb.py`` somewhere inside your
+``PYTHONPATH``.
+
+Note that the module is called ``pdb.py`` so that ``pdb++`` will automatically
+be used in all places that do ``import pdb`` (e.g., ``py.test --pdb`` will
+give you a ``pdb++`` prompt).  The old ``pdb`` module is still available by
+doing e.g. ``import pdb; pdb.pdb.set_trace()``
 
 New interactive commands
 ------------------------
