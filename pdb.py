@@ -407,8 +407,12 @@ prints a list of hidden frames.
         except ImportError:
             print >> self.stdout, '** cannot import pypy.translator.tool.reftracker **'
             return
-        val = self._getval(arg)
-        track(val)
+        try:
+            val = self._getval(arg)
+        except:
+            pass
+        else:
+            track(val)
 
     def _get_display_list(self):
         return self.display_list.setdefault(self.curframe, {})
