@@ -710,3 +710,16 @@ False
 1
 # c
 """)
+
+def test_track_with_no_args():
+    def fn():
+        set_trace()
+        return 42
+
+    check(fn, """
+> .*fn()
+-> return 42
+# track
+... SyntaxError:
+# c
+""")
