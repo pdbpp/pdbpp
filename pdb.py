@@ -85,7 +85,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     config_filename = '.pdbrc.py'
 
     def __init__(self, *args, **kwds):
-        print 'pdb starting'
         Config = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
@@ -104,7 +103,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
-        self.interact_ns = {}
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -394,12 +392,9 @@ prints a list of hidden frames.
         Start an interative interpreter whose global namespace
         contains all the names found in the current scope.
         """
-        ns = self.interact_ns
-        print ns.keys()
-        ns.update(self.curframe.f_globals)
+        ns = self.curframe.f_globals.copy()
         ns.update(self.curframe.f_locals)
         code.interact("*interactive*", local=ns)
-        print ns.get('x', 'undef')
 
     def do_track(self, arg):
         """
