@@ -232,6 +232,9 @@ default value:
   highlight line numbers and the current line when showing the ``longlist`` of
   a function or when in **sticky mode**.
 
+``sticky_by_default = False``
+  determine whether pdb++ starts in sticky mode or not.
+
 ``line_number_color = Color.turquoise``
   the color to use for line numbers.
 
