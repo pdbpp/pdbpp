@@ -33,7 +33,8 @@ class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
     def __init__(self, **kwds):
-        pdb.Pdb.__init__(self, Config=ConfigTest, **kwds)
+        kwds.setdefault('Config', ConfigTest)
+        pdb.Pdb.__init__(self, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
         print "RUN %s +%d '%s'" % (editor, lineno, filename)
@@ -43,9 +44,9 @@ class PdbTest(pdb.Pdb):
         print text
 
 
-def set_trace():
+def set_trace(**kwds):
     frame = sys._getframe().f_back
-    pdb.set_trace(frame, PdbTest)
+    pdb.set_trace(frame, PdbTest, **kwds)
 
 def xpm():
     pdb.xpm(PdbTest)
@@ -261,6 +262,32 @@ NUM  ->         a = 1
 NUM             b = 2
 # c
 """ % (start, end, start))
+
+
+def test_sticky_by_default():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+    
+    def fn():
+        set_trace(Config=MyConfig)
+        a = 1
+        b = 2
+        c = 3
+        return a
+
+    check(fn, """
+> .*fn()
+-> a = 1
+CLEAR>.*
+
+NUM         def fn():
+NUM             set_trace(Config=MyConfig)
+NUM  ->         a = 1
+NUM             b = 2
+NUM             c = 3
+NUM             return a
+# c
+""")
 
 
 def test_exception_lineno():

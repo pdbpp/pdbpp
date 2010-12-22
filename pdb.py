@@ -39,6 +39,7 @@ pdb = import_from_stdlib('pdb')
 class DefaultConfig:
     prompt = '(Pdb++) '
     highlight = True
+    sticky_by_default = False
     bg = 'dark'
     use_pygments = True
     colorscheme = None
@@ -97,7 +98,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
         self.mycompleter = None
         self.display_list = {} # frame --> (name --> last seen value)
-        self.sticky = False
+        self.sticky = self.config.sticky_by_default
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
         self.history = []
@@ -667,12 +668,12 @@ def post_mortem(t, Pdb=Pdb):
     p.reset()
     p.interaction(None, t)
 
-def set_trace(frame=None, Pdb=Pdb):
+def set_trace(frame=None, Pdb=Pdb, **kwds):
     if frame is None:
         frame = sys._getframe().f_back
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
-    Pdb(start_lineno=lineno, start_filename=filename).set_trace(frame)
+    Pdb(start_lineno=lineno, start_filename=filename, **kwds).set_trace(frame)
 
 # pdb++ specific interface
 
