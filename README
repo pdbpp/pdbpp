@@ -232,6 +232,10 @@ default value:
   highlight line numbers and the current line when showing the ``longlist`` of
   a function or when in **sticky mode**.
 
+``encoding = 'utf-8'``
+  file encoding. Useful when there are international characters in your string
+  literals or comments.
+
 ``sticky_by_default = False``
   determine whether pdb++ starts in sticky mode or not.
 

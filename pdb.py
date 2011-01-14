@@ -48,6 +48,7 @@ class DefaultConfig:
     truncate_long_lines = True
     exec_if_unfocused = None
     disable_pytest_capturing = True
+    encoding = 'utf-8'
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
@@ -240,6 +241,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if not self._init_pygments():
             return src
         from pygments import highlight, lex
+        src = src.decode(self.config.encoding)
         return highlight(src, self._lexer, self._fmt)
 
     def format_line(self, lineno, marker, line):
