@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import inspect
 import os.path
 import sys
@@ -27,6 +28,10 @@ class ConfigTest(pdb.DefaultConfig):
     editor = 'emacs'
     stdin_paste = 'epaste'
     disable_pytest_capturing = False
+
+
+class ConfigWithHighlight(ConfigTest):
+    highlight = True
 
 
 class PdbTest(pdb.Pdb):
@@ -80,11 +85,19 @@ def cook_regexp(s):
         s = s.replace(key, value)
     return s
 
-def check(func, expected):
+def run_func(func, expected):
+    """Runs given function and returns its output along with expected patterns.
+
+    It does not make any assertions. To compare func's output with expected
+    lines, use `check` function.
+    """
     expected = expected.strip().splitlines()
     commands = extract_commands(expected)
     expected = map(cook_regexp, expected)
-    lines = runpdb(func, commands)
+    return expected, runpdb(func, commands)
+
+def check(func, expected):
+    expected, lines = run_func(func, expected)
     assert len(expected) == len(lines)
     for pattern, string in zip(expected, lines):
         assert re.match(pattern, string)
@@ -750,3 +763,14 @@ def test_track_with_no_args():
 ... SyntaxError:
 # c
 """)
+
+def test_utf8():
+    def fn():
+        # тест
+        a = 1
+        set_trace(Config = ConfigWithHighlight)
+        return a
+
+    expected, lines = run_func(fn, '# ll\n# c')
+    assert 'тест' in lines[4]
+
