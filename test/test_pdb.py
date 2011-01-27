@@ -396,7 +396,7 @@ def test_bad_source():
 > .*fn()
 -> return 42
 # source 42
-\*\* Error: arg is not a module, class, method, function, traceback, frame, or code object \*\*
+\*\* Error: .* is not a module, class, method, function, traceback, frame, or code object \*\*
 # c
 """)
 
