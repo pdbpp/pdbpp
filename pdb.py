@@ -572,6 +572,7 @@ prints a list of hidden frames.
         else:
             self.curindex = self.curindex - 1
             self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
     do_u = do_up
@@ -582,6 +583,7 @@ prints a list of hidden frames.
         else:
             self.curindex = self.curindex + 1
             self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
     do_d = do_down

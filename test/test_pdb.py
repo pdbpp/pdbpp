@@ -123,6 +123,25 @@ def test_runpdb():
 # c
 """)
 
+def test_up_local_vars():
+    def nested():
+        set_trace()
+        return
+    def fn():
+        xx = 42
+        nested()
+
+    check(fn, """
+> .*nested()
+-> return
+# up
+> .*fn()
+-> nested()
+# xx
+42
+# c
+""")
+
 def test_parseline():
     def fn():
         c = 42
