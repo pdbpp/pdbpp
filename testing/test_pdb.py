@@ -71,7 +71,14 @@ def runpdb(func, input):
     return stdout.getvalue().splitlines()
 
 def extract_commands(lines):
-    return [line[2:] for line in lines if line.startswith('# ')]
+    cmds = []
+    prompts = ('# ', '(#) ')
+    for line in lines:
+        for prompt in prompts:
+            if line.startswith(prompt):
+                cmds.append(line[len(prompt):])
+                continue
+    return cmds
 
 shortcuts = {
     '(': '\\(',
@@ -98,9 +105,19 @@ def run_func(func, expected):
 
 def check(func, expected):
     expected, lines = run_func(func, expected)
-    assert len(expected) == len(lines)
-    for pattern, string in zip(expected, lines):
-        assert re.match(pattern, string)
+    maxlen = max(map(len, expected))
+    ok = True
+    print
+    for pattern, string in map(None, expected, lines):
+        ok = pattern is not None and string is not None and re.match(pattern, string)
+        pattern = pattern or ''
+        string = string or ''
+        print pattern.ljust(maxlen+1), '| ', string,
+        if ok:
+            print
+        else:
+            print pdb.Color.set(pdb.Color.red, '    <<<<<')
+    assert ok
 
 
 def test_runpdb():
@@ -795,3 +812,28 @@ def test_utf8():
     # sequences
     expected, lines = run_func(fn, '# ll\n# c')
     assert 'тест' in lines[4]
+
+
+def test_debug():
+    def g():
+        a = 1
+        return a
+    def fn():
+        g()
+        set_trace()
+        return 1
+
+    check(fn, """
+> .*fn()
+-> return 1
+# debug g()
+ENTERING RECURSIVE DEBUGGER
+> .*
+(#) s
+--Call--
+> .*g()
+-> def g():
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
