@@ -656,6 +656,13 @@ prints a list of hidden frames.
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
 
 
+def rebind_globals(func, newglobals=None):
+    if newglobals is None:
+        newglobals = globals()
+    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
+                                 func.func_defaults)
+    return newfunc
+
 # simplified interface
 
 if hasattr(pdb, 'Restart'):
@@ -664,10 +671,8 @@ if hasattr(pdb, 'Restart'):
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
-    newfunc = types.FunctionType(func.func_code, globals(), func.func_name,
-                                 func.func_defaults)
-    globals()[name] = newfunc
-del name, func, newfunc
+    globals()[name] = rebind_globals(func)
+del name, func
 
 def post_mortem(t, Pdb=Pdb):
     p = Pdb()
