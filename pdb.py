@@ -36,6 +36,13 @@ def import_from_stdlib(name):
 
 pdb = import_from_stdlib('pdb')
 
+def rebind_globals(func, newglobals=None):
+    if newglobals is None:
+        newglobals = globals()
+    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
+                                 func.func_defaults)
+    return newfunc
+
 
 class DefaultConfig:
     prompt = '(Pdb++) '
@@ -390,6 +397,8 @@ prints a list of hidden frames.
 
     do_l = do_list
 
+    do_debug = rebind_globals(pdb.Pdb.do_debug.im_func)
+
     def do_interact(self, arg):
         """
         interact
@@ -655,13 +664,6 @@ prints a list of hidden frames.
         text = self._get_history_text()
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
 
-
-def rebind_globals(func, newglobals=None):
-    if newglobals is None:
-        newglobals = globals()
-    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
-                                 func.func_defaults)
-    return newfunc
 
 # simplified interface
 
