@@ -833,6 +833,10 @@ ENTERING RECURSIVE DEBUGGER
 --Call--
 > .*g()
 -> def g():
+(#) ll
+NUM  ->     def g():
+NUM             a = 1
+NUM             return a
 (#) c
 LEAVING RECURSIVE DEBUGGER
 # c
