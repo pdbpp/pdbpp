@@ -95,10 +95,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     config_filename = '.pdbrc.py'
 
     def __init__(self, *args, **kwds):
-        Config = kwds.pop('Config', None)
+        self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
-        self.config = self.get_config(Config)
+        self.config = self.get_config(self.ConfigFactory)
         self.config.setup(self)
         if self.config.disable_pytest_capturing:
             self._disable_pytest_capture_maybe()
@@ -397,7 +397,22 @@ prints a list of hidden frames.
 
     do_l = do_list
 
-    do_debug = rebind_globals(pdb.Pdb.do_debug.im_func)
+    def do_debug(self, arg):
+        # this is a hack (as usual :-))
+        #
+        # inside the original do_debug, there is a call to the global "Pdb" to
+        # instantiate the recursive debugger: we want to intercept this call
+        # and instantiate *our* Pdb, passing the our custom config. So, we
+        # dynamically rebind the globals
+        #
+        def new_pdb_with_config(*args):
+            return self.__class__(*args, Config=self.ConfigFactory)
+        newglobals = {
+            'Pdb': new_pdb_with_config,
+            'sys': sys,
+            }
+        orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+        return orig_do_debug(self, arg)
 
     def do_interact(self, arg):
         """
