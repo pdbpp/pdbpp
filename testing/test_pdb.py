@@ -37,9 +37,9 @@ class ConfigWithHighlight(ConfigTest):
 class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
-    def __init__(self, **kwds):
+    def __init__(self, *args, **kwds):
         kwds.setdefault('Config', ConfigTest)
-        pdb.Pdb.__init__(self, **kwds)
+        pdb.Pdb.__init__(self, *args, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
         print "RUN %s +%d '%s'" % (editor, lineno, filename)
