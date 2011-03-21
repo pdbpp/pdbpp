@@ -655,14 +655,28 @@ prints a list of hidden frames.
         proc.stdin.write(text)
         proc.stdin.close()
 
-    def do_put(self, arg):
+    def _put(self, text):
         stdin_paste = self.config.stdin_paste
         if stdin_paste is None:
-            print >> self.stdout, '** Error: the "stdin_paste" option is not configure **'
+            print >> self.stdout, '** Error: the "stdin_paste" option is not configured **'
         filename = self.start_filename
         lineno = self.start_lineno
-        text = self._get_history_text()
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
+
+    def do_put(self, arg):
+        text = self._get_history_text()
+        self._put(text)
+
+    def do_paste(self, arg):
+        from cStringIO import StringIO
+        arg = arg.strip()
+        old_stdout = self.stdout
+        self.stdout = StringIO()
+        self.onecmd(arg)
+        text = self.stdout.getvalue()
+        self.stdout = old_stdout
+        sys.stdout.write(text)
+        self._put(text)
 
 
 # simplified interface

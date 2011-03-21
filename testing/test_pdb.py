@@ -536,6 +536,29 @@ RUN epaste \+%d
 # c
 """ % start_lineno)
 
+def test_paste():
+    def g():
+        print 'hello world'
+    def fn():
+        set_trace()
+        if False: g()
+        return 42
+    _, lineno = inspect.getsourcelines(fn)
+    start_lineno = lineno + 1
+
+    check(fn, r"""
+> .*fn()
+-> if False: g()
+# g()
+hello world
+# paste g()
+hello world
+RUN epaste \+%d
+hello world
+
+# c
+""" % start_lineno)
+
 
 def test_put_if():
     def fn():
