@@ -576,6 +576,8 @@ prints a list of hidden frames.
             obj = self._getval(arg)
         except:
             return None, None, None
+        if isinstance(obj, str):
+            return obj, 1, None
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
