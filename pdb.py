@@ -65,6 +65,9 @@ class DefaultConfig:
     def setup(self, pdb):
         pass
 
+    def before_interaction_hook(self, pdb):
+        pass
+
 def setbgcolor(line, color):
     # hack hack hack
     # add a bgcolor attribute to all escape sequences found
@@ -138,6 +141,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         completer = fancycompleter.setup()
         old_completer = completer.config.readline.get_completer()
         completer.config.readline.set_completer(self.complete)
+        self.config.before_interaction_hook(self)
         self.cmdloop()
         completer.config.readline.set_completer(old_completer)
         self.forget()
