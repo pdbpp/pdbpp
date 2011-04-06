@@ -406,7 +406,8 @@ prints a list of hidden frames.
         # dynamically rebind the globals
         #
         def new_pdb_with_config(*args):
-            return self.__class__(*args, Config=self.ConfigFactory)
+            kwds = dict(Config=self.ConfigFactory)
+            return self.__class__(*args, **kwds)
         newglobals = {
             'Pdb': new_pdb_with_config,
             'sys': sys,
