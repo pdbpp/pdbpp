@@ -714,9 +714,10 @@ def test_list_hidden_frames():
     
 
 def test_break_on_setattr():
-    @pdb.break_on_setattr('x', set_trace=set_trace)
+    # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         pass
+    Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
     def fn():
         obj = Foo()
         obj.x = 0
@@ -739,9 +740,10 @@ False
 def test_break_on_setattr_condition():
     def mycond(obj, value):
         return value == 42
-    @pdb.break_on_setattr('x', condition=mycond, set_trace=set_trace)
+    # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         pass
+    Foo = pdb.break_on_setattr('x', condition=mycond, set_trace=set_trace)(Foo)
     def fn():
         obj = Foo()
         obj.x = 0
@@ -783,11 +785,11 @@ def test_break_on_setattr_non_decorator():
 """)
 
 def test_break_on_setattr_overridden():
-    @pdb.break_on_setattr('x', set_trace=set_trace)
+    # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         def __setattr__(self, attr, value):
             object.__setattr__(self, attr, value+1)
-
+    Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
     def fn():
         obj = Foo()
         obj.y = 41
