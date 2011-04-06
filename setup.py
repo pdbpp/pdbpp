@@ -12,7 +12,7 @@ long_description = open(readme).read()
 
 setup(
     name='pdbpp',
-    version='0.6',
+    version='0.7',
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb'],

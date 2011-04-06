@@ -6,7 +6,7 @@ This module extends the stdlib pdb in numerous ways: look at the README for
 more details on pdb++ features.
 """
 
-__version__='0.6'
+__version__='0.7'
 __author__ ='Antonio Cuni <anto.cuni@gmail.com>'
 __url__='http://bitbucket.org/antocuni/pdb'
 
