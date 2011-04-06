@@ -866,3 +866,18 @@ NUM             return a
 LEAVING RECURSIVE DEBUGGER
 # c
 """)
+
+def test_before_interaction_hook():
+    class MyConfig(ConfigTest):
+        def before_interaction_hook(self, pdb):
+            pdb.stdout.write('HOOK!\n')
+    def fn():
+        set_trace(Config=MyConfig)
+        return 1
+
+    check(fn, """
+> .*fn()
+-> return 1
+HOOK!
+# c
+""")
