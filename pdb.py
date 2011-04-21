@@ -18,6 +18,7 @@ import codecs
 import types
 import traceback
 import subprocess
+import pprint
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
@@ -400,6 +401,13 @@ prints a list of hidden frames.
         print >> self.stdout, src,
 
     do_l = do_list
+
+    def do_pp(self, arg):
+        width, height = self.get_terminal_size()
+        try:
+            pprint.pprint(self._getval(arg), self.stdout, width=width)
+        except:
+            pass
 
     def do_debug(self, arg):
         # this is a hack (as usual :-))
