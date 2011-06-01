@@ -295,12 +295,21 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def help_hidden_frames(self):
         print >> self.stdout, """\
-Some frames might be marked as "hidden" by e.g. using the pdb.hideframe
-function decorator.  By default, hidden frames are not shown in the stack
-trace, and cannot be reached using ``up`` and ``down``.  You can use
-``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
-frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
-prints a list of hidden frames.
+Some frames might be marked as "hidden": by default, hidden frames are not
+shown in the stack trace, and cannot be reached using ``up`` and ``down``.
+You can use ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to
+treat hidden frames as normal ones), and ``hf_hide`` to hide them again.
+``hf_list`` prints a list of hidden frames.
+
+Frames can marked as hidden in the following ways:
+
+- by using the @pdb.hideframe function decorator
+
+- by having __tracebackhide__=True in the locals or the globals of the function
+  (this hides py.test internal stuff)
+
+- by having __unittest=True in the globals of the function (this hides
+  unittest internal stuff)
 """
 
     def do_hf_unhide(self, arg):
