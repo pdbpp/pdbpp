@@ -174,7 +174,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _is_hidden(self, frame):
         consts = frame.f_code.co_consts
-        return consts and consts[-1] is _HIDE_FRAME
+        if consts and consts[-1] is _HIDE_FRAME:
+            return True
+        if frame.f_globals.get('__unittest'):
+            return True
+        if frame.f_locals.get('__tracebackhide__') \
+           or frame.f_globals.get('__tracebackhide__'):
+            return True
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
