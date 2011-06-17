@@ -699,7 +699,6 @@ def test_list_hidden_frames():
     def fn():
         k()
         return 1
-    XXX
     check(fn, """
 > .*fn()
 -> k()
