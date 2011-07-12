@@ -121,7 +121,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _disable_pytest_capture_maybe(self):
         try:
-            import py
+            import py.test
+            py.test.config # force to raise ImportError if pytest is not
+                           # installed
         except ImportError:
             return
         try:
