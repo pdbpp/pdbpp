@@ -699,7 +699,6 @@ def test_list_hidden_frames():
     def fn():
         k()
         return 1
-
     check(fn, """
 > .*fn()
 -> k()
@@ -712,6 +711,49 @@ def test_list_hidden_frames():
 # c
 """)
     
+
+def test_hidden_pytest_frames():
+    def g():
+        __tracebackhide__ = True
+        set_trace()
+        return 'foo'
+    def k(g=g):
+        return g()
+    k = pdb.rebind_globals(k, {'__tracebackhide__': True})
+    def fn():
+        k()
+        return 1
+
+    check(fn, """
+> .*fn()
+-> k()
+   2 frames hidden .*
+# hf_list
+.*k()
+-> return g()
+.*g()
+-> return 'foo'
+# c
+    """)
+
+def test_hidden_unittest_frames():
+    
+    def g(set_trace=set_trace):
+        set_trace()
+        return 'foo'
+    g = pdb.rebind_globals(g, {'__unittest':True})
+    def fn():
+        return g()
+
+    check(fn, """
+> .*fn()
+-> return g()
+   1 frame hidden .*
+# hf_list
+.*g()
+-> return 'foo'
+# c
+    """)
 
 def test_break_on_setattr():
     # we don't use a class decorator to keep 2.5 compatibility

@@ -18,6 +18,7 @@ import codecs
 import types
 import traceback
 import subprocess
+import pprint
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
@@ -120,7 +121,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _disable_pytest_capture_maybe(self):
         try:
-            import py
+            import py.test
+            py.test.config # force to raise ImportError if pytest is not
+                           # installed
         except ImportError:
             return
         try:
@@ -173,7 +176,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def _is_hidden(self, frame):
         consts = frame.f_code.co_consts
-        return consts and consts[-1] is _HIDE_FRAME
+        if consts and consts[-1] is _HIDE_FRAME:
+            return True
+        if frame.f_globals.get('__unittest'):
+            return True
+        if frame.f_locals.get('__tracebackhide__') \
+           or frame.f_globals.get('__tracebackhide__'):
+            return True
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
@@ -288,12 +297,21 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def help_hidden_frames(self):
         print >> self.stdout, """\
-Some frames might be marked as "hidden" by e.g. using the pdb.hideframe
-function decorator.  By default, hidden frames are not shown in the stack
-trace, and cannot be reached using ``up`` and ``down``.  You can use
-``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
-frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
-prints a list of hidden frames.
+Some frames might be marked as "hidden": by default, hidden frames are not
+shown in the stack trace, and cannot be reached using ``up`` and ``down``.
+You can use ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to
+treat hidden frames as normal ones), and ``hf_hide`` to hide them again.
+``hf_list`` prints a list of hidden frames.
+
+Frames can marked as hidden in the following ways:
+
+- by using the @pdb.hideframe function decorator
+
+- by having __tracebackhide__=True in the locals or the globals of the function
+  (this hides py.test internal stuff)
+
+- by having __unittest=True in the globals of the function (this hides
+  unittest internal stuff)
 """
 
     def do_hf_unhide(self, arg):
@@ -400,6 +418,13 @@ prints a list of hidden frames.
         print >> self.stdout, src,
 
     do_l = do_list
+
+    def do_pp(self, arg):
+        width, height = self.get_terminal_size()
+        try:
+            pprint.pprint(self._getval(arg), self.stdout, width=width)
+        except:
+            pass
 
     def do_debug(self, arg):
         # this is a hack (as usual :-))
