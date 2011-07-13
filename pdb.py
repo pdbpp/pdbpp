@@ -124,7 +124,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             import py.test
             py.test.config # force to raise ImportError if pytest is not
                            # installed
-        except ImportError:
+        except (ImportError, AttributeError):
             return
         try:
             capman = py.test.config.pluginmanager.getplugin('capturemanager')
