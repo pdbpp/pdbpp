@@ -167,7 +167,7 @@ pdb++.
 
 ``pdb.xpm()``
   eXtended Post Mortem: it is equivalent to
-  ``pdb.post_morted(sys.exc_info()[2])``.  If used inside an ``except``
+  ``pdb.post_mortem(sys.exc_info()[2])``.  If used inside an ``except``
   clause, it will start a post-mortem pdb prompt from the line that raised the
   exception being caught.
 
