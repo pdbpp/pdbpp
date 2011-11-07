@@ -159,12 +159,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def exec_if_unfocused(self):
         import os
         import wmctrl
+        term = os.getenv('TERM', '')
         try:
             winid = int(os.getenv('WINDOWID'))
         except (TypeError, ValueError):
             return # cannot find WINDOWID of the terminal
         active_win = wmctrl.Window.get_active()
-        if not active_win or (int(active_win.id, 16) != winid):
+        if not active_win or (int(active_win.id, 16) != winid) and \
+           not (active_win.wm_class == 'emacs.Emacs' and term.startswith('eterm')):
             os.system(self.config.exec_if_unfocused)
 
     def setup(self, frame, tb):
