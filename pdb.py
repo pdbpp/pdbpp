@@ -365,7 +365,7 @@ Frames can marked as hidden in the following ways:
                 lineno = 1
             else:
                 lines, lineno = inspect.getsourcelines(self.curframe)
-        except IOError, e:
+        except IOError as e:
             print >> self.stdout, '** Error: %s **' % e
             return
         if linerange:
@@ -613,7 +613,7 @@ Frames can marked as hidden in the following ways:
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
-        except (IOError, TypeError), e:
+        except (IOError, TypeError) as e:
             print >> self.stdout, '** Error: %s **' % e
             return None, None, None
         return filename, lineno, lines
@@ -651,7 +651,7 @@ Frames can marked as hidden in the following ways:
             import termios, fcntl, struct
             call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00"*8)
             height, width = struct.unpack("hhhh", call)[:2]
-        except (SystemExit, KeyboardInterrupt), e:
+        except (SystemExit, KeyboardInterrupt) as e:
             raise
         except:
             width = int(os.environ.get('COLUMNS', 80))
