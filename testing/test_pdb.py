@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import inspect
 import os.path
 import sys
@@ -42,11 +44,11 @@ class PdbTest(pdb.Pdb):
         pdb.Pdb.__init__(self, *args, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
-        print "RUN %s +%d '%s'" % (editor, lineno, filename)
+        print("RUN %s +%d '%s'" % (editor, lineno, filename))
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
-        print "RUN %s +%d" % (cmd, lineno)
-        print text
+        print("RUN %s +%d" % (cmd, lineno))
+        print(text)
 
 
 def set_trace(**kwds):
@@ -107,16 +109,16 @@ def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
     ok = True
-    print
+    print()
     for pattern, string in map(None, expected, lines):
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
         string = string or ''
-        print pattern.ljust(maxlen+1), '| ', string,
+        print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
-            print
+            print()
         else:
-            print pdb.Color.set(pdb.Color.red, '    <<<<<')
+            print(pdb.Color.set(pdb.Color.red, '    <<<<<'))
     assert ok
 
 
@@ -395,7 +397,7 @@ def test_py_code_source():
         return x
     """)
     
-    exec src.compile()
+    exec(src.compile())
     check(fn, """
 > .*fn()
 -> return x
@@ -499,7 +501,7 @@ def test_edit_py_code_source():
     """)
     _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
     dic = {'set_trace': set_trace}
-    exec src.compile() in dic # 8th line from the beginning of the function
+    exec(src.compile(), dic) # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
     #
@@ -538,7 +540,7 @@ RUN epaste \+%d
 
 def test_paste():
     def g():
-        print 'hello world'
+        print('hello world')
     def fn():
         set_trace()
         if False: g()
