@@ -5,7 +5,7 @@ import inspect
 import os.path
 import sys
 import re
-from cStringIO import StringIO
+from io import StringIO
 import py
 
 # make sure that we are really importing our pdb
