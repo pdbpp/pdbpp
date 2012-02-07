@@ -599,7 +599,7 @@ Frames can marked as hidden in the following ways:
     def preloop(self):
         self._print_if_sticky()
         display_list = self._get_display_list()
-        for expr, oldvalue in display_list.iteritems():
+        for expr, oldvalue in display_list.items():
             newvalue = self._getval_or_undefined(expr)
             # check for identity first; this prevents custom __eq__ to
             # be called at every loop, and also prevents instances
