@@ -45,8 +45,8 @@ pdb = import_from_stdlib('pdb')
 def rebind_globals(func, newglobals=None):
     if newglobals is None:
         newglobals = globals()
-    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
-                                 func.func_defaults)
+    newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
+                                 func.__defaults__)
     return newfunc
 
 
