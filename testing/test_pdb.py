@@ -5,7 +5,7 @@ import inspect
 import os.path
 import sys
 import re
-from io import StringIO
+from io import BytesIO
 import py
 
 # make sure that we are really importing our pdb
@@ -64,7 +64,7 @@ def runpdb(func, input):
 
     try:
         sys.stdin = FakeStdin(input)
-        sys.stdout = stdout = StringIO()
+        sys.stdout = stdout = BytesIO()
         func()
     finally:
         sys.stdin = oldstdin
