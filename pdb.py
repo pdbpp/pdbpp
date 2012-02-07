@@ -33,8 +33,11 @@ def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
     stdlibdir, _ = os.path.split(code.__file__)
     pyfile = os.path.join(stdlibdir, name + '.py')
+    with open(pyfile) as f:
+        src = f.read()
+    co_module = compile(src, pyfile, 'exec', dont_inherit=True)
     result = types.ModuleType(name)
-    mydict = execfile(pyfile, result.__dict__)
+    mydict = exec(co_module, result.__dict__)
     return result
 
 pdb = import_from_stdlib('pdb')
