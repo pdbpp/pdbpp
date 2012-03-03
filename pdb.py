@@ -364,7 +364,11 @@ Frames can marked as hidden in the following ways:
                 lines, _ = inspect.findsource(self.curframe)
                 lineno = 1
             else:
-                lines, lineno = inspect.getsourcelines(self.curframe)
+                try:
+                    lines, lineno = inspect.getsourcelines(self.curframe)
+                except Exception, e:
+                    print >> self.stdout, '** Error in inspect.getsourcelines: %s **' % e
+                    return
         except IOError, e:
             print >> self.stdout, '** Error: %s **' % e
             return
