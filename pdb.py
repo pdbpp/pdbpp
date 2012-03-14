@@ -75,7 +75,22 @@ def setbgcolor(line, color):
     import re
     setbg = '\x1b[%dm' % color
     regexbg = '\\1;%dm' % color
-    return setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
+    result = setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
+    if os.environ.get('TERM') == 'eterm-color':
+        # it seems that emacs' terminal has problems with some ANSI escape
+        # sequences. Eg, 'ESC[44m' sets the background color in all terminals
+        # I tried, but not in emacs. To set the background color, it needs to
+        # have also an explicit foreground color, e.g. 'ESC[37;44m'. These
+        # three lines are a hack, they try to add a foreground color to all
+        # escape sequences wich are not recognized by emacs. However, we need
+        # to pick one specific fg color: I choose white (==37), but you might
+        # want to change it.  These lines seems to work fine with the ANSI
+        # codes produced by pygments, but they are surely not a general
+        # solution.
+        result = result.replace(setbg, '\x1b[37;%dm' % color)
+        result = result.replace('\x1b[00;%dm' % color, '\x1b[37;%dm' % color)
+        result = result.replace('\x1b[39;49;00;', '\x1b[37;')
+    return result
 
 CLEARSCREEN = '\033[2J\033[1;1H'
 
