@@ -57,7 +57,7 @@ class DefaultConfig:
     truncate_long_lines = True
     exec_if_unfocused = None
     disable_pytest_capturing = True
-    encoding = 'utf-8'
+    encodings = ('utf-8', 'latin-1')
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
@@ -267,6 +267,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     #
     def format_stack_entry(self, frame_lineno, lprefix=': '):
         entry = pdb.Pdb.format_stack_entry(self, frame_lineno, lprefix)
+        entry = self.try_to_decode(entry)
         if self.config.highlight:
             match = self.stack_entry_regexp.match(entry)
             if match:
@@ -276,11 +277,19 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                 entry = '%s(%s)%s' % (filename, lineno, other)
         return entry
 
+    def try_to_decode(self, s):
+        for encoding in self.config.encodings:
+            try:
+                return s.decode(encoding)
+            except UnicodeDecodeError:
+                pass
+        return s
+
     def format_source(self, src):
         if not self._init_pygments():
             return src
         from pygments import highlight
-        src = src.decode(self.config.encoding)
+        src = self.try_to_decode(src)
         return highlight(src, self._lexer, self._fmt)
 
     def format_line(self, lineno, marker, line):
