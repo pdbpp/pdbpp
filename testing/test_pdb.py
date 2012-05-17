@@ -923,3 +923,21 @@ def test_before_interaction_hook():
 HOOK!
 # c
 """)
+
+
+def test_unicode_bug():
+    def fn():
+        set_trace()
+        x = "this is plan ascii"
+        y = "this contains a unicode: à"
+        return
+
+    check(fn, """
+> .*fn()
+-> x = "this is plan ascii"
+# n
+> .*fn()
+-> y = "this contains a unicode:"
+# c
+""")
+    
