@@ -58,6 +58,8 @@ class DefaultConfig:
     exec_if_unfocused = None
     disable_pytest_capturing = True
     encodings = ('utf-8', 'latin-1')
+    enable_hidden_frames = True
+    show_hidden_frames_count = True
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
@@ -166,7 +168,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def print_hidden_frames_count(self):
         n = len(self.hidden_frames)
-        if n:
+        if n and self.config.show_hidden_frames_count:
             plural = n>1 and 's' or ''
             print >> self.stdout, \
                 "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
@@ -192,6 +194,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             tb = tb.tb_next
 
     def _is_hidden(self, frame):
+        if not self.config.enable_hidden_frames:
+            return False
         consts = frame.f_code.co_consts
         if consts and consts[-1] is _HIDE_FRAME:
             return True
