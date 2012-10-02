@@ -708,12 +708,12 @@ Frames can marked as hidden in the following ways:
             filename, lineno, _ = self._get_position_of_arg(arg)
             if filename is None:
                 return
-            # this case handles code generated with py.code.Source()
-            # filename is something like '<0-codegen foo.py:18>'
-            match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
-            if match:
-                filename = match.group(1)
-                lineno = int(match.group(2))
+        # this case handles code generated with py.code.Source()
+        # filename is something like '<0-codegen foo.py:18>'
+        match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
+        if match:
+            filename = match.group(1)
+            lineno = int(match.group(2))
         editor = self.config.editor
         self._open_editor(editor, lineno, filename)
 
