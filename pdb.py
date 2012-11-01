@@ -453,6 +453,12 @@ Frames can marked as hidden in the following ways:
 
     do_l = do_list
 
+    def do_continue(self, arg):
+        if arg != '':
+            self.do_tbreak(arg)
+        return pdb.Pdb.do_continue(self, '')
+    do_c = do_cont = do_continue
+
     def do_pp(self, arg):
         width, height = self.get_terminal_size()
         try:
