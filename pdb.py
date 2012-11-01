@@ -771,7 +771,11 @@ for name in 'run runeval runctx runcall pm main'.split():
     globals()[name] = rebind_globals(func)
 del name, func
 
-def post_mortem(t, Pdb=Pdb):
+def post_mortem(t=None, Pdb=Pdb):
+    if t is None:
+      t = sys.exc_info()[2]
+      assert t is not None, "post_mortem outside of exception context"
+
     p = Pdb()
     p.reset()
     p.interaction(None, t)
