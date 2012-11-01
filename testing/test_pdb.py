@@ -999,3 +999,24 @@ def test_unicode_bug():
 # c
 """)
     
+
+def test_continue_arg():
+    def fn():
+        set_trace()
+        x = 1
+        y = 2
+        z = 3
+        return x+y+z
+    _, lineno = inspect.getsourcelines(fn)
+    line_z = lineno+4
+
+    check(fn, """
+> .*fn()
+-> x = 1
+# c %d
+Breakpoint 1 at .*/test_pdb.py:%d
+Deleted breakpoint 1
+> .*fn()
+-> z = 3
+# c
+""" % (line_z, line_z))
