@@ -367,6 +367,26 @@ NUM  ->             xpm()
 # c
 """)
 
+
+def test_postmortem_noargs():
+
+    def fn():
+        try:
+            a = 1
+            1/0
+        except ZeroDivisionError:
+            pdb.post_mortem(Pdb=PdbTest)
+
+    check(fn, """
+> .*fn()
+-> 1/0
+# c
+""")
+
+def test_postmortem_needs_exceptioncontext():
+    sys.exc_clear() # py.test bug - doesnt clear the index error from finding the next item
+    py.test.raises(AssertionError, pdb.post_mortem, Pdb=PdbTest)
+
 def test_exception_through_generator():
     def gen():
         yield 5
