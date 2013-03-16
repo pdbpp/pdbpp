@@ -622,6 +622,25 @@ Frames can marked as hidden in the following ways:
             self.sticky_range = None
         self._print_if_sticky()
 
+    def print_stack_trace(self):
+        try:
+            for frame_index, frame_lineno in enumerate(self.stack):
+                self.print_stack_entry(frame_lineno, frame_index=frame_index)
+        except KeyboardInterrupt:
+            pass
+
+    def print_stack_entry(self,
+            frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None):
+        frame_index = (frame_index if frame_index is not None else
+                       self.curindex)
+        frame, lineno = frame_lineno
+        if frame is self.curframe:
+            print >>self.stdout, ('[%d]\n>' % frame_index),
+        else:
+            print >>self.stdout, ('[%d]\n ' % frame_index),
+        print >>self.stdout, self.format_stack_entry(frame_lineno,
+                                                     prompt_prefix)
+
     def print_current_stack_entry(self):
         if self.sticky:
             self._print_if_sticky()
@@ -662,22 +681,49 @@ Frames can marked as hidden in the following ways:
             return
         self._print_lines(lines, lineno, print_markers=False)
 
-    def do_up(self, arg):
-        if self.curindex == 0:
+    def do_frame(self, arg):
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            return
+        if arg < 0 or arg >= len(self.stack):
+            print >>self.stdout, '*** Out of range'
+        else:
+            self.curindex = arg
+            self.curframe = self.stack[self.curindex][0]
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_f = do_frame
+
+    def do_up(self, arg='1'):
+        arg = '1' if arg == '' else arg
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            return
+        if self.curindex - arg < 0:
             print >> self.stdout, '*** Oldest frame'
         else:
-            self.curindex = self.curindex - 1
+            self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
     do_u = do_up
 
-    def do_down(self, arg):
-        if self.curindex + 1 == len(self.stack):
+    def do_down(self, arg='1'):
+        arg = '1' if arg == '' else arg
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            return
+        if self.curindex + arg >= len(self.stack):
             print >> self.stdout, '*** Newest frame'
         else:
-            self.curindex = self.curindex + 1
+            self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
