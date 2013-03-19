@@ -504,7 +504,7 @@ Frames can marked as hidden in the following ways:
         the current PYTHONPATH.
         """
         try:
-            from pypy.translator.tool.reftracker import track
+            from rpython.translator.tool.reftracker import track
         except ImportError:
             print >> self.stdout, '** cannot import pypy.translator.tool.reftracker **'
             return
