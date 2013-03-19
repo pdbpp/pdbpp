@@ -70,10 +70,16 @@ def runpdb(func, input):
 
     return stdout.getvalue().splitlines()
 
+def remove_comment(line): 
+    if '###' in line:
+        line, _ = line.split('###', 1)
+    return line
+
 def extract_commands(lines):
     cmds = []
     prompts = ('# ', '(#) ')
     for line in lines:
+        line = remove_comment(line)
         for prompt in prompts:
             if line.startswith(prompt):
                 cmds.append(line[len(prompt):])
@@ -111,6 +117,7 @@ def check(func, expected):
     all_ok = True
     print
     for pattern, string in map(None, expected, lines):
+        pattern = remove_comment(pattern)
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
         string = string or ''
@@ -765,7 +772,7 @@ def test_hide_hidden_frames():
 [NUM]
 > .*fn()
 -> g()
-# hf_hide        # hide the frame again
+# hf_hide        ### hide the frame again
 # down
 ... Newest frame
 # c
@@ -786,11 +793,11 @@ def test_hide_current_frame():
 -> g()
    1 frame hidden .*
 # hf_unhide
-# down
+# down           ### now the frame is no longer hidden
 [NUM]
 > .*g()
 -> return 'foo'
-# hf_hide        # hide the current frame, go to the top of the stack
+# hf_hide        ### hide the current frame, go to the top of the stack
 [NUM]
 > .*fn()
 -> g()
@@ -883,7 +890,7 @@ def test_dont_show_hidden_frames_count():
 [NUM]
 > .*fn()
 -> g()
-# c
+# c           ### note that the hidden frame count is not displayed
 """)
 
 
@@ -903,7 +910,7 @@ def test_disable_hidden_frames():
 [NUM]
 > .*g()
 -> return 'foo'
-# c
+# c           ### note that we were inside g()
 """)
 
 
