@@ -80,15 +80,17 @@ def extract_commands(lines):
                 continue
     return cmds
 
-shortcuts = {
-    '(': '\\(',
-    ')': '\\)',
-    'NUM': ' *[0-9]*',
-    'CLEAR': re.escape(pdb.CLEARSCREEN),
-    }
+shortcuts = [
+    ('[', '\\['),
+    (']', '\\]'),
+    ('(', '\\('),
+    (')', '\\)'),
+    ('NUM', ' *[0-9]*'),
+    ('CLEAR', re.escape(pdb.CLEARSCREEN)),
+    ]
 
 def cook_regexp(s):
-    for key, value in shortcuts.iteritems():
+    for key, value in shortcuts:
         s = s.replace(key, value)
     return s
 
@@ -106,7 +108,7 @@ def run_func(func, expected):
 def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
-    ok = True
+    all_ok = True
     print
     for pattern, string in map(None, expected, lines):
         ok = pattern is not None and string is not None and re.match(pattern, string)
@@ -117,7 +119,8 @@ def check(func, expected):
             print
         else:
             print pdb.Color.set(pdb.Color.red, '    <<<<<')
-    assert ok
+            all_ok = False
+    assert all_ok
 
 
 def test_runpdb():
@@ -161,6 +164,50 @@ def test_up_local_vars():
 -> nested()
 # xx
 42
+# c
+""")
+
+def test_frame():
+    def a():
+        b()
+    def b():
+        c()
+    def c():
+        set_trace()
+        return
+
+    check(a, """
+[38]
+> .*c()
+-> return
+# f 36
+[36]
+> .*a()
+-> b()
+# c
+""")
+
+def test_up_down_arg():
+    def a():
+        b()
+    def b():
+        c()
+    def c():
+        set_trace()
+        return
+
+    check(a, """
+[38]
+> .*c()
+-> return
+# up 3
+[35]
+> .*runpdb()
+-> func()
+# down 1
+[36]
+> .*a()
+-> b()
 # c
 """)
 
@@ -306,7 +353,6 @@ NUM             return a
 """)
 
 def test_sticky_range():
-    import inspect
     def fn():
         set_trace()
         a = 1
@@ -708,10 +754,10 @@ def test_hide_hidden_frames():
 > .*fn()
 -> g()
    1 frame hidden .*
-# down           # cannot go down because the frame is hidden
+# down
 ... Newest frame
 # hf_unhide
-# down           # now the frame is no longer hidden
+# down
 [NUM]
 > .*g()
 -> return 'foo'
@@ -1057,7 +1103,7 @@ def test_unicode_bug():
 # n
 [NUM]
 > .*fn()
--> y = "this contains a unicode:"
+-> y = "this contains a unicode: à"
 # c
 """)
     
