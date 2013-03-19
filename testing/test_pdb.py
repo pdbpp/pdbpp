@@ -139,16 +139,13 @@ def test_runpdb():
         return a+b+c
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 1
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> b = 2
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> c = 3
 # c
 """)
@@ -162,12 +159,10 @@ def test_up_local_vars():
         nested()
 
     check(fn, """
-[NUM]
-> .*nested()
+[NUM] > .*nested()
 -> return
 # up
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> nested()
 # xx
 42
@@ -184,12 +179,10 @@ def test_frame():
         return
 
     check(a, """
-[38]
-> .*c()
+[38] > .*c()
 -> return
 # f 36
-[36]
-> .*a()
+[36] > .*a()
 -> b()
 # c
 """)
@@ -204,16 +197,13 @@ def test_up_down_arg():
         return
 
     check(a, """
-[38]
-> .*c()
+[38] > .*c()
 -> return
 # up 3
-[35]
-> .*runpdb()
+[35] > .*runpdb()
 -> func()
 # down 1
-[36]
-> .*a()
+[36] > .*a()
 -> b()
 # c
 """)
@@ -225,8 +215,7 @@ def test_parseline():
         return c
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return c
 # c
 42
@@ -242,8 +231,7 @@ def test_args_name():
         return args
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return args
 # args
 42
@@ -257,8 +245,7 @@ def test_longlist():
         return a
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return a
 # ll
 NUM         def fn():
@@ -278,23 +265,19 @@ def test_display():
         return a
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> b = 1
 # display a
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 2
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 3
 a: 1 --> 2
 # undisplay a
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return a
 # c
 """)
@@ -306,13 +289,11 @@ def test_display_undefined():
         return b
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> b = 42
 # display b
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return b
 b: <undefined> --> 42
 # c
@@ -327,8 +308,7 @@ def test_sticky():
         return a
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 1
 # sticky
 CLEAR>.*
@@ -340,8 +320,7 @@ NUM             b = 2
 NUM             c = 3
 NUM             return a
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> b = 2
 CLEAR>.*
 
@@ -353,8 +332,7 @@ NUM             c = 3
 NUM             return a
 # sticky
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> c = 3
 # c
 """)
@@ -371,8 +349,7 @@ def test_sticky_range():
     end = lineno + 3
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 1
 # sticky %d %d
 CLEAR>.*
@@ -396,8 +373,7 @@ def test_sticky_by_default():
         return a
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a = 1
 CLEAR>.*
 
@@ -423,12 +399,10 @@ def test_exception_lineno():
             xpm()
 
     check(fn, """
-[NUM]
-> .*bar()
+[NUM] > .*bar()
 -> assert False
 # u
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> bar()
 # ll
 NUM         def fn():
@@ -452,8 +426,7 @@ def test_postmortem_noargs():
             pdb.post_mortem(Pdb=PdbTest)
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> 1/0
 # c
 """)
@@ -474,12 +447,10 @@ def test_exception_through_generator():
             xpm()
 
     check(fn, """
-[NUM]
-> .*gen()
+[NUM] > .*gen()
 -> assert False
 # u
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> for i in gen():
 # c
 """)
@@ -494,8 +465,7 @@ def test_py_code_source():
     
     exec src.compile()
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return x
 # ll
 NUM     def fn():
@@ -513,8 +483,7 @@ def test_source():
         return bar()
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return bar()
 # source bar
 NUM         def bar():
@@ -528,8 +497,7 @@ def test_bad_source():
         return 42
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # source 42
 \*\* Error: .* is not a module, class, method, function, traceback, frame, or code object \*\*
@@ -552,8 +520,7 @@ def test_edit():
         filename = filename[:-1]
     
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # edit
 RUN emacs \+%d '%s'
@@ -561,12 +528,10 @@ RUN emacs \+%d '%s'
 """ % (return42_lineno, filename))
 
     check(bar, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # up
-[NUM]
-> .*bar()
+[NUM] > .*bar()
 -> fn()
 # edit
 RUN emacs \+%d '%s'
@@ -587,8 +552,7 @@ def test_edit_obj():
         filename = filename[:-1]
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # edit bar
 RUN emacs \+%d '%s'
@@ -612,8 +576,7 @@ def test_edit_py_code_source():
         filename = filename[:-1]
     #
     check(bar, """
-[NUM]
-> .*bar()
+[NUM] > .*bar()
 -> return 42
 # edit bar
 RUN emacs \+%d '%s'
@@ -629,8 +592,7 @@ def test_put():
     start_lineno = lineno + 1
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # x = 10
 # y = 12
@@ -653,8 +615,7 @@ def test_paste():
     start_lineno = lineno + 1
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> if False: g()
 # g()
 hello world
@@ -677,8 +638,7 @@ def test_put_if():
     start_lineno = lineno + 3
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return x
 # x = 10
 # y = 12
@@ -707,8 +667,7 @@ def test_put_side_effects_free():
     start_lineno = lineno + 2
 
     check(fn, r"""
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # x
 10
@@ -733,8 +692,7 @@ def test_enable_disable():
         return x
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return x
 # x
 2
@@ -757,20 +715,17 @@ def test_hide_hidden_frames():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> g()
    1 frame hidden .*
 # down
 ... Newest frame
 # hf_unhide
 # down
-[NUM]
-> .*g()
+[NUM] > .*g()
 -> return 'foo'
 # up
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> g()
 # hf_hide        ### hide the frame again
 # down
@@ -788,18 +743,15 @@ def test_hide_current_frame():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> g()
    1 frame hidden .*
 # hf_unhide
 # down           ### now the frame is no longer hidden
-[NUM]
-> .*g()
+[NUM] > .*g()
 -> return 'foo'
 # hf_hide        ### hide the current frame, go to the top of the stack
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> g()
 # c
 """)
@@ -816,8 +768,7 @@ def test_list_hidden_frames():
         k()
         return 1
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> k()
    2 frames hidden .*
 # hf_list
@@ -842,8 +793,7 @@ def test_hidden_pytest_frames():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> k()
    2 frames hidden .*
 # hf_list
@@ -864,8 +814,7 @@ def test_hidden_unittest_frames():
         return g()
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return g()
    1 frame hidden .*
 # hf_list
@@ -887,8 +836,7 @@ def test_dont_show_hidden_frames_count():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> g()
 # c           ### note that the hidden frame count is not displayed
 """)
@@ -907,8 +855,7 @@ def test_disable_hidden_frames():
         return 1
 
     check(fn, """
-[NUM]
-> .*g()
+[NUM] > .*g()
 -> return 'foo'
 # c           ### note that we were inside g()
 """)
@@ -925,15 +872,13 @@ def test_break_on_setattr():
         return obj.x
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> obj.x = 0
    1 frame hidden .*
 # hasattr(obj, 'x')
 False
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return obj.x
 # print obj.x
 0
@@ -954,15 +899,13 @@ def test_break_on_setattr_condition():
         return obj.x
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> obj.x = 42
    1 frame hidden .*
 # obj.x
 0
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return obj.x
 # obj.x
 42
@@ -983,8 +926,7 @@ def test_break_on_setattr_non_decorator():
         a.bar = 42
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> a.bar = 42
    1 frame hidden .*
 # c
@@ -1003,8 +945,7 @@ def test_break_on_setattr_overridden():
         return obj.x
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> obj.x = 0
    1 frame hidden .*
 # obj.y
@@ -1012,8 +953,7 @@ def test_break_on_setattr_overridden():
 # hasattr(obj, 'x')
 False
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return obj.x
 # print obj.x
 1
@@ -1026,8 +966,7 @@ def test_track_with_no_args():
         return 42
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 42
 # track
 ... SyntaxError:
@@ -1058,17 +997,14 @@ def test_debug():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 1
 # debug g()
 ENTERING RECURSIVE DEBUGGER
-[NUM]
-> .*
+[NUM] > .*
 (#) s
 --Call--
-[NUM]
-> .*g()
+[NUM] > .*g()
 -> def g():
 (#) ll
 NUM  ->     def g():
@@ -1088,8 +1024,7 @@ def test_before_interaction_hook():
         return 1
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> return 1
 HOOK!
 # c
@@ -1104,12 +1039,10 @@ def test_unicode_bug():
         return
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> x = "this is plan ascii"
 # n
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> y = "this contains a unicode: à"
 # c
 """)
@@ -1126,14 +1059,12 @@ def test_continue_arg():
     line_z = lineno+4
 
     check(fn, """
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> x = 1
 # c %d
 Breakpoint 1 at .*/test_pdb.py:%d
 Deleted breakpoint 1
-[NUM]
-> .*fn()
+[NUM] > .*fn()
 -> z = 3
 # c
 """ % (line_z, line_z))
