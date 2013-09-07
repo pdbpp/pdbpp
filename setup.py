@@ -1,10 +1,12 @@
+from __future__ import print_function
+
 import sys
 import os.path
 from setuptools import setup, find_packages
 
 single_version = '--single-version-externally-managed'
 if single_version in sys.argv:
-    print >> sys.stderr, '[pdb++] WARNING: ignoring unsupported option', single_version
+    print('[pdb++] WARNING: ignoring unsupported option', single_version, file=sys.stderr)
     sys.argv.remove(single_version)
 
 readme = os.path.join(os.path.dirname(__file__), 'README')
