@@ -1,0 +1,18 @@
+
+- fix issue 20: support argument-free post mortem
+
+Changes between 0.7.1 and 0.7.2
+===============================
+
+- don't crash with newer versions of ``py.test``
+
+Changes between 0.7 and 0.7.1
+=============================
+
+- The ``pp`` (pretty print) command now uses the actual width of the terminal,
+  instead of hardcoding 80 columns
+
+- py.test and unittest internal frames are hidden by default (type ``help
+  hidden_frames`` for more info)
+
+- don't crash if ``py`` is installed but ``py.test`` is not
