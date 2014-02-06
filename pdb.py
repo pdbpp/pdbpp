@@ -740,6 +740,9 @@ Frames can marked as hidden in the following ways:
         except:
             width = int(os.environ.get('COLUMNS', 80))
             height = int(os.environ.get('COLUMNS', 24))
+        # Work around above returning width, height = 0, 0 in Emacs
+        width = width if width != 0 else 80
+        height = height if height != 0 else 24
         return width, height
 
     def _open_editor(self, editor, lineno, filename):
@@ -898,7 +901,3 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
 if __name__=='__main__':
     import pdb
     pdb.main()
-
-
-# XXX todo:
-# get_terminal_size inside emacs returns 0,0
