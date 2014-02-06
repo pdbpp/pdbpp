@@ -846,7 +846,10 @@ def xpm(Pdb=Pdb):
     To be used inside an except clause, enter a post-mortem pdb
     related to the just catched exception.
     """
-    post_mortem(sys.exc_info()[2], Pdb)
+    info = sys.exc_info()
+    print(traceback.format_exc())
+    post_mortem(info[2], Pdb)
+
 
 def enable():
     global set_trace
