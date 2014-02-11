@@ -8,6 +8,7 @@ it.
 import readline
 import pdb
 
+
 class Config(pdb.DefaultConfig):
 
     editor = 'e'
