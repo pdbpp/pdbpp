@@ -5,6 +5,7 @@ import sys
 import re
 from cStringIO import StringIO
 import py
+import pytest
 
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
@@ -961,6 +962,8 @@ False
 """)
 
 def test_track_with_no_args():
+    pytest.importorskip('rpython.translator.tool.reftracker')
+
     def fn():
         set_trace()
         return 42
