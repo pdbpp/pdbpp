@@ -447,6 +447,13 @@ def test_exception_through_generator():
             xpm()
 
     check(fn, """
+Traceback (most recent call last):
+.*test_pdb.py.*, line NUM, in fn
+.*for i in gen():
+.*test_pdb.py.*, line NUM, in gen
+.*assert False
+AssertionError: assert False
+
 [NUM] > .*gen()
 -> assert False
 # u
