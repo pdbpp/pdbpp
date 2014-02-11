@@ -4,7 +4,10 @@ import os.path
 import sys
 import re
 try:
-    from io import BytesIO as StringIO
+    if sys.version_info < (3, ):
+        from io import BytesIO as StringIO
+    else:
+        from io import StringIO
 except ImportError:
     try:
         from cStringIO import StringIO
@@ -22,7 +25,7 @@ class FakeStdin:
 
     def readline(self):
         try:
-            line = self.lines.next() + '\n'
+            line = next(self.lines) + '\n'
             sys.stdout.write(line)
             return line
         except StopIteration:

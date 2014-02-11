@@ -28,6 +28,27 @@ import fancycompleter
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
 
+def get_function_name(func):
+    if sys.version_info >= (2, 6):
+        return func.__name__
+    else:
+        return func.func_name
+
+
+def get_function_code(func):
+    if sys.version_info >= (2, 6):
+        return func.__code__
+    else:
+        return func.func_code
+
+
+def get_function_defaults(func):
+    if sys.version_info >= (2, 6):
+        return func.__defaults__
+    else:
+        return func.func_defaults
+
+
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
     stdlibdir, _ = os.path.split(code.__file__)
@@ -42,8 +63,11 @@ pdb = import_from_stdlib('pdb')
 def rebind_globals(func, newglobals=None):
     if newglobals is None:
         newglobals = globals()
-    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
-                                 func.func_defaults)
+    newfunc = types.FunctionType(
+        get_function_code(func),
+        newglobals,
+        get_function_name(func),
+        get_function_defaults(func))
     return newfunc
 
 
@@ -141,7 +165,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
-        self.stdout = codecs.getwriter('utf-8')(self.stdout)
+        if sys.version_info < (3, ):
+            self.stdout = codecs.getwriter('utf-8')(self.stdout)
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -294,7 +319,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         for encoding in self.config.encodings:
             try:
                 return s.decode(encoding)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, AttributeError):
                 pass
         return s
 
@@ -439,7 +464,9 @@ Frames can marked as hidden in the following ways:
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
         if height >= 6:
-            last_marker_line = max(self.curframe.f_lineno, exc_lineno) - lineno
+            last_marker_line = max(
+                self.curframe.f_lineno,
+                exc_lineno if exc_lineno else 0) - lineno
             if last_marker_line >= 0:
                 maxlines = last_marker_line + height * 2 // 3
                 if len(lines) > maxlines:
@@ -496,7 +523,10 @@ Frames can marked as hidden in the following ways:
             'Pdb': new_pdb_with_config,
             'sys': sys,
         }
-        orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+        if sys.version_info < (3, ):
+            orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+        else:
+            orig_do_debug = rebind_globals(pdb.Pdb.do_debug, newglobals)
         return orig_do_debug(self, arg)
 
     def do_interact(self, arg):
@@ -670,7 +700,7 @@ Frames can marked as hidden in the following ways:
     def preloop(self):
         self._print_if_sticky()
         display_list = self._get_display_list()
-        for expr, oldvalue in display_list.iteritems():
+        for expr, oldvalue in display_list.items():
             newvalue = self._getval_or_undefined(expr)
             # check for identity first; this prevents custom __eq__ to
             # be called at every loop, and also prevents instances
@@ -905,7 +935,7 @@ _HIDE_FRAME = object()
 
 def hideframe(func):
     import new
-    c = func.func_code
+    c = get_function_code(func)
     c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
                  c.co_flags, c.co_code,
                  c.co_consts + (_HIDE_FRAME,),
