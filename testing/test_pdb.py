@@ -476,7 +476,7 @@ def test_py_code_source():
         return x
     """)
     
-    exec(src.compile())
+    exec(src.compile(), globals())
     check(fn, """
 [NUM] > .*fn()
 -> return x
@@ -580,7 +580,7 @@ def test_edit_py_code_source():
     """)
     _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
     dic = {'set_trace': set_trace}
-    exec(src.compile()) in dic  # 8th line from the beginning of the function
+    exec(src.compile(), dic)  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
     #
