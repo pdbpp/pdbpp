@@ -934,14 +934,25 @@ _HIDE_FRAME = object()
 
 
 def hideframe(func):
-    import new
     c = get_function_code(func)
-    c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
-                 c.co_flags, c.co_code,
-                 c.co_consts + (_HIDE_FRAME,),
-                 c.co_names, c.co_varnames, c.co_filename,
-                 c.co_name, c.co_firstlineno, c.co_lnotab,
-                 c.co_freevars, c.co_cellvars)
+    if sys.version_info < (3, ):
+        c = types.CodeType(
+            c.co_argcount, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
+    else:
+        # Python 3 takes an additional arg -- kwonlyargcount
+        # typically set to 0
+        c = types.CodeType(
+            c.co_argcount, 0, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
     func.func_code = c
     return func
 
