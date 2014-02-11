@@ -861,7 +861,16 @@ Frames can marked as hidden in the following ways:
         self._put(text)
 
     def do_paste(self, arg):
-        from cStringIO import StringIO
+        try:
+            if sys.version_info < (3, ):
+                from io import BytesIO as StringIO
+            else:
+                from io import StringIO
+        except ImportError:
+            try:
+                from cStringIO import StringIO
+            except ImportError:
+                from StringIO import StringIO
         arg = arg.strip()
         old_stdout = self.stdout
         self.stdout = StringIO()
