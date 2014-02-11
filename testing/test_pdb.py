@@ -441,7 +441,11 @@ def test_postmortem_noargs():
 """)
 
 def test_postmortem_needs_exceptioncontext():
-    sys.exc_clear() # py.test bug - doesnt clear the index error from finding the next item
+    try:
+        sys.exc_clear() # py.test bug - doesnt clear the index error from finding the next item
+    except AttributeError:
+        # Python 3 doesn't have sys.exc_clear
+        pass
     py.test.raises(AssertionError, pdb.post_mortem, Pdb=PdbTest)
 
 def test_exception_through_generator():
