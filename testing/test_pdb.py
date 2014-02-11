@@ -5,6 +5,7 @@ import sys
 import re
 from cStringIO import StringIO
 import py
+import pytest
 
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
@@ -454,6 +455,13 @@ def test_exception_through_generator():
             xpm()
 
     check(fn, """
+Traceback (most recent call last):
+.*test_pdb.py.*, line NUM, in fn
+.*for i in gen():
+.*test_pdb.py.*, line NUM, in gen
+.*assert False
+AssertionError: assert False
+
 [NUM] > .*gen()
 -> assert False
 # u
@@ -968,6 +976,8 @@ False
 """)
 
 def test_track_with_no_args():
+    pytest.importorskip('rpython.translator.tool.reftracker')
+
     def fn():
         set_trace()
         return 42
