@@ -3,7 +3,13 @@ import inspect
 import os.path
 import sys
 import re
-from cStringIO import StringIO
+try:
+    from io import BytesIO as StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
 import py
 
 # make sure that we are really importing our pdb
@@ -42,11 +48,11 @@ class PdbTest(pdb.Pdb):
         pdb.Pdb.__init__(self, *args, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
-        print "RUN %s +%d '%s'" % (editor, lineno, filename)
+        print("RUN %s +%d '%s'" % (editor, lineno, filename))
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
-        print "RUN %s +%d" % (cmd, lineno)
-        print text
+        print("RUN %s +%d" % (cmd, lineno))
+        print(text)
 
 
 def set_trace(**kwds):
@@ -115,17 +121,17 @@ def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
     all_ok = True
-    print
+    print()
     for pattern, string in map(None, expected, lines):
         pattern = remove_comment(pattern)
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
         string = string or ''
-        print pattern.ljust(maxlen+1), '| ', string,
+        print(pattern.ljust(maxlen+1), '| ', string),
         if ok:
-            print
+            print()
         else:
-            print pdb.Color.set(pdb.Color.red, '    <<<<<')
+            print(pdb.Color.set(pdb.Color.red, '    <<<<<'))
             all_ok = False
     assert all_ok
 
@@ -463,7 +469,7 @@ def test_py_code_source():
         return x
     """)
     
-    exec src.compile()
+    exec(src.compile())
     check(fn, """
 [NUM] > .*fn()
 -> return x
@@ -567,7 +573,7 @@ def test_edit_py_code_source():
     """)
     _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
     dic = {'set_trace': set_trace}
-    exec src.compile() in dic # 8th line from the beginning of the function
+    exec(src.compile()) in dic  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
     #
@@ -606,7 +612,7 @@ RUN epaste \+%d
 
 def test_paste():
     def g():
-        print 'hello world'
+        print('hello world')
     def fn():
         set_trace()
         if False: g()
