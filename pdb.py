@@ -33,7 +33,7 @@ def import_from_stdlib(name):
     stdlibdir, _ = os.path.split(code.__file__)
     pyfile = os.path.join(stdlibdir, name + '.py')
     result = types.ModuleType(name)
-    mydict = execfile(pyfile, result.__dict__)
+    exec(open(pyfile).read(), result.__dict__)
     return result
 
 pdb = import_from_stdlib('pdb')
@@ -408,11 +408,11 @@ Frames can marked as hidden in the following ways:
             else:
                 try:
                     lines, lineno = inspect.getsourcelines(self.curframe)
-                except Exception, e:
+                except Exception as e:
                     self.stdout.write(
                         '** Error in inspect.getsourcelines: %s **\n' % e)
                     return
-        except IOError, e:
+        except IOError as e:
             self.stdout.write('** Error: %s **\n' % e)
             return
         if linerange:
@@ -691,7 +691,7 @@ Frames can marked as hidden in the following ways:
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
-        except (IOError, TypeError), e:
+        except (IOError, TypeError) as e:
             self.stdout.write('** Error: %s **\n' % e)
             return None, None, None
         return filename, lineno, lines
@@ -761,7 +761,7 @@ Frames can marked as hidden in the following ways:
             import struct
             call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00" * 8)
             height, width = struct.unpack("hhhh", call)[:2]
-        except (SystemExit, KeyboardInterrupt), e:
+        except (SystemExit, KeyboardInterrupt) as e:
             raise
         except:
             width = int(os.environ.get('COLUMNS', 80))
@@ -897,7 +897,7 @@ disable.set_trace = lambda frame=None, Pdb=Pdb: None
 
 
 def set_tracex():
-    print 'PDB!'
+    print('PDB!')
 set_tracex._dont_inline_ = True
 
 _HIDE_FRAME = object()
