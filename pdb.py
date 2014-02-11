@@ -523,10 +523,13 @@ Frames can marked as hidden in the following ways:
             'Pdb': new_pdb_with_config,
             'sys': sys,
         }
+
         if sys.version_info < (3, ):
-            orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+            do_debug_func = pdb.Pdb.do_debug.im_func
         else:
-            orig_do_debug = rebind_globals(pdb.Pdb.do_debug, newglobals)
+            do_debug_func = pdb.Pdb.do_debug
+
+        orig_do_debug = rebind_globals(do_debug_func, newglobals)
         return orig_do_debug(self, arg)
 
     def do_interact(self, arg):
