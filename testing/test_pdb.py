@@ -400,6 +400,13 @@ def test_exception_lineno():
             xpm()
 
     check(fn, """
+Traceback (most recent call last):
+.*File.*test_pdb.py.*, line NUM, in fn
+    bar()
+.*File.*test_pdb.py.*, line NUM, in bar
+    assert False
+AssertionError: assert False
+
 [NUM] > .*bar()
 -> assert False
 # u
