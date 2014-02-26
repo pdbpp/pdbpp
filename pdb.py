@@ -316,7 +316,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         # if you type e.g. 'r[0]' by mystake.
         cmd, arg, newline = pdb.Pdb.parseline(self, line)
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
-                                                 cmd in self.curframe.f_locals):
+                                                 cmd in self.curframe.f_locals or
+                                                 arg.startswith('=')):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline

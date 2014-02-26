@@ -222,6 +222,12 @@ def test_parseline():
 42
 # !c
 42
+# r = 5
+# r
+5
+# r = 6
+# r
+6
 # !!c
 """)
 
