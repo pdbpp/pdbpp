@@ -172,7 +172,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
-        self.stdout = codecs.getwriter('utf-8')(self.stdout)
+
+        # Wrap stdout with an encoder, but only if not already wrapped
+        if not hasattr(self.stdout, 'stream'):
+            self.stdout = codecs.getwriter('utf-8')(self.stdout)
 
     def _disable_pytest_capture_maybe(self):
         try:
