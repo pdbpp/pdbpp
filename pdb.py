@@ -290,7 +290,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         for encoding in self.config.encodings:
             try:
                 return s.decode(encoding)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, AttributeError):
                 pass
         return s
 
