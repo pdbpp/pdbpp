@@ -685,9 +685,9 @@ Frames can marked as hidden in the following ways:
                        self.curindex)
         frame, lineno = frame_lineno
         if frame is self.curframe:
-            print(('[%d] >' % frame_index), file=self.stdout, end=' ')
+            print('[%d] >' % frame_index, file=self.stdout, end=' ')
         else:
-            print(('[%d]  ' % frame_index), file=self.stdout, end=' ')
+            print('[%d]  ' % frame_index, file=self.stdout, end=' ')
         print(self.format_stack_entry(frame_lineno,
                                       prompt_prefix),
               file=self.stdout)
