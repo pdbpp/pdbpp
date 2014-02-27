@@ -491,7 +491,6 @@ Frames can marked as hidden in the following ways:
     do_ll = do_longlist
 
     def do_list(self, arg):
-        from StringIO import StringIO
         oldstdout = self.stdout
         self.stdout = StringIO()
         pdb.Pdb.do_list(self, arg)
