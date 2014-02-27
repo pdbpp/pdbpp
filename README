@@ -42,7 +42,7 @@ Since ``pdb++`` is not a valid identifier for ``pip`` and ``easy_install``,
 you have to install ``pdbpp`` instead::
 
     $ pip install pdbpp
-    
+
     -- OR --
 
     $ easy_install pdbpp
@@ -125,7 +125,7 @@ just print the value of a local variable which happens to have the same name
 as one of such commands. E.g.::
 
     (Pdb) list
-      1  	
+      1
       2     def fn():
       3         c = 42
       4         import pdb;pdb.set_trace()
@@ -142,7 +142,7 @@ variable, if it exists.  If you really want to execute the corresponding
 command, you can prefix it with ``!!``.  Thus, the example above becomes::
 
     (Pdb++) list
-      1  	
+      1
       2     def fn():
       3         c = 42
       4         import pdb;pdb.set_trace()
@@ -167,7 +167,7 @@ pdb++.
 
 ``pdb.xpm()``
   eXtended Post Mortem: it is equivalent to
-  ``pdb.post_morted(sys.exc_info()[2])``.  If used inside an ``except``
+  ``pdb.post_mortem(sys.exc_info()[2])``.  If used inside an ``except``
   clause, it will start a post-mortem pdb prompt from the line that raised the
   exception being caught.
 
@@ -204,7 +204,7 @@ pdb++.
           pass
       a = Foo()
       b = Foo()
-      
+
       def break_if_a(obj, value):
           return obj is a
 
@@ -255,7 +255,7 @@ default value:
   to the source code when showing the ``longlist`` of a function or when in
   **sticky mode**.
 
-``bg = 'dark'`` 
+``bg = 'dark'``
   passed directly to ``pygments.formatters.TerminalFormatter`` constructor.
   Select the color scheme to use, depending on the background color of your
   terminal. If you have a light background color, try to set it to
