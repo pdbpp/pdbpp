@@ -463,7 +463,9 @@ Frames can marked as hidden in the following ways:
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
         if height >= 6:
-            last_marker_line = max(self.curframe.f_lineno, exc_lineno) - lineno
+            last_marker_line = max(
+                self.curframe.f_lineno,
+                exc_lineno if exc_lineno else 0) - lineno
             if last_marker_line >= 0:
                 maxlines = last_marker_line + height * 2 // 3
                 if len(lines) > maxlines:
