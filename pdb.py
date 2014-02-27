@@ -29,6 +29,28 @@ import fancycompleter
 # free
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
+
+def get_function_name(func):
+    if sys.version_info >= (2, 6):
+        return func.__name__
+    else:
+        return func.func_name
+
+
+def get_function_code(func):
+    if sys.version_info >= (2, 6):
+        return func.__code__
+    else:
+        return func.func_code
+
+
+def get_function_defaults(func):
+    if sys.version_info >= (2, 6):
+        return func.__defaults__
+    else:
+        return func.func_defaults
+
+
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
     stdlibdir, _ = os.path.split(code.__file__)
@@ -885,14 +907,25 @@ set_tracex._dont_inline_ = True
 _HIDE_FRAME = object()
 
 def hideframe(func):
-    import new
-    c = func.func_code
-    c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
-                 c.co_flags, c.co_code,
-                 c.co_consts+(_HIDE_FRAME,),
-                 c.co_names, c.co_varnames, c.co_filename,
-                 c.co_name, c.co_firstlineno, c.co_lnotab,
-                 c.co_freevars, c.co_cellvars)
+    c = get_function_code(func)
+    if sys.version_info < (3, ):
+        c = types.CodeType(
+            c.co_argcount, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
+    else:
+        # Python 3 takes an additional arg -- kwonlyargcount
+        # typically set to 0
+        c = types.CodeType(
+            c.co_argcount, 0, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
     func.func_code = c
     return func
 
