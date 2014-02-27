@@ -19,7 +19,7 @@ class FakeStdin:
 
     def readline(self):
         try:
-            line = self.lines.next() + '\n'
+            line = next(self.lines) + '\n'
             sys.stdout.write(line)
             return line
         except StopIteration:
