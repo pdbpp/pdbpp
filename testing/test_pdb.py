@@ -63,9 +63,27 @@ def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
 
+    if sys.version_info < (3, ):
+        text_type = unicode
+    else:
+        text_type = str
+
+    class MyBytesIO(BytesIO):
+        """write accepts unicode or bytes"""
+
+        encoding = 'ascii'
+
+        def __init__(self, encoding='ascii'):
+            self.encoding = encoding
+
+        def write(self, msg):
+            if isinstance(msg, text_type):
+                msg = msg.encode(self.encoding)
+            super(MyBytesIO, self).write(msg)
+
     try:
         sys.stdin = FakeStdin(input)
-        sys.stdout = stdout = BytesIO()
+        sys.stdout = stdout = MyBytesIO()
         func()
     finally:
         sys.stdin = oldstdin
