@@ -27,6 +27,7 @@ class FakeStdin:
 
 class ConfigTest(pdb.DefaultConfig):
     highlight = False
+    use_pygments = False
     prompt = '# ' # because + has a special meaning in the regexp
     editor = 'emacs'
     stdin_paste = 'epaste'
@@ -264,6 +265,27 @@ def test_args_name():
 42
 # c
 """)
+
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
+def test_shortlist():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigTest)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+# l {line_num}, 3
+NUM  	    def fn():
+NUM  	        a = 1
+NUM  	        set_trace(Config=ConfigTest)
+NUM  ->	        return a
+# c
+""".format(line_num=pdb.get_function_code(fn).co_firstlineno))
 
 def test_longlist():
     def fn():
