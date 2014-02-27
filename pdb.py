@@ -29,6 +29,17 @@ import fancycompleter
 # free
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
+try:
+    if sys.version_info < (3, ):
+        from io import BytesIO as StringIO
+    else:
+        from io import StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
 
 def get_function_name(func):
     if sys.version_info >= (2, 6):
@@ -840,7 +851,6 @@ Frames can marked as hidden in the following ways:
         self._put(text)
 
     def do_paste(self, arg):
-        from cStringIO import StringIO
         arg = arg.strip()
         old_stdout = self.stdout
         self.stdout = StringIO()
