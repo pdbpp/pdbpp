@@ -509,7 +509,7 @@ def test_py_code_source():
         return x
     """)
     
-    exec(src.compile())
+    exec(src.compile(), globals())
     check(fn, """
 [NUM] > .*fn()
 -> return x
