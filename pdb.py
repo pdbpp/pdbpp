@@ -401,10 +401,10 @@ Frames can marked as hidden in the following ways:
                 try:
                     lines, lineno = inspect.getsourcelines(self.curframe)
                 except Exception as e:
-                    print('** Error in inspect.getsourcelines: %s **' % e, file=sys.stdout)
+                    print('** Error in inspect.getsourcelines: %s **' % e, file=self.stdout)
                     return
         except IOError as e:
-            print('** Error: %s **' % e, file=sys.stdout)
+            print('** Error: %s **' % e, file=self.stdout)
             return
         if linerange:
             start, end = linerange
@@ -694,10 +694,10 @@ Frames can marked as hidden in the following ways:
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{0}"'.format(arg), file=sys.stdout)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if arg < 0 or arg >= len(self.stack):
-            print('*** Out of range', file=sys.stdout)
+            print('*** Out of range', file=self.stdout)
         else:
             self.curindex = arg
             self.curframe = self.stack[self.curindex][0]
@@ -710,10 +710,10 @@ Frames can marked as hidden in the following ways:
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{0}"'.format(arg), file=sys.stdout)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if self.curindex - arg < 0:
-            print('*** Oldest frame', file=sys.stdout)
+            print('*** Oldest frame', file=self.stdout)
         else:
             self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
@@ -727,10 +727,10 @@ Frames can marked as hidden in the following ways:
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{0}"'.format(arg), file=sys.stdout)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if self.curindex + arg >= len(self.stack):
-            print('*** Newest frame', file=sys.stdout)
+            print('*** Newest frame', file=self.stdout)
         else:
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
