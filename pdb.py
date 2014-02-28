@@ -377,6 +377,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         except AttributeError:
             print("*** No help for '{command}'".format(command=arg),
                   file=self.stdout)
+    do_help.__doc__ = pdb.Pdb.do_help.__doc__
 
     def help_hidden_frames(self):
         print("""\
@@ -513,12 +514,14 @@ Frames can marked as hidden in the following ways:
         self.stdout = oldstdout
         print(src, file=self.stdout, end='')
 
+    do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
 
     def do_continue(self, arg):
         if arg != '':
             self.do_tbreak(arg)
         return pdb.Pdb.do_continue(self, '')
+    do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
 
     def do_pp(self, arg):
@@ -527,6 +530,7 @@ Frames can marked as hidden in the following ways:
             pprint.pprint(self._getval(arg), self.stdout, width=width)
         except:
             pass
+    do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
         # this is a hack (as usual :-))
@@ -550,6 +554,7 @@ Frames can marked as hidden in the following ways:
 
         orig_do_debug = rebind_globals(do_debug_func, newglobals)
         return orig_do_debug(self, arg)
+    do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):
         """
@@ -781,6 +786,7 @@ Frames can marked as hidden in the following ways:
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_up.__doc__ = pdb.Pdb.do_up.__doc__
     do_u = do_up
 
     def do_down(self, arg='1'):
@@ -798,6 +804,7 @@ Frames can marked as hidden in the following ways:
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
     def get_terminal_size(self):
