@@ -29,6 +29,39 @@ import fancycompleter
 # free
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
+try:
+    if sys.version_info < (3, ):
+        from io import BytesIO as StringIO
+    else:
+        from io import StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
+
+def get_function_name(func):
+    if sys.version_info >= (2, 6):
+        return func.__name__
+    else:
+        return func.func_name
+
+
+def get_function_code(func):
+    if sys.version_info >= (2, 6):
+        return func.__code__
+    else:
+        return func.func_code
+
+
+def get_function_defaults(func):
+    if sys.version_info >= (2, 6):
+        return func.__defaults__
+    else:
+        return func.func_defaults
+
+
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
     stdlibdir, _ = os.path.split(code.__file__)
@@ -62,7 +95,9 @@ class DefaultConfig:
     truncate_long_lines = True
     exec_if_unfocused = None
     disable_pytest_capturing = True
-    encoding = 'utf-8'
+    encodings = ('utf-8', 'latin-1')
+    enable_hidden_frames = True
+    show_hidden_frames_count = True
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
@@ -80,7 +115,22 @@ def setbgcolor(line, color):
     import re
     setbg = '\x1b[%dm' % color
     regexbg = '\\1;%dm' % color
-    return setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
+    result = setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
+    if os.environ.get('TERM') == 'eterm-color':
+        # it seems that emacs' terminal has problems with some ANSI escape
+        # sequences. Eg, 'ESC[44m' sets the background color in all terminals
+        # I tried, but not in emacs. To set the background color, it needs to
+        # have also an explicit foreground color, e.g. 'ESC[37;44m'. These
+        # three lines are a hack, they try to add a foreground color to all
+        # escape sequences wich are not recognized by emacs. However, we need
+        # to pick one specific fg color: I choose white (==37), but you might
+        # want to change it.  These lines seems to work fine with the ANSI
+        # codes produced by pygments, but they are surely not a general
+        # solution.
+        result = result.replace(setbg, '\x1b[37;%dm' % color)
+        result = result.replace('\x1b[00;%dm' % color, '\x1b[37;%dm' % color)
+        result = result.replace('\x1b[39;49;00;', '\x1b[37;')
+    return result
 
 CLEARSCREEN = '\033[2J\033[1;1H'
 
@@ -122,7 +172,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
-        self.stdout = codecs.getwriter('utf-8')(self.stdout)
+        self.stdout = self.ensure_file_can_write_unicode(self.stdout)
+
+    def ensure_file_can_write_unicode(self, f):
+        # Wrap with an encoder, but only if not already wrapped
+        if not hasattr(f, 'stream') and f.encoding.lower() != 'utf-8':
+            f = codecs.getwriter('utf-8')(f)
+
+        return f
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -156,7 +213,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def print_hidden_frames_count(self):
         n = len(self.hidden_frames)
-        if n:
+        if n and self.config.show_hidden_frames_count:
             plural = n>1 and 's' or ''
             print("   %d frame%s hidden (try 'help hidden_frames')" % (n, plural),
                   file=self.stdout)
@@ -182,6 +239,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             tb = tb.tb_next
 
     def _is_hidden(self, frame):
+        if not self.config.enable_hidden_frames:
+            return False
         consts = frame.f_code.co_consts
         if consts and consts[-1] is _HIDE_FRAME:
             return True
@@ -257,6 +316,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     #
     def format_stack_entry(self, frame_lineno, lprefix=': '):
         entry = pdb.Pdb.format_stack_entry(self, frame_lineno, lprefix)
+        entry = self.try_to_decode(entry)
         if self.config.highlight:
             match = self.stack_entry_regexp.match(entry)
             if match:
@@ -266,11 +326,19 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                 entry = '%s(%s)%s' % (filename, lineno, other)
         return entry
 
+    def try_to_decode(self, s):
+        for encoding in self.config.encodings:
+            try:
+                return s.decode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                pass
+        return s
+
     def format_source(self, src):
         if not self._init_pygments():
             return src
         from pygments import highlight
-        src = src.decode(self.config.encoding)
+        src = self.try_to_decode(src)
         return highlight(src, self._lexer, self._fmt)
 
     def format_line(self, lineno, marker, line):
@@ -293,7 +361,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         # if you type e.g. 'r[0]' by mystake.
         cmd, arg, newline = pdb.Pdb.parseline(self, line)
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
-                                                 cmd in self.curframe.f_locals):
+                                                 cmd in self.curframe.f_locals or
+                                                 arg.startswith('=')):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
@@ -301,6 +370,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def default(self, line):
         self.history.append(line)
         return pdb.Pdb.default(self, line)
+
+    def do_help(self, arg):
+        try:
+            return pdb.Pdb.do_help(self, arg)
+        except AttributeError:
+            print("*** No help for '{command}'".format(command=arg),
+                  file=self.stdout)
+    do_help.__doc__ = pdb.Pdb.do_help.__doc__
 
     def help_hidden_frames(self):
         print("""\
@@ -369,7 +446,11 @@ Frames can marked as hidden in the following ways:
                 lines, _ = inspect.findsource(self.curframe)
                 lineno = 1
             else:
-                lines, lineno = inspect.getsourcelines(self.curframe)
+                try:
+                    lines, lineno = inspect.getsourcelines(self.curframe)
+                except Exception as e:
+                    print('** Error in inspect.getsourcelines: %s **' % e, file=self.stdout)
+                    return
         except IOError as e:
             print('** Error: %s **' % e, file=self.stdout)
             return
@@ -381,7 +462,7 @@ Frames can marked as hidden in the following ways:
             lineno = start
         self._print_lines(lines, lineno)
 
-    def _print_lines(self, lines, lineno, print_markers=True):
+    def _py2_print_lines(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
         width, height = self.get_terminal_size()
@@ -397,7 +478,9 @@ Frames can marked as hidden in the following ways:
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
         if height >= 6:
-            last_marker_line = max(self.curframe.f_lineno, exc_lineno) - lineno
+            last_marker_line = max(
+                self.curframe.f_lineno,
+                exc_lineno if exc_lineno else 0) - lineno
             if last_marker_line >= 0:
                 maxlines = last_marker_line + height * 2 // 3
                 if len(lines) > maxlines:
@@ -413,10 +496,17 @@ Frames can marked as hidden in the following ways:
             lineno += 1
         print('\n'.join(lines), file=self.stdout)
 
+    if sys.version_info > (3, ):
+        # Python 3 pdb._print_lines has a different signature
+        def _py3_print_lines(self, lines, start, breaks=(), frame=None):
+            return self._py2_print_lines(lines, start)
+        _print_lines = _py3_print_lines
+    else:
+        _print_lines = _py2_print_lines
+
     do_ll = do_longlist
 
     def do_list(self, arg):
-        from StringIO import StringIO
         oldstdout = self.stdout
         self.stdout = StringIO()
         pdb.Pdb.do_list(self, arg)
@@ -424,7 +514,15 @@ Frames can marked as hidden in the following ways:
         self.stdout = oldstdout
         print(src, file=self.stdout, end='')
 
+    do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
+
+    def do_continue(self, arg):
+        if arg != '':
+            self.do_tbreak(arg)
+        return pdb.Pdb.do_continue(self, '')
+    do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
+    do_c = do_cont = do_continue
 
     def do_pp(self, arg):
         width, height = self.get_terminal_size()
@@ -432,6 +530,7 @@ Frames can marked as hidden in the following ways:
             pprint.pprint(self._getval(arg), self.stdout, width=width)
         except:
             pass
+    do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
         # this is a hack (as usual :-))
@@ -448,8 +547,14 @@ Frames can marked as hidden in the following ways:
             'Pdb': new_pdb_with_config,
             'sys': sys,
             }
-        orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+        if sys.version_info < (3, ):
+            do_debug_func = pdb.Pdb.do_debug.im_func
+        else:
+            do_debug_func = pdb.Pdb.do_debug
+
+        orig_do_debug = rebind_globals(do_debug_func, newglobals)
         return orig_do_debug(self, arg)
+    do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):
         """
@@ -471,7 +576,7 @@ Frames can marked as hidden in the following ways:
         the current PYTHONPATH.
         """
         try:
-            from pypy.translator.tool.reftracker import track
+            from rpython.translator.tool.reftracker import track
         except ImportError:
             print('** cannot import pypy.translator.tool.reftracker **', file=self.stdout)
             return
@@ -590,6 +695,26 @@ Frames can marked as hidden in the following ways:
             self.sticky_range = None
         self._print_if_sticky()
 
+    def print_stack_trace(self):
+        try:
+            for frame_index, frame_lineno in enumerate(self.stack):
+                self.print_stack_entry(frame_lineno, frame_index=frame_index)
+        except KeyboardInterrupt:
+            pass
+
+    def print_stack_entry(self,
+            frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None):
+        frame_index = (frame_index if frame_index is not None else
+                       self.curindex)
+        frame, lineno = frame_lineno
+        if frame is self.curframe:
+            print('[%d] >' % frame_index, file=self.stdout, end=' ')
+        else:
+            print('[%d]  ' % frame_index, file=self.stdout, end=' ')
+        print(self.format_stack_entry(frame_lineno,
+                                      prompt_prefix),
+              file=self.stdout)
+
     def print_current_stack_entry(self):
         if self.sticky:
             self._print_if_sticky()
@@ -629,28 +754,57 @@ Frames can marked as hidden in the following ways:
         _, lineno, lines = self._get_position_of_arg(arg)
         if lineno is None:
             return
-        self._print_lines(lines, lineno, print_markers=False)
+        self._py2_print_lines(lines, lineno, print_markers=False)
 
-    def do_up(self, arg):
-        if self.curindex == 0:
+    def do_frame(self, arg):
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            return
+        if arg < 0 or arg >= len(self.stack):
+            print('*** Out of range', file=self.stdout)
+        else:
+            self.curindex = arg
+            self.curframe = self.stack[self.curindex][0]
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_f = do_frame
+
+    def do_up(self, arg='1'):
+        arg = '1' if arg == '' else arg
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            return
+        if self.curindex - arg < 0:
             print('*** Oldest frame', file=self.stdout)
         else:
-            self.curindex = self.curindex - 1
+            self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_up.__doc__ = pdb.Pdb.do_up.__doc__
     do_u = do_up
 
-    def do_down(self, arg):
-        if self.curindex + 1 == len(self.stack):
+    def do_down(self, arg='1'):
+        arg = '1' if arg == '' else arg
+        try:
+            arg = int(arg)
+        except (ValueError, TypeError):
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            return
+        if self.curindex + arg >= len(self.stack):
             print('*** Newest frame', file=self.stdout)
         else:
-            self.curindex = self.curindex + 1
+            self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
     def get_terminal_size(self):
@@ -663,6 +817,9 @@ Frames can marked as hidden in the following ways:
         except:
             width = int(os.environ.get('COLUMNS', 80))
             height = int(os.environ.get('COLUMNS', 24))
+        # Work around above returning width, height = 0, 0 in Emacs
+        width = width if width != 0 else 80
+        height = height if height != 0 else 24
         return width, height
 
     def _open_editor(self, editor, lineno, filename):
@@ -683,12 +840,12 @@ Frames can marked as hidden in the following ways:
             filename, lineno, _ = self._get_position_of_arg(arg)
             if filename is None:
                 return
-            # this case handles code generated with py.code.Source()
-            # filename is something like '<0-codegen foo.py:18>'
-            match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
-            if match:
-                filename = match.group(1)
-                lineno = int(match.group(2))
+        # this case handles code generated with py.code.Source()
+        # filename is something like '<0-codegen foo.py:18>'
+        match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
+        if match:
+            filename = match.group(1)
+            lineno = int(match.group(2))
         editor = self.config.editor
         self._open_editor(editor, lineno, filename)
 
@@ -724,7 +881,6 @@ Frames can marked as hidden in the following ways:
         self._put(text)
 
     def do_paste(self, arg):
-        from cStringIO import StringIO
         arg = arg.strip()
         old_stdout = self.stdout
         self.stdout = StringIO()
@@ -746,7 +902,11 @@ for name in 'run runeval runctx runcall pm main'.split():
     globals()[name] = rebind_globals(func)
 del name, func
 
-def post_mortem(t, Pdb=Pdb):
+def post_mortem(t=None, Pdb=Pdb):
+    if t is None:
+      t = sys.exc_info()[2]
+      assert t is not None, "post_mortem outside of exception context"
+
     p = Pdb()
     p.reset()
     p.interaction(None, t)
@@ -765,7 +925,10 @@ def xpm(Pdb=Pdb):
     To be used inside an except clause, enter a post-mortem pdb
     related to the just catched exception.
     """
-    post_mortem(sys.exc_info()[2], Pdb)
+    info = sys.exc_info()
+    print(traceback.format_exc())
+    post_mortem(info[2], Pdb)
+
 
 def enable():
     global set_trace
@@ -784,14 +947,25 @@ set_tracex._dont_inline_ = True
 _HIDE_FRAME = object()
 
 def hideframe(func):
-    import new
-    c = func.func_code
-    c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
-                 c.co_flags, c.co_code,
-                 c.co_consts+(_HIDE_FRAME,),
-                 c.co_names, c.co_varnames, c.co_filename,
-                 c.co_name, c.co_firstlineno, c.co_lnotab,
-                 c.co_freevars, c.co_cellvars)
+    c = get_function_code(func)
+    if sys.version_info < (3, ):
+        c = types.CodeType(
+            c.co_argcount, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
+    else:
+        # Python 3 takes an additional arg -- kwonlyargcount
+        # typically set to 0
+        c = types.CodeType(
+            c.co_argcount, 0, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
     func.func_code = c
     return func
 
@@ -814,7 +988,3 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
 if __name__=='__main__':
     import pdb
     pdb.main()
-
-
-# XXX todo:
-# get_terminal_size inside emacs returns 0,0
