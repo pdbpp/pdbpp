@@ -371,6 +371,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history.append(line)
         return pdb.Pdb.default(self, line)
 
+    def do_help(self, arg):
+        try:
+            return pdb.Pdb.do_help(self, arg)
+        except AttributeError:
+            print("*** No help for '{command}'".format(command=arg),
+                  file=self.stdout)
+
     def help_hidden_frames(self):
         print("""\
 Some frames might be marked as "hidden": by default, hidden frames are not
