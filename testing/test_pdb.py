@@ -1193,13 +1193,13 @@ HOOK!
 def test_unicode_bug():
     def fn():
         set_trace()
-        x = "this is plan ascii"
+        x = "this is plain ascii"
         y = "this contains a unicode: à"
         return
 
     check(fn, """
 [NUM] > .*fn()
--> x = "this is plan ascii"
+-> x = "this is plain ascii"
 # n
 [NUM] > .*fn()
 -> y = "this contains a unicode: à"
