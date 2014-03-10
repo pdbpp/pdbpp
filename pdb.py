@@ -29,10 +29,17 @@ side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
 def import_from_stdlib(name):
     import code # arbitrary module which stays in the same dir as pdb
-    stdlibdir, _ = os.path.split(code.__file__)
-    pyfile = os.path.join(stdlibdir, name + '.py')
     result = types.ModuleType(name)
-    mydict = execfile(pyfile, result.__dict__)
+    if hasattr(code, '__loader__'):
+        code = code.__loader__.get_code('pdb')
+        resultd = {}
+        exec code in resultd
+        for k, v in resultd.items():
+          setattr(result, k, v)
+    else:
+        stdlibdir, _ = os.path.split(code.__file__)
+        pyfile = os.path.join(stdlibdir, name + '.py')
+        mydict = execfile(pyfile, result.__dict__)
     return result
 
 pdb = import_from_stdlib('pdb')
