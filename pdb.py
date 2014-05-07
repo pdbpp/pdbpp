@@ -866,7 +866,7 @@ def disable():
 disable.set_trace = lambda frame=None, Pdb=Pdb: None
 
 def set_tracex():
-    print 'PDB!'
+    print('PDB!')
 set_tracex._dont_inline_ = True
 
 _HIDE_FRAME = object()
