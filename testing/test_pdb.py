@@ -180,10 +180,10 @@ def test_frame():
         return
 
     check(a, """
-[38] > .*c()
+[NUM] > .*c()
 -> return
 # f 36
-[36] > .*a()
+[NUM] > .*a()
 -> b()
 # c
 """)
@@ -198,13 +198,13 @@ def test_up_down_arg():
         return
 
     check(a, """
-[38] > .*c()
+[NUM] > .*c()
 -> return
 # up 3
-[35] > .*runpdb()
+[NUM] > .*runpdb()
 -> func()
 # down 1
-[36] > .*a()
+[NUM] > .*a()
 -> b()
 # c
 """)
