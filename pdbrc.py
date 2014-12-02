@@ -16,8 +16,8 @@ class Config(pdb.DefaultConfig):
     #exec_if_unfocused = "play ~/sounds/dialtone.wav 2> /dev/null &"
 
     def __init__(self):
-        readline.parse_and_bind('set convert-meta on')
-        readline.parse_and_bind('Meta-/: complete')
+        # readline.parse_and_bind('set convert-meta on')
+        # readline.parse_and_bind('Meta-/: complete')
 
         try:
             from pygments.formatters import terminal
