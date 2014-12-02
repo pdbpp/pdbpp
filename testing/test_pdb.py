@@ -182,7 +182,7 @@ def test_frame():
     check(a, """
 [NUM] > .*c()
 -> return
-# f 36
+# up 2
 [NUM] > .*a()
 -> b()
 # c
