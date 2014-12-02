@@ -64,18 +64,18 @@ The following are new commands that you can use from the interative
 .. _`sticky mode`:
 
 ``sticky [start end]``
-  toggle **sticky mode**.  When in this mode, every time the current position
-  change, the screen is repainted and the whole function shown.  Thus, when
+  Toggle **sticky mode**.  When in this mode, every time the current position
+  changes, the screen is repainted and the whole function shown.  Thus, when
   doing step-by-step execution you can easily follow the flow of the
   execution.  If ``start`` and ``end`` are given, sticky mode is enabled and
   only lines within that range (extremes included) will be displayed.
 
 
 ``longlist`` (``ll``)
-  List source code for the current function.  Differently than the normal pdb
+  List source code for the current function.  Different from the normal pdb
   ``list`` command, ``longlist`` displays the whole function.  The current
   line is marked with ``->``.  In case of post-mortem debugging, the line
-  which effectively raised the exception is marked with ``>>``.  If the
+  which actually raised the exception is marked with ``>>``.  If the
   ``highlight`` `config option`_ is set and pygments_ is installed, the source
   code is highlighted.
 
@@ -86,29 +86,29 @@ The following are new commands that you can use from the interative
 
 
 ``track EXPRESSION``
-  display a graph showing which objects are the value of the expression refers
+  Display a graph showing which objects are the value of the expression refers
   to and are referred by.  This command requires the ``pypy`` source code to
   be importable.
 
 ``display EXPRESSION``
-  add an expression to the **display list**; expressions in this list are
+  Add an expression to the **display list**; expressions in this list are
   evaluated at each step, and printed every time its value changes.
-  **WARNING**: since the expressions is evaluated multiple time, pay attention
+  **WARNING**: since these expressions are evaluated multiple times, make sure
   not to put expressions with side-effects in the display list.
 
 ``undisplay EXPRESSION``:
-  remove ``EXPRESSION`` from the display list.
+  Remove ``EXPRESSION`` from the display list.
 
 ``source EXPRESSION``
-  show the source code for the given function/method/class.
+  Show the source code for the given function/method/class.
 
 ``edit EXPRESSION``
-  open the editor in the right position to edit the given
-  function/method/class.  The editor to use is specified through a `config
+  Open the editor in the right position to edit the given
+  function/method/class.  The editor used is specified in a `config
   option`_.
 
 ``hf_unhide``, ``hf_hide``, ``hf_list``
-  some frames might be marked as "hidden" by e.g. using the `@pdb.hideframe`_
+  Some frames might be marked as "hidden" by e.g. using the `@pdb.hideframe`_
   function decorator.  By default, hidden frames are not shown in the stack
   trace, and cannot be reached using ``up`` and ``down``.  You can use
   ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
@@ -120,9 +120,9 @@ Smart command parsing
 ----------------------
 
 By default, pdb tries hard to interpret what you enter at the command prompt
-as one of its builtin commands.  However, this is unconvenient if you want to
+as one of its builtin commands.  However, this is inconvenient if you want to
 just print the value of a local variable which happens to have the same name
-as one of such commands. E.g.::
+as one of the commands. E.g.::
 
     (Pdb) list
       1
@@ -132,14 +132,14 @@ as one of such commands. E.g.::
       5  ->     return c
     (Pdb) c
 
-In the example above, instead of printing 42 pdb interprets the command as
-``continue``, and then you loose your prompt.  This is even worse because it
-happens even if you type e.g. ``c.__class__``.
+In the example above, instead of printing 42 pdb interprets the input as the
+command ``continue``, and then you loose your prompt.  It's even worse than
+that, because it happens even if you type e.g. ``c.__class__``.
 
 pdb++ fixes this unfriendly (from the author's point of view, of course :-))
-behavior by always giving the precedence to printing the value of the given
-variable, if it exists.  If you really want to execute the corresponding
-command, you can prefix it with ``!!``.  Thus, the example above becomes::
+behavior by always prefering variable in scope, if it exists.  If you really
+want to execute the corresponding command, you can prefix it with ``!!``.
+Thus, the example above becomes::
 
     (Pdb++) list
       1
@@ -151,15 +151,15 @@ command, you can prefix it with ``!!``.  Thus, the example above becomes::
     42
     (Pdb++) !!c
 
-Note that the "smart" behavior takes place only when there is ambiguity,
-i.e. if it exists a variable with the same name of a command: in all the other
+Note that the "smart" behavior takes place only when there is ambiguity, i.e.
+if there exists a variable with the same name as a command: in all other
 cases, everything works as usual.
 
 Additional functions in the ``pdb`` module
 ------------------------------------------
 
 The ``pdb`` module that comes with pdb++ includes all the functions and
-classes that are in the module from the standard lib.  If you find any
+classes that are in the module from the standard library.  If you find any
 difference, please report it as a bug.
 
 In addition, there are some new convenience functions that are unique to
@@ -172,23 +172,23 @@ pdb++.
   exception being caught.
 
 ``pdb.disable()``
-  disable ``pdb.set_trace()``: any subsequent call to it will be ignored.
+  Disable ``pdb.set_trace()``: any subsequent call to it will be ignored.
 
 ``pdb.enable()``
-  re-enable ``pdb.set_trace()``, in the case it was disabled by ``pdb.disable()``.
+  Re-enable ``pdb.set_trace()``, in case it was disabled by ``pdb.disable()``.
 
 .. _`@pdb.hideframe`:
 
 ``@pdb.hideframe``
-  function decorator to tells pdb++ to hide the frame corresponding to the
+  A function decorator that tells pdb++ to hide the frame corresponding to the
   function.  Hidden frames do not show up when using interactive commands such
   as ``up``, ``down`` or ``where``, unless ``hf_unhide`` is invoked.
 
 ``@pdb.break_on_setattr(attrname, condition=always)``
 
-  class decorator: break the execution of program every time that the
+  class decorator: break the execution of program every time the
   attribute ``attrname`` is set on any instance of the class. ``condition`` is
-  a callable taking the target object of the ``setattr`` and the actual value;
+  a callable that takes the target object of the ``setattr`` and the actual value;
   by default, it breaks every time the attribute is set. E.g.::
 
       @break_on_setattr('bar')
@@ -197,7 +197,7 @@ pdb++.
       f = Foo()
       f.bar = 42    # the program breaks here
 
-  If can be used also after the class has already been created, e.g. if we
+  If can be used even after the class has already been created, e.g. if we
   want to break when some attribute of a particular object is set::
 
       class Foo(object):
@@ -220,74 +220,74 @@ Configuration and customization
 
 To customize pdb++, you can put a file named ``.pdbrc.py`` in your home
 directory.  The file must contain a class named ``Config`` inheriting from
-``pdb.DefaultConfig`` and overridding the desired values.
+``pdb.DefaultConfig`` and override the desired values.
 
 The following is a list of the options you can customize, together with their
 default value:
 
 ``prompt = '(Pdb++) '``
-  the prompt to show when in interactive mode.
+  The prompt to show when in interactive mode.
 
 ``highlight = True``
-  highlight line numbers and the current line when showing the ``longlist`` of
+  Highlight line numbers and the current line when showing the ``longlist`` of
   a function or when in **sticky mode**.
 
 ``encoding = 'utf-8'``
-  file encoding. Useful when there are international characters in your string
+  File encoding. Useful when there are international characters in your string
   literals or comments.
 
 ``sticky_by_default = False``
-  determine whether pdb++ starts in sticky mode or not.
+  Determine whether pdb++ starts in sticky mode or not.
 
 ``line_number_color = Color.turquoise``
-  the color to use for line numbers.
+  The color to use for line numbers.
 
 ``filename_color = Color.yellow``
-  the color to use for file names when printing the stack entries
+  The color to use for file names when printing the stack entries.
 
 ``current_line_color = 44``
-  the background color to use to highlight the current line; the background
+  The background color to use to highlight the current line; the background
   color is set by using the ANSI escape sequence ``^[Xm`` where ``^`` is the
   ESC character and ``X`` is the background color. 44 corresponds to "blue".
 
 ``use_pygments = True``
-  if pygments_ is installed and ``highlight == True``, apply syntax highlight
+  If pygments_ is installed and ``highlight == True``, apply syntax highlight
   to the source code when showing the ``longlist`` of a function or when in
   **sticky mode**.
 
 ``bg = 'dark'``
-  passed directly to ``pygments.formatters.TerminalFormatter`` constructor.
-  Select the color scheme to use, depending on the background color of your
+  Passed directly to the ``pygments.formatters.TerminalFormatter`` constructor.
+  Selects the color scheme to use, depending on the background color of your
   terminal. If you have a light background color, try to set it to
   ``'light'``.
 
 ``colorscheme = None``
-  passed directly to ``pygments.formatters.TerminalFormatter`` constructor.
-  A dictionary mapping token types to (lightbg, darkbg) color names or
+  Passed directly to the ``pygments.formatters.TerminalFormatter`` constructor.
+  It expects a dictionary that maps token types to (lightbg, darkbg) color names or
   ``None`` (default: ``None`` = use builtin colorscheme).
 
 ``editor = '${EDITOR:-vi}'``
-  the command to invoke when using the ``edit`` command. By default, it uses
+  The command to invoke when using the ``edit`` command. By default, it uses
   ``$EDITOR`` if set, else ``vi``.  The command must support the standard
-  notation ``COMMAND +n filename`` to open filename at line ``n``.  At least
-  ``emacs`` and ``vi`` do support it.
+  notation ``COMMAND +n filename`` to open filename at line ``n``. ``emacs``
+  and ``vi`` are known to support this.
 
 ``truncate_long_lines = True``
-  truncate lines which exceeds the terminal width.
+  Truncate lines which exceed the terminal width.
 
 ``exec_if_unfocused = None``
-  shell command to execute when starting the pdb prompt and the terminal
+  Shell command to execute when starting the pdb prompt and the terminal
   window is not focused.  Useful to e.g. play a sound to alert the user that
   the execution of the program stopped. It requires the wmctrl_ module.
 
 ``disable_pytest_capturing = True``
-  old versions of `py.test`_ crash when you executed ``pdb.set_trace()`` in a
-  test but the standard output is captured (i.e., without the ``-s`` option,
+  Old versions of `py.test`_ crash when you execute ``pdb.set_trace()`` in a
+  test, but the standard output is captured (i.e., without the ``-s`` option,
   which is the default behavior).  When this option is on, the stdout
   capturing is automatically disabled before showing the interactive prompt.
 
 ``def setup(self, pdb): pass``
-  this method is called during the initialization of the ``Pdb`` class. Useful
+  This method is called during the initialization of the ``Pdb`` class. Useful
   to do complex setup.
 
 
