@@ -419,6 +419,7 @@ Frames can marked as hidden in the following ways:
     def _print_lines(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
+        lines = [line.replace('\t', '    ') for line in lines] # force tabs to 4 spaces
         width, height = self.get_terminal_size()
 
         if self.config.truncate_long_lines:
