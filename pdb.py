@@ -23,7 +23,7 @@ import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
 from backports.inspect import signature
-from collections import OrderedDict
+from ordereddict import OrderedDict
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
