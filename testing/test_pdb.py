@@ -112,6 +112,14 @@ def run_func(func, expected):
     expected = map(cook_regexp, expected)
     return expected, runpdb(func, commands)
 
+def count_frames():
+    f = sys._getframe()
+    i = 0
+    while f is not None:
+        i += 1
+        f = f.f_back
+    return i
+
 def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
@@ -182,11 +190,11 @@ def test_frame():
     check(a, """
 [NUM] > .*c()
 -> return
-# f 36
+# f {frame_num_a}
 [NUM] > .*a()
 -> b()
 # c
-""")
+""".format(frame_num_a=count_frames() + 2))
 
 def test_up_down_arg():
     def a():
