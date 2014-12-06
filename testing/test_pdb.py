@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import inspect
 import os.path
 import sys
 import re
-from cStringIO import StringIO
+from io import BytesIO
 import py
 import pytest
 
@@ -17,7 +19,7 @@ class FakeStdin:
 
     def readline(self):
         try:
-            line = self.lines.next() + '\n'
+            line = next(self.lines) + '\n'
             sys.stdout.write(line)
             return line
         except StopIteration:
@@ -25,6 +27,7 @@ class FakeStdin:
 
 class ConfigTest(pdb.DefaultConfig):
     highlight = False
+    use_pygments = False
     prompt = '# ' # because + has a special meaning in the regexp
     editor = 'emacs'
     stdin_paste = 'epaste'
@@ -43,11 +46,11 @@ class PdbTest(pdb.Pdb):
         pdb.Pdb.__init__(self, *args, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
-        print "RUN %s +%d '%s'" % (editor, lineno, filename)
+        print("RUN %s +%d '%s'" % (editor, lineno, filename))
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
-        print "RUN %s +%d" % (cmd, lineno)
-        print text
+        print("RUN %s +%d" % (cmd, lineno))
+        print(text)
 
 
 def set_trace(**kwds):
@@ -61,9 +64,27 @@ def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
 
+    if sys.version_info < (3, ):
+        text_type = unicode
+    else:
+        text_type = str
+
+    class MyBytesIO(BytesIO):
+        """write accepts unicode or bytes"""
+
+        encoding = 'ascii'
+
+        def __init__(self, encoding='ascii'):
+            self.encoding = encoding
+
+        def write(self, msg):
+            if isinstance(msg, text_type):
+                msg = msg.encode(self.encoding)
+            super(MyBytesIO, self).write(msg)
+
     try:
         sys.stdin = FakeStdin(input)
-        sys.stdout = stdout = StringIO()
+        sys.stdout = stdout = MyBytesIO()
         func()
     finally:
         sys.stdin = oldstdin
@@ -124,17 +145,17 @@ def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
     all_ok = True
-    print
+    print()
     for pattern, string in map(None, expected, lines):
         pattern = remove_comment(pattern)
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
         string = string or ''
-        print pattern.ljust(maxlen+1), '| ', string,
+        print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
-            print
+            print()
         else:
-            print pdb.Color.set(pdb.Color.red, '    <<<<<')
+            print(pdb.Color.set(pdb.Color.red, '    <<<<<'))
             all_ok = False
     assert all_ok
 
@@ -252,6 +273,116 @@ def test_args_name():
 42
 # c
 """)
+
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
+@pytest.mark.parametrize("command,expected_regex", [
+    ("", "Documented commands \(type help <topic>\):"),
+    ("EOF", "Handles the receipt of EOF as a command."),
+    ("a", "Print the argument"),
+    ("alias", "an alias"),
+    ("args", "Print the argument"),
+    ("b", "set a break"),
+    ("break", "set a break"),
+    ("bt", "Print a stack trace"),
+    ("c", "Continue execution, only stop when a breakpoint"),
+    ("cl", "clear all breaks"),
+    ("clear", "clear all breaks"),
+    ("commands", "Specify a list of commands for breakpoint"),
+    ("condition", "must evaluate to true"),
+    ("cont", "Continue execution, only stop when a breakpoint"),
+    ("continue", "Continue execution, only stop when a breakpoint"),
+    ("d", "Move the current frame .* down"),
+    ("debug", "Enter a recursive debugger"),
+    ("disable", "Disables the breakpoints"),
+    ("display", "Add expression to the display list"),
+    ("down", "Move the current frame .* down"),
+    ("ed", "Open an editor"),
+    ("edit", "Open an editor"),
+    ("enable", "Enables the breakpoints"),
+    ("exit", "Quit from the debugger."),
+    ("h", "h(elp)"),
+    ("help", "h(elp)"),
+    ("hf_hide", "hide hidden frames"),
+    ("hf_unhide", "unhide hidden frames"),
+    ("ignore", "ignore count for the given breakpoint"),
+    ("interact", "Start an interative interpreter"),
+    ("j", "Set the next line that will be executed."),
+    ("jump", "Set the next line that will be executed."),
+    ("l", "List source code for the current file."),
+    ("list", "List source code for the current file."),
+    ("ll", "List source code for the current function."),
+    ("longlist", "List source code for the current function."),
+    ("n", "Continue execution until the next line"),
+    ("next", "Continue execution until the next line"),
+    ("p", "Print the value of the expression"),
+    ("pp", "Pretty-print the value of the expression."),
+    ("q", "Quit from the debugger."),
+    ("quit", "Quit from the debugger."),
+    ("r", "Continue execution until the current function returns."),
+    ("restart", "Restart the debugged python program."),
+    ("return", "Continue execution until the current function returns."),
+    ("run", "Restart the debugged python program"),
+    ("s", "Execute the current line, stop at the first possible occasion"),
+    ("step", "Execute the current line, stop at the first possible occasion"),
+    ("sticky", "Toggle sticky mode"),
+    ("tbreak", "arguments as break"),
+    ("track", "track expression"),
+    ("u", "Move the current frame .* up"),
+    ("unalias", "specified alias."),
+    ("undisplay", "Remove expression from the display list"),
+    ("unt", "until the line"),
+    ("until", "until the line"),
+    ("up", "Move the current frame .* up"),
+    ("w", "Print a stack trace"),
+    ("whatis", "Prints? the type of the argument."),
+    ("where", "Print a stack trace"),
+    ("hidden_frames", "Some frames might be marked as \"hidden\""),
+    ("exec", "Execute the \(one-line\) statement"),
+
+    ("hf_list", "\*\*\* No help"),
+    ("paste", "\*\*\* No help"),
+    ("put", "\*\*\* No help"),
+    ("retval", "\*\*\* No help|return value"),
+    ("rv", "\*\*\* No help|return value"),
+    ("source", "\*\*\* No help"),
+    ("unknown_command", "\*\*\* No help"),
+    ("help", "print the list of available commands."),
+])
+def test_help(command, expected_regex):
+    from pdb import StringIO
+    instance = PdbTest()
+    instance.stdout = StringIO()
+
+    # Redirect sys.stdout because Python 2 pdb.py has `print >>self.stdout` for
+    # some functions and plain ol' `print` for others.
+    try:
+        sys.stdout = instance.stdout
+        instance.do_help(command)
+    finally:
+        sys.stdout == sys.__stdout__
+
+    output = instance.stdout.getvalue()
+    assert re.search(expected_regex, output)
+
+def test_shortlist():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigTest)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+# l {line_num}, 3
+NUM  	    def fn():
+NUM  	        a = 1
+NUM  	        set_trace(Config=ConfigTest)
+NUM  ->	        return a
+# c
+""".format(line_num=pdb.get_function_code(fn).co_firstlineno))
 
 def test_longlist():
     def fn():
@@ -454,7 +585,12 @@ def test_postmortem_noargs():
 """)
 
 def test_postmortem_needs_exceptioncontext():
-    sys.exc_clear() # py.test bug - doesnt clear the index error from finding the next item
+    try:
+        # py.test bug - doesnt clear the index error from finding the next item
+        sys.exc_clear()
+    except AttributeError:
+        # Python 3 doesn't have sys.exc_clear
+        pass
     py.test.raises(AssertionError, pdb.post_mortem, Pdb=PdbTest)
 
 def test_exception_through_generator():
@@ -492,7 +628,7 @@ def test_py_code_source():
         return x
     """)
     
-    exec src.compile()
+    exec(src.compile(), globals())
     check(fn, """
 [NUM] > .*fn()
 -> return x
@@ -596,7 +732,7 @@ def test_edit_py_code_source():
     """)
     _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
     dic = {'set_trace': set_trace}
-    exec src.compile() in dic # 8th line from the beginning of the function
+    exec(src.compile(), dic) # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
     #
@@ -635,7 +771,7 @@ RUN epaste \+%d
 
 def test_paste():
     def g():
-        print 'hello world'
+        print('hello world')
     def fn():
         set_trace()
         if False: g()
@@ -1065,13 +1201,13 @@ HOOK!
 def test_unicode_bug():
     def fn():
         set_trace()
-        x = "this is plan ascii"
+        x = "this is plain ascii"
         y = "this contains a unicode: à"
         return
 
     check(fn, """
 [NUM] > .*fn()
--> x = "this is plan ascii"
+-> x = "this is plain ascii"
 # n
 [NUM] > .*fn()
 -> y = "this contains a unicode: à"
