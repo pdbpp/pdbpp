@@ -527,9 +527,13 @@ Frames can marked as hidden in the following ways:
         oldstdout = self.stdout
         self.stdout = StringIO()
         pdb.Pdb.do_list(self, arg)
-        src = self.format_source(self.stdout.getvalue())
+        src = self.stdout.getvalue()
+        if '\x1b[36;' not in src:
+            src = self.format_source(self.stdout.getvalue())
         self.stdout = oldstdout
         print(src, file=self.stdout, end='')
+        with open('out.txt', 'w') as f:
+            print(src, file=f, end='')
 
     do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
