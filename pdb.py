@@ -351,10 +351,31 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
         data = OrderedDict()
         data['Type'] = type(obj).__name__
-        data['String Form'] = str(obj)
-        data['File'] = inspect.getabsfile(obj)
-        data['Definition'] = '%s%s' % (arg, signature(obj))
-        data['Docstring'] = obj.__doc__
+        data['String Form'] = str(obj).strip()
+        if hasattr(obj, '__len__'):
+            data['Length'] = len(obj)
+        try:
+            data['File'] = inspect.getabsfile(obj)
+        except TypeError:
+            pass
+
+        if (isinstance(obj, type)
+                and hasattr(obj, '__init__')
+                and getattr(obj, '__module__') != '__builtin__'):
+            # Class - show definition and docstring for constructor
+            data['Docstring'] = obj.__doc__
+            data['Constructor information'] = ''
+            try:
+                data[' Definition'] = '%s%s' % (arg, signature(obj))
+            except ValueError:
+                pass
+            data[' Docstring'] = obj.__init__.__doc__
+        else:
+            try:
+                data['Definition'] = '%s%s' % (arg, signature(obj))
+            except (TypeError, ValueError):
+                pass
+            data['Docstring'] = obj.__doc__
 
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
