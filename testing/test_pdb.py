@@ -151,6 +151,61 @@ def test_runpdb():
 # c
 """)
 
+def test_single_question_mark():
+    def fn():
+        def f2(x, y):
+            """Return product of x and y"""
+            return x * y
+        set_trace()
+        a = 1
+        b = 2
+        c = 3
+        return a+b+c
+
+    # import pdb; pdb.set_trace()
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+# f2
+<function f2 at .*>
+# f2?
+.*Type:.*function
+.*String Form:.*<function f2 at .*>
+.*File:.*test_pdb.py
+.*Definition:.*f2(x, y)
+.*Docstring:.*Return product of x and y
+# c
+""")
+
+def test_double_question_mark():
+    def fn():
+        def f2(x, y):
+            """Return product of x and y"""
+            return x * y
+        set_trace()
+        a = 1
+        b = 2
+        c = 3
+        return a+b+c
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+# f2
+<function f2 at .*>
+# f2??
+.*Type:.*function
+.*String Form:.*<function f2 at .*>
+.*File:.*test_pdb.py
+.*Definition:.*f2(x, y)
+.*Docstring:.*Return product of x and y
+.*Source:.*
+.* def f2(x, y):
+.*     \"\"\"Return product of x and y\"\"\"
+.*     return x \* y
+# c
+""")
+
 def test_up_local_vars():
     def nested():
         set_trace()
