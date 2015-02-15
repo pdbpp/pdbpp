@@ -330,14 +330,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                 cmd, arg = ('help', cmd)
             elif arg.endswith('??'):
                 arg = cmd + arg.split('?')[0]
-                val = self._getval(arg)
                 cmd = 'source'
                 self.do_inspect(arg)
                 self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
             else:
                 arg = cmd + arg.split('?')[0]
-                val = self._getval(arg)
                 cmd = 'inspect'
+                return cmd, arg, newline
 
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
