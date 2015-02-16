@@ -34,6 +34,8 @@ setup(
         "Topic :: Utilities",
         ],
     install_requires=["fancycompleter>=0.2",
+                      "ordereddict",
+                      "backports.inspect",
                       "wmctrl",
                       "pygments"],
 )
