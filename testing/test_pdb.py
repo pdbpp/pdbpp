@@ -133,6 +133,14 @@ def run_func(func, expected):
     expected = map(cook_regexp, expected)
     return expected, runpdb(func, commands)
 
+def count_frames():
+    f = sys._getframe()
+    i = 0
+    while f is not None:
+        i += 1
+        f = f.f_back
+    return i
+
 def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
@@ -172,6 +180,61 @@ def test_runpdb():
 # c
 """)
 
+def test_single_question_mark():
+    def fn():
+        def f2(x, y):
+            """Return product of x and y"""
+            return x * y
+        set_trace()
+        a = 1
+        b = 2
+        c = 3
+        return a+b+c
+
+    # import pdb; pdb.set_trace()
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+# f2
+<function f2 at .*>
+# f2?
+.*Type:.*function
+.*String Form:.*<function f2 at .*>
+.*File:.*test_pdb.py
+.*Definition:.*f2(x, y)
+.*Docstring:.*Return product of x and y
+# c
+""")
+
+def test_double_question_mark():
+    def fn():
+        def f2(x, y):
+            """Return product of x and y"""
+            return x * y
+        set_trace()
+        a = 1
+        b = 2
+        c = 3
+        return a+b+c
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+# f2
+<function f2 at .*>
+# f2??
+.*Type:.*function
+.*String Form:.*<function f2 at .*>
+.*File:.*test_pdb.py
+.*Definition:.*f2(x, y)
+.*Docstring:.*Return product of x and y
+.*Source:.*
+.* def f2(x, y):
+.*     \"\"\"Return product of x and y\"\"\"
+.*     return x \* y
+# c
+""")
+
 def test_up_local_vars():
     def nested():
         set_trace()
@@ -201,13 +264,13 @@ def test_frame():
         return
 
     check(a, """
-[38] > .*c()
+[NUM] > .*c()
 -> return
-# f 36
-[36] > .*a()
+# f {frame_num_a}
+[NUM] > .*a()
 -> b()
 # c
-""")
+""".format(frame_num_a=count_frames() + 2))
 
 def test_up_down_arg():
     def a():
@@ -219,13 +282,13 @@ def test_up_down_arg():
         return
 
     check(a, """
-[38] > .*c()
+[NUM] > .*c()
 -> return
 # up 3
-[35] > .*runpdb()
+[NUM] > .*runpdb()
 -> func()
 # down 1
-[36] > .*a()
+[NUM] > .*a()
 -> b()
 # c
 """)
