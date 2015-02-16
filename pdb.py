@@ -25,7 +25,10 @@ import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
 from backports.inspect import signature
-from ordereddict import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
