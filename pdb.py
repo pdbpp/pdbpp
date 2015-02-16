@@ -24,6 +24,8 @@ import pprint
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
+from backports.inspect import signature
+from ordereddict import OrderedDict
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
@@ -376,12 +378,61 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         # with the name exits in the current contex; this prevents pdb to quit
         # if you type e.g. 'r[0]' by mystake.
         cmd, arg, newline = pdb.Pdb.parseline(self, line)
+
+        if arg and arg.endswith('?'):
+            if hasattr(self, 'do_' + cmd):
+                cmd, arg = ('help', cmd)
+            elif arg.endswith('??'):
+                arg = cmd + arg.split('?')[0]
+                cmd = 'source'
+                self.do_inspect(arg)
+                self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
+            else:
+                arg = cmd + arg.split('?')[0]
+                cmd = 'inspect'
+                return cmd, arg, newline
+
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
                                                  arg.startswith('=')):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
+
+    def do_inspect(self, arg):
+        obj = self._getval(arg)
+
+        data = OrderedDict()
+        data['Type'] = type(obj).__name__
+        data['String Form'] = str(obj).strip()
+        if hasattr(obj, '__len__'):
+            data['Length'] = len(obj)
+        try:
+            data['File'] = inspect.getabsfile(obj)
+        except TypeError:
+            pass
+
+        if (isinstance(obj, type)
+                and hasattr(obj, '__init__')
+                and getattr(obj, '__module__') != '__builtin__'):
+            # Class - show definition and docstring for constructor
+            data['Docstring'] = obj.__doc__
+            data['Constructor information'] = ''
+            try:
+                data[' Definition'] = '%s%s' % (arg, signature(obj))
+            except ValueError:
+                pass
+            data[' Docstring'] = obj.__init__.__doc__
+        else:
+            try:
+                data['Definition'] = '%s%s' % (arg, signature(obj))
+            except (TypeError, ValueError):
+                pass
+            data['Docstring'] = obj.__doc__
+
+        for key, value in data.items():
+            formatted_key = Color.set(Color.red, key + ':')
+            self.stdout.write('%-28s %s\n' % (formatted_key, value))
 
     def default(self, line):
         self.history.append(line)
