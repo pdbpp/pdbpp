@@ -6,6 +6,8 @@ This module extends the stdlib pdb in numerous ways: look at the README for
 more details on pdb++ features.
 """
 
+from __future__ import print_function
+
 __version__='0.7'
 __author__ ='Antonio Cuni <anto.cuni@gmail.com>'
 __url__='http://bitbucket.org/antocuni/pdb'
@@ -29,19 +31,64 @@ from ordereddict import OrderedDict
 # free
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-def import_from_stdlib(name):
-    import code # arbitrary module which stays in the same dir as pdb
-    result = types.ModuleType(name)
-    if hasattr(code, '__loader__'):
-        code = code.__loader__.get_code('pdb')
-        resultd = {}
-        exec code in resultd
-        for k, v in resultd.items():
-          setattr(result, k, v)
+try:
+    if sys.version_info < (3, ):
+        from io import BytesIO as StringIO
     else:
+        from io import StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
+
+def get_function_name(func):
+    if sys.version_info >= (2, 6):
+        return func.__name__
+    else:
+        return func.func_name
+
+
+def get_function_code(func):
+    if sys.version_info >= (2, 6):
+        return func.__code__
+    else:
+        return func.func_code
+
+
+def get_function_defaults(func):
+    if sys.version_info >= (2, 6):
+        return func.__defaults__
+    else:
+        return func.func_defaults
+
+
+def import_from_stdlib(name):
+    import code  # arbitrary module which stays in the same dir as pdb
+    result = types.ModuleType(name)
+    imported = False
+
+    if hasattr(code, '__loader__'):
+        try:
+            code = code.__loader__.get_code('pdb')
+        except ImportError:
+            pass
+        else:
+            resultd = {}
+            exec(code, resultd)
+            for k, v in resultd.items():
+              setattr(result, k, v)
+            imported = True
+
+    if not imported:
         stdlibdir, _ = os.path.split(code.__file__)
         pyfile = os.path.join(stdlibdir, name + '.py')
-        mydict = execfile(pyfile, result.__dict__)
+        with open(pyfile) as f:
+            src = f.read()
+        co_module = compile(src, pyfile, 'exec', dont_inherit=True)
+        exec(co_module, result.__dict__)
+
     return result
 
 pdb = import_from_stdlib('pdb')
@@ -49,8 +96,8 @@ pdb = import_from_stdlib('pdb')
 def rebind_globals(func, newglobals=None):
     if newglobals is None:
         newglobals = globals()
-    newfunc = types.FunctionType(func.func_code, newglobals, func.func_name,
-                                 func.func_defaults)
+    newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
+                                 func.__defaults__)
     return newfunc
 
 
@@ -143,7 +190,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
-        self.stdout = codecs.getwriter('utf-8')(self.stdout)
+        self.stdout = self.ensure_file_can_write_unicode(self.stdout)
+
+    def ensure_file_can_write_unicode(self, f):
+        # Wrap with an encoder, but only if not already wrapped
+        if not hasattr(f, 'stream') and f.encoding.lower() != 'utf-8':
+            f = codecs.getwriter('utf-8')(f)
+
+        return f
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -179,8 +233,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         n = len(self.hidden_frames)
         if n and self.config.show_hidden_frames_count:
             plural = n>1 and 's' or ''
-            print >> self.stdout, \
-                "   %d frame%s hidden (try 'help hidden_frames')" % (n, plural)
+            print("   %d frame%s hidden (try 'help hidden_frames')" % (n, plural),
+                  file=self.stdout)
 
     def exec_if_unfocused(self):
         import os
@@ -294,7 +348,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         for encoding in self.config.encodings:
             try:
                 return s.decode(encoding)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, AttributeError):
                 pass
         return s
 
@@ -384,8 +438,16 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.history.append(line)
         return pdb.Pdb.default(self, line)
 
+    def do_help(self, arg):
+        try:
+            return pdb.Pdb.do_help(self, arg)
+        except AttributeError:
+            print("*** No help for '{command}'".format(command=arg),
+                  file=self.stdout)
+    do_help.__doc__ = pdb.Pdb.do_help.__doc__
+
     def help_hidden_frames(self):
-        print >> self.stdout, """\
+        print("""\
 Some frames might be marked as "hidden": by default, hidden frames are not
 shown in the stack trace, and cannot be reached using ``up`` and ``down``.
 You can use ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to
@@ -401,7 +463,7 @@ Frames can marked as hidden in the following ways:
 
 - by having __unittest=True in the globals of the function (this hides
   unittest internal stuff)
-"""
+""", file=self.stdout)
 
     def do_hf_unhide(self, arg):
         """
@@ -422,8 +484,8 @@ Frames can marked as hidden in the following ways:
 
     def do_hf_list(self, arg):
         for frame_lineno in self.hidden_frames:
-            print >> self.stdout, \
-                self.format_stack_entry(frame_lineno, pdb.line_prefix)
+            print(self.format_stack_entry(frame_lineno, pdb.line_prefix),
+                  file=self.stdout)
 
     def do_longlist(self, arg):
         """
@@ -454,10 +516,10 @@ Frames can marked as hidden in the following ways:
                 try:
                     lines, lineno = inspect.getsourcelines(self.curframe)
                 except Exception as e:
-                    print >> self.stdout, '** Error in inspect.getsourcelines: %s **' % e
+                    print('** Error in inspect.getsourcelines: %s **' % e, file=self.stdout)
                     return
         except IOError as e:
-            print >> self.stdout, '** Error: %s **' % e
+            print('** Error: %s **' % e, file=self.stdout)
             return
         if linerange:
             start, end = linerange
@@ -467,7 +529,7 @@ Frames can marked as hidden in the following ways:
             lineno = start
         self._print_lines(lines, lineno)
 
-    def _print_lines(self, lines, lineno, print_markers=True):
+    def _py2_print_lines(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
         lines = [line.replace('\t', '    ') for line in lines] # force tabs to 4 spaces
@@ -484,7 +546,9 @@ Frames can marked as hidden in the following ways:
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
         if height >= 6:
-            last_marker_line = max(self.curframe.f_lineno, exc_lineno) - lineno
+            last_marker_line = max(
+                self.curframe.f_lineno,
+                exc_lineno if exc_lineno else 0) - lineno
             if last_marker_line >= 0:
                 maxlines = last_marker_line + height * 2 // 3
                 if len(lines) > maxlines:
@@ -498,25 +562,34 @@ Frames can marked as hidden in the following ways:
                 marker = '>>'
             lines[i] = self.format_line(lineno, marker, line)
             lineno += 1
-        print >> self.stdout, '\n'.join(lines)
+        print('\n'.join(lines), file=self.stdout)
+
+    if sys.version_info > (3, ):
+        # Python 3 pdb._print_lines has a different signature
+        def _py3_print_lines(self, lines, start, breaks=(), frame=None):
+            return self._py2_print_lines(lines, start)
+        _print_lines = _py3_print_lines
+    else:
+        _print_lines = _py2_print_lines
 
     do_ll = do_longlist
 
     def do_list(self, arg):
-        from StringIO import StringIO
         oldstdout = self.stdout
         self.stdout = StringIO()
         pdb.Pdb.do_list(self, arg)
         src = self.format_source(self.stdout.getvalue())
         self.stdout = oldstdout
-        print >> self.stdout, src,
+        print(src, file=self.stdout, end='')
 
+    do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
 
     def do_continue(self, arg):
         if arg != '':
             self.do_tbreak(arg)
         return pdb.Pdb.do_continue(self, '')
+    do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
 
     def do_pp(self, arg):
@@ -525,6 +598,7 @@ Frames can marked as hidden in the following ways:
             pprint.pprint(self._getval(arg), self.stdout, width=width)
         except:
             pass
+    do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
         # this is a hack (as usual :-))
@@ -541,8 +615,14 @@ Frames can marked as hidden in the following ways:
             'Pdb': new_pdb_with_config,
             'sys': sys,
             }
-        orig_do_debug = rebind_globals(pdb.Pdb.do_debug.im_func, newglobals)
+        if sys.version_info < (3, ):
+            do_debug_func = pdb.Pdb.do_debug.im_func
+        else:
+            do_debug_func = pdb.Pdb.do_debug
+
+        orig_do_debug = rebind_globals(do_debug_func, newglobals)
         return orig_do_debug(self, arg)
+    do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):
         """
@@ -566,7 +646,7 @@ Frames can marked as hidden in the following ways:
         try:
             from rpython.translator.tool.reftracker import track
         except ImportError:
-            print >> self.stdout, '** cannot import pypy.translator.tool.reftracker **'
+            print('** cannot import pypy.translator.tool.reftracker **', file=self.stdout)
             return
         try:
             val = self._getval(arg)
@@ -612,7 +692,7 @@ Frames can marked as hidden in the following ways:
         try:
             del self._get_display_list()[arg]
         except KeyError:
-            print >> self.stdout, '** %s not in the display list **' % arg
+            print('** %s not in the display list **' % arg, file=self.stdout)
 
     def _print_if_sticky(self):
         if self.sticky:
@@ -620,8 +700,8 @@ Frames can marked as hidden in the following ways:
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)
-            print >> self.stdout, s
-            print >> self.stdout
+            print(s, file=self.stdout)
+            print(file=self.stdout)
             sticky_range = self.sticky_ranges.get(self.curframe, None)
             self._printlonglist(sticky_range)
 
@@ -642,8 +722,8 @@ Frames can marked as hidden in the following ways:
                         raise
                     except:
                         s += '(unprintable exception)'
-                    print >> self.stdout, \
-                        Color.set(self.config.line_number_color, ' ' + s)
+                    print(Color.set(self.config.line_number_color, ' ' + s),
+                          file=self.stdout)
                     return
             if '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -653,8 +733,8 @@ Frames can marked as hidden in the following ways:
                     raise
                 except:
                     s = '(unprintable return value)'
-                print >> self.stdout, \
-                    Color.set(self.config.line_number_color, ' return ' + s)
+                print(Color.set(self.config.line_number_color, ' return ' + s),
+                      file=self.stdout)
 
     def do_sticky(self, arg):
         """
@@ -673,7 +753,8 @@ Frames can marked as hidden in the following ways:
             try:
                 start, end = map(int, arg.split())
             except ValueError:
-                print >> self.stdout, '** Error when parsing argument: %s **' % arg
+                print('** Error when parsing argument: %s **' % arg,
+                      file=self.stdout)
                 return
             self.sticky = True
             self.sticky_ranges[self.curframe] = start, end+1
@@ -695,11 +776,12 @@ Frames can marked as hidden in the following ways:
                        self.curindex)
         frame, lineno = frame_lineno
         if frame is self.curframe:
-            print >>self.stdout, ('[%d] >' % frame_index),
+            print('[%d] >' % frame_index, file=self.stdout, end=' ')
         else:
-            print >>self.stdout, ('[%d]  ' % frame_index),
-        print >>self.stdout, self.format_stack_entry(frame_lineno,
-                                                     prompt_prefix)
+            print('[%d]  ' % frame_index, file=self.stdout, end=' ')
+        print(self.format_stack_entry(frame_lineno,
+                                      prompt_prefix),
+              file=self.stdout)
 
     def print_current_stack_entry(self):
         if self.sticky:
@@ -710,14 +792,15 @@ Frames can marked as hidden in the following ways:
     def preloop(self):
         self._print_if_sticky()
         display_list = self._get_display_list()
-        for expr, oldvalue in display_list.iteritems():
+        for expr, oldvalue in display_list.items():
             newvalue = self._getval_or_undefined(expr)
             # check for identity first; this prevents custom __eq__ to
             # be called at every loop, and also prevents instances
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
                 display_list[expr] = newvalue
-                print >> self.stdout, '%s: %r --> %r' % (expr, oldvalue, newvalue)
+                print('%s: %r --> %r' % (expr, oldvalue, newvalue),
+                      file=self.stdout)
 
 
     def _get_position_of_arg(self, arg):
@@ -731,7 +814,7 @@ Frames can marked as hidden in the following ways:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
-            print >> self.stdout, '** Error: %s **' % e
+            print('** Error: %s **' % e, file=self.stdout)
             return None, None, None
         return filename, lineno, lines
 
@@ -739,16 +822,16 @@ Frames can marked as hidden in the following ways:
         _, lineno, lines = self._get_position_of_arg(arg)
         if lineno is None:
             return
-        self._print_lines(lines, lineno, print_markers=False)
+        self._py2_print_lines(lines, lineno, print_markers=False)
 
     def do_frame(self, arg):
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if arg < 0 or arg >= len(self.stack):
-            print >>self.stdout, '*** Out of range'
+            print('*** Out of range', file=self.stdout)
         else:
             self.curindex = arg
             self.curframe = self.stack[self.curindex][0]
@@ -761,16 +844,17 @@ Frames can marked as hidden in the following ways:
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if self.curindex - arg < 0:
-            print >> self.stdout, '*** Oldest frame'
+            print('*** Oldest frame', file=self.stdout)
         else:
             self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_up.__doc__ = pdb.Pdb.do_up.__doc__
     do_u = do_up
 
     def do_down(self, arg='1'):
@@ -778,16 +862,17 @@ Frames can marked as hidden in the following ways:
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print >>self.stdout, '*** Expected a number, got "{0}"'.format(arg)
+            print('*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
         if self.curindex + arg >= len(self.stack):
-            print >> self.stdout, '*** Newest frame'
+            print('*** Newest frame', file=self.stdout)
         else:
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+    do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
     def get_terminal_size(self):
@@ -854,7 +939,7 @@ Frames can marked as hidden in the following ways:
     def _put(self, text):
         stdin_paste = self.config.stdin_paste
         if stdin_paste is None:
-            print >> self.stdout, '** Error: the "stdin_paste" option is not configured **'
+            print('** Error: the "stdin_paste" option is not configured **', file=self.stdout)
         filename = self.start_filename
         lineno = self.start_lineno
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
@@ -864,7 +949,6 @@ Frames can marked as hidden in the following ways:
         self._put(text)
 
     def do_paste(self, arg):
-        from cStringIO import StringIO
         arg = arg.strip()
         old_stdout = self.stdout
         self.stdout = StringIO()
@@ -925,20 +1009,31 @@ def disable():
 disable.set_trace = lambda frame=None, Pdb=Pdb: None
 
 def set_tracex():
-    print 'PDB!'
+    print('PDB!')
 set_tracex._dont_inline_ = True
 
 _HIDE_FRAME = object()
 
 def hideframe(func):
-    import new
-    c = func.func_code
-    c = new.code(c.co_argcount, c.co_nlocals, c.co_stacksize,
-                 c.co_flags, c.co_code,
-                 c.co_consts+(_HIDE_FRAME,),
-                 c.co_names, c.co_varnames, c.co_filename,
-                 c.co_name, c.co_firstlineno, c.co_lnotab,
-                 c.co_freevars, c.co_cellvars)
+    c = get_function_code(func)
+    if sys.version_info < (3, ):
+        c = types.CodeType(
+            c.co_argcount, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
+    else:
+        # Python 3 takes an additional arg -- kwonlyargcount
+        # typically set to 0
+        c = types.CodeType(
+            c.co_argcount, 0, c.co_nlocals, c.co_stacksize,
+            c.co_flags, c.co_code,
+            c.co_consts + (_HIDE_FRAME,),
+            c.co_names, c.co_varnames, c.co_filename,
+            c.co_name, c.co_firstlineno, c.co_lnotab,
+            c.co_freevars, c.co_cellvars)
     func.func_code = c
     return func
 
