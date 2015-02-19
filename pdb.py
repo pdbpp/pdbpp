@@ -197,7 +197,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
-        if not hasattr(f, 'stream') and f.encoding.lower() != 'utf-8':
+        if not hasattr(f, 'stream') and f.encoding and f.encoding.lower() != 'utf-8':
             f = codecs.getwriter('utf-8')(f)
 
         return f
