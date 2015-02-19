@@ -1292,9 +1292,8 @@ Deleted breakpoint 1
 """ % (line_z, line_z))
 
 def test_stdout_encoding_None():
-    from pdb import StringIO
     instance = PdbTest()
-    instance.stdout = StringIO()
+    instance.stdout = BytesIO()
     instance.stdout.encoding = None
 
     instance.ensure_file_can_write_unicode(instance.stdout)
