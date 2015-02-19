@@ -530,9 +530,9 @@ Frames can marked as hidden in the following ways:
             end = min(end, lineno+len(lines))
             lines = lines[start-lineno:end-lineno]
             lineno = start
-        self._print_lines(lines, lineno)
+        self._print_lines_pdbpp(lines, lineno)
 
-    def _py2_print_lines(self, lines, lineno, print_markers=True):
+    def _print_lines_pdbpp(self, lines, lineno, print_markers=True):
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines] # remove the trailing '\n'
         lines = [line.replace('\t', '    ') for line in lines] # force tabs to 4 spaces
@@ -566,14 +566,6 @@ Frames can marked as hidden in the following ways:
             lines[i] = self.format_line(lineno, marker, line)
             lineno += 1
         print('\n'.join(lines), file=self.stdout)
-
-    if sys.version_info > (3, ):
-        # Python 3 pdb._print_lines has a different signature
-        def _py3_print_lines(self, lines, start, breaks=(), frame=None):
-            return self._py2_print_lines(lines, start)
-        _print_lines = _py3_print_lines
-    else:
-        _print_lines = _py2_print_lines
 
     do_ll = do_longlist
 
@@ -825,7 +817,7 @@ Frames can marked as hidden in the following ways:
         _, lineno, lines = self._get_position_of_arg(arg)
         if lineno is None:
             return
-        self._py2_print_lines(lines, lineno, print_markers=False)
+        self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def do_frame(self, arg):
         try:
