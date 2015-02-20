@@ -632,7 +632,7 @@ Frames can marked as hidden in the following ways:
         Start an interative interpreter whose global namespace
         contains all the names found in the current scope.
         """
-        ns = self.curframe.f_globals.copy()
+        ns = self.curframe.f_globals
         ns.update(self.curframe.f_locals)
         code.interact("*interactive*", local=ns)
 
