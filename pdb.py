@@ -111,6 +111,7 @@ class DefaultConfig:
     bg = 'dark'
     use_pygments = True
     colorscheme = None
+    use_terminal256formatter = True
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
@@ -315,7 +316,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self.mycompleter = Completer(mydict)
         return self.mycompleter.complete(text, state)
 
-    def _init_pygments(self): 
+    def _init_pygments(self):
         if not self.config.use_pygments:
             return False
         try:
@@ -328,11 +329,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return True
 
         Formatter = (Terminal256Formatter
-                     if '256color' in os.environ.get('TERM', '')
+                     if self.config.use_terminal256formatter
+                        and '256color' in os.environ.get('TERM', '')
                      else TerminalFormatter)
 
-        self._fmt = TerminalFormatter(bg=self.config.bg,
-                                      colorscheme=self.config.colorscheme)
+        self._fmt = Formatter(bg=self.config.bg,
+                              colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
         return True
 
