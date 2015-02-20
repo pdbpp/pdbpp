@@ -320,13 +320,17 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             return False
         try:
             from pygments.lexers import PythonLexer
-            from pygments.formatters import TerminalFormatter
+            from pygments.formatters import TerminalFormatter, Terminal256Formatter
         except ImportError:
             return False
 
         if hasattr(self, '_fmt'):
             return True
-        
+
+        Formatter = (Terminal256Formatter
+                     if '256color' in os.environ.get('TERM', '')
+                     else TerminalFormatter)
+
         self._fmt = TerminalFormatter(bg=self.config.bg,
                                       colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
