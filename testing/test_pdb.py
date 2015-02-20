@@ -53,7 +53,9 @@ class PdbTest(pdb.Pdb):
         print(text)
 
 
-def set_trace(**kwds):
+def set_trace(cleanup=True, **kwds):
+    if cleanup:
+        pdb.cleanup()
     frame = sys._getframe().f_back
     pdb.set_trace(frame, PdbTest, **kwds)
 
@@ -177,6 +179,32 @@ def test_runpdb():
 # n
 [NUM] > .*fn()
 -> c = 3
+# c
+""")
+
+def test_set_trace_remembers_previous_state():
+    def fn():
+        a = 1
+        set_trace()
+        a = 2
+        set_trace(cleanup=False)
+        a = 3
+        set_trace(cleanup=False)
+        a = 4
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 2
+# display a
+# c
+[NUM] > .*fn()
+-> a = 3
+a: 1 --> 2
+# c
+[NUM] > .*fn()
+-> a = 4
+a: 2 --> 3
 # c
 """)
 

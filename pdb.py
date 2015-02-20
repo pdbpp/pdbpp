@@ -980,12 +980,31 @@ def post_mortem(t=None, Pdb=Pdb):
     p.reset()
     p.interaction(None, t)
 
+GLOBAL_PDB = None
+
 def set_trace(frame=None, Pdb=Pdb, **kwds):
+    global GLOBAL_PDB
+
     if frame is None:
         frame = sys._getframe().f_back
-    filename = frame.f_code.co_filename
-    lineno = frame.f_lineno
-    Pdb(start_lineno=lineno, start_filename=filename, **kwds).set_trace(frame)
+
+    if GLOBAL_PDB:
+        pdb = GLOBAL_PDB
+    else:
+        filename = frame.f_code.co_filename
+        lineno = frame.f_lineno
+        pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
+        GLOBAL_PDB = pdb
+
+    if hasattr(pdb, 'curframe'):
+        del pdb.curframe
+
+    pdb.set_trace(frame)
+
+def cleanup():
+    global GLOBAL_PDB
+
+    GLOBAL_PDB = None
 
 # pdb++ specific interface
 
