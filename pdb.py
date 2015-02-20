@@ -24,7 +24,13 @@ import pprint
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
-from backports.inspect import signature
+
+try:
+    from backports.inspect import signature
+except ImportError:
+    def signature(obj):
+        return ' [pip install backports.inspect to show the signature]'
+
 try:
     from collections import OrderedDict
 except ImportError:
