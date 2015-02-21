@@ -111,7 +111,7 @@ class DefaultConfig:
     bg = 'dark'
     use_pygments = True
     colorscheme = None
-    use_terminal256formatter = True
+    use_terminal256formatter = False
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
