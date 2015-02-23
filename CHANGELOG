@@ -6,13 +6,13 @@ Changes between 0.7.2 and 0.8.dev0
 
 - Python 3 compatibility
 - Optional support for 256 color formatting by setting
-  `use_terminal256formatter = True` in `~/.pdbrc.py`
+  ``use_terminal256formatter = True`` in ``~/.pdbrc.py``
   (https://bitbucket.org/antocuni/pdb/pull-request/30)
-- Make set_trace() in same program remember previous state
+- Make ``set_trace()`` in same program remember previous state
   (https://bitbucket.org/antocuni/pdb/pull-request/33)
-- Append ? and ?? to callable to get info a la IPython
+- Append ``?`` and ``??`` to callable to get info a la IPython
   (https://bitbucket.org/antocuni/pdb/pull-request/25)
-- Don't treat lines like "r = 5" or "c = 6" as commands
+- Don't treat lines like ``r = 5`` or ``c = 6`` as commands
   (https://bitbucket.org/antocuni/pdb/pull-request/11)
 
 - fix issue 20: support argument-free post mortem
