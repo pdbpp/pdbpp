@@ -1,4 +1,8 @@
+CHANGELOG
+=========
+
 Changes between 0.7.2 and 0.8.dev0
+===============================
 
 - Python 3 compatibility
 - Optional support for 256 color formatting by setting
