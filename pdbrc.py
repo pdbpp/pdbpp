@@ -13,6 +13,7 @@ class Config(pdb.DefaultConfig):
     editor = 'e'
     stdin_paste = 'epaste'
     filename_color = pdb.Color.lightgray
+    use_terminal256formatter = False
     #exec_if_unfocused = "play ~/sounds/dialtone.wav 2> /dev/null &"
 
     def __init__(self):
