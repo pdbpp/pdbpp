@@ -10,7 +10,8 @@ if single_version in sys.argv:
     sys.argv.remove(single_version)
 
 readme = os.path.join(os.path.dirname(__file__), 'README.rst')
-long_description = open(readme).read()
+changelog = os.path.join(os.path.dirname(__file__), 'CHANGELOG')
+long_description = open(readme).read() + '\n\n' + open(changelog).read()
 
 setup(
     name='pdbpp',
