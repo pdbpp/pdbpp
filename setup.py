@@ -15,7 +15,7 @@ long_description = open(readme).read() + '\n\n' + open(changelog).read()
 
 setup(
     name='pdbpp',
-    version='0.8.dev1',
+    version='0.8',
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb'],
