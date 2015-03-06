@@ -1,7 +1,15 @@
 CHANGELOG
 =========
 
-Changes between 0.7.2 and 0.8.dev0
+Changes between 0.8 and 0.8.1
+==================================
+
+- Remove dependency on ``backports.inspect``
+  Make dependency on ``funcsigs`` optional.
+	(https://bitbucket.org/antocuni/pdb/issue/37/doesn-t-install-on-os-x)
+	(https://bitbucket.org/antocuni/pdb/pull-request/35/use-funcsigs-package-instead-of/diff)
+
+Changes between 0.7.2 and 0.8
 ==================================
 
 - Python 3 compatibility
