@@ -36,7 +36,7 @@ setup(
         ],
     install_requires=["fancycompleter>=0.2",
                       "ordereddict",
-                      "backports.inspect",
                       "wmctrl",
                       "pygments"],
+    extras_require={'funcsigs': ["funcsigs"]},
 )
