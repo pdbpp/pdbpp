@@ -26,10 +26,13 @@ from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
 
 try:
-    from funcsigs import signature
+    from inspect import signature  # Python >= 3.3
 except ImportError:
-    def signature(obj):
-        return ' [pip install funcsigs to show the signature]'
+    try:
+        from funcsigs import signature
+    except ImportError:
+        def signature(obj):
+            return ' [pip install funcsigs to show the signature]'
 
 try:
     from collections import OrderedDict
