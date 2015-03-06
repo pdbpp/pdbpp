@@ -26,10 +26,10 @@ from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
 
 try:
-    from backports.inspect import signature
+    from funcsigs import signature
 except ImportError:
     def signature(obj):
-        return ' [pip install backports.inspect to show the signature]'
+        return ' [pip install funcsigs to show the signature]'
 
 try:
     from collections import OrderedDict
