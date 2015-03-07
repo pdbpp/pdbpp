@@ -8,7 +8,16 @@ more details on pdb++ features.
 
 from __future__ import print_function
 
-__version__='0.7'
+def get_version():
+    try:
+        import pkg_resources
+        dist = pkg_resources.get_distribution('pdbpp')
+        return dist.version
+    except Exception:
+        pass
+
+
+__version__ = get_version()
 __author__ ='Antonio Cuni <anto.cuni@gmail.com>'
 __url__='http://bitbucket.org/antocuni/pdb'
 
@@ -509,7 +518,7 @@ Frames can marked as hidden in the following ways:
         """
         {longlist|ll}
         List source code for the current function.
-        
+
         Differently than list, the whole function is displayed; the
         current line is marked with '->'.  In case of post-mortem
         debugging, the line which effectively raised the exception is

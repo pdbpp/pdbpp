@@ -40,7 +40,7 @@ class install_pth_hack(Command):
 
 setup(
     name='pdbpp',
-    version='0.8.1',
+    use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb', '_pdbpp_path_hack.pdb'],
@@ -64,6 +64,7 @@ setup(
                       "wmctrl",
                       "pygments"],
     extras_require={'funcsigs': ["funcsigs"]},
+    setup_requires=['setuptools_scm'],
     cmdclass={
         'install': install_with_pth,
         'install_pth_hack': install_pth_hack,
