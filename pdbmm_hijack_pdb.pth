@@ -1,0 +1,2 @@
+_pdbpp_path_hack
+import sys;sys.path.insert(0, sys.path.pop())
