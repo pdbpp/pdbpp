@@ -27,3 +27,4 @@ env/
 .coverage
 .ropeproject
 *.sublime-*
+.env/
