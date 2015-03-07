@@ -15,7 +15,7 @@ long_description = open(readme).read() + '\n\n' + open(changelog).read()
 
 setup(
     name='pdbpp',
-    version='0.8.1',
+    use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb'],
@@ -39,4 +39,5 @@ setup(
                       "wmctrl",
                       "pygments"],
     extras_require={'funcsigs': ["funcsigs"]},
+    setup_requires=['setuptools_scm'],
 )
