@@ -222,8 +222,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
     def _disable_pytest_capture_maybe(self):
         try:
             import py.test
-            py.test.config  # force to raise ImportError if pytest is not
-                           # installed
+            # force to raise ImportError if pytest is not installed
+            py.test.config
         except (ImportError, AttributeError):
             return
         try:
@@ -232,8 +232,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         except KeyError:
             pass
         except AttributeError:
-            pass  # newer py.test with support ready, or very old py.test for
-                 # which this hack does not work
+            # newer py.test with support ready, or very old py.test for
+            # which this hack does not work
+            pass
 
     def interaction(self, frame, traceback):
         if self.config.exec_if_unfocused:
