@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+Changes between 0.8.1 and 0.8.2
+===============================
+
+- fix wheel packaging; see
+	https://bitbucket.org/antocuni/pdb/pull-request/38/support-pip-install-and-wheels-natively/diff
+
 Changes between 0.8 and 0.8.1
 =============================
 

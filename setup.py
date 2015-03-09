@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import sys
 import os.path
-from setuptools import setup, find_packages
+from setuptools import setup
 from setuptools.command.install import install
 from distutils.core import Command
 HACK = 'pdbmm_hijack_pdb.pth'
