@@ -8,9 +8,18 @@ more details on pdb++ features.
 
 from __future__ import print_function
 
-__version__ = '0.7'
-__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
-__url__ = 'http://bitbucket.org/antocuni/pdb'
+def get_version():
+    try:
+        import pkg_resources
+        dist = pkg_resources.get_distribution('pdbpp')
+        return dist.version
+    except Exception:
+        pass
+
+
+__version__ = get_version()
+__author__ ='Antonio Cuni <anto.cuni@gmail.com>'
+__url__='http://bitbucket.org/antocuni/pdb'
 
 import sys
 import os.path

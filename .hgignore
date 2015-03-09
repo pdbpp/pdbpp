@@ -20,9 +20,11 @@ build/
 dist/
 *.egg-info
 env/
+.env/
 3rdparty/
 .tox
 .cache
 .coverage
 .ropeproject
 *.sublime-*
+.env/
