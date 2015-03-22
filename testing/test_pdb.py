@@ -1325,3 +1325,11 @@ def test_stdout_encoding_None():
     instance.stdout.encoding = None
 
     instance.ensure_file_can_write_unicode(instance.stdout)
+
+    try:
+        import cStringIO
+    except ImportError:
+        pass
+    else:
+        instance.stdout = cStringIO.StringIO()
+        instance.ensure_file_can_write_unicode(instance.stdout)
