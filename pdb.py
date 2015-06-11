@@ -135,6 +135,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.show_hidden_frames = False
         self.hidden_frames = []
         self.stdout = codecs.getwriter('utf-8')(self.stdout)
+        self._init_stdout_maybe()
+
+    def _init_stdout_maybe(self):
+        if sys.platform == 'win32':
+            import colorama
+            self.stdout = colorama.initialise.wrap_stream(self.stdout, convert=True, strip=None,
+                                                          autoreset=False, wrap=True)
+
 
     def _disable_pytest_capture_maybe(self):
         try:
@@ -554,9 +562,16 @@ Frames can marked as hidden in the following ways:
         except KeyError:
             print >> self.stdout, '** %s not in the display list **' % arg
 
+    def _clearscreen(self):
+        if sys.platform == 'win32':
+            # this is a gross hack, but apparently colorama crashes on CLEARSCREEN
+            os.system('cls')
+        else:
+            self.stdout.write(CLEARSCREEN)
+            
     def _print_if_sticky(self):
         if self.sticky:
-            self.stdout.write(CLEARSCREEN)
+            self._clearscreen()
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)
@@ -747,7 +762,7 @@ Frames can marked as hidden in the following ways:
 
     def _open_editor(self, editor, lineno, filename):
         filename = filename.replace("'", "\\'")
-        os.system("%s +%d '%s'" % (editor, lineno, filename))
+        os.system('%s +%d "%s"' % (editor, lineno, filename))
 
     def _get_current_position(self):
         frame = self.curframe
