@@ -134,7 +134,7 @@ class DefaultConfig:
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
     exec_if_unfocused = None
-    disable_pytest_capturing = True
+    disable_pytest_capturing = False
     encodings = ('utf-8', 'latin-1')
     enable_hidden_frames = True
     show_hidden_frames_count = True
