@@ -38,6 +38,16 @@ class install_pth_hack(Command):
                 outfp.write(infp.read())
 
 
+install_requires = [
+    "fancycompleter>=0.2",
+    "wmctrl",
+    "pygments",
+]
+
+if sys.version_info < (2, 7):
+    install_requires.append("ordereddict")
+
+
 setup(
     name='pdbpp',
     use_scm_version=True,
@@ -68,10 +78,7 @@ setup(
         'Programming Language :: Python',
         'Topic :: Utilities',
     ],
-    install_requires=["fancycompleter>=0.2",
-                      "ordereddict",
-                      "wmctrl",
-                      "pygments"],
+    install_requires=install_requires,
     extras_require={'funcsigs': ["funcsigs"]},
     setup_requires=['setuptools_scm'],
     cmdclass={
