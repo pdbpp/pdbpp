@@ -855,6 +855,7 @@ Frames can marked as hidden in the following ways:
         else:
             self.curindex = arg
             self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
     do_f = do_frame
