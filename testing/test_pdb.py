@@ -1333,3 +1333,25 @@ def test_stdout_encoding_None():
     else:
         instance.stdout = cStringIO.StringIO()
         instance.ensure_file_can_write_unicode(instance.stdout)
+
+
+def test_frame_cmd_changes_locals():
+    def a():
+        x = 42
+        b()
+    def b():
+        fn()
+    def fn():
+        set_trace()
+        return
+
+    check(a, """
+[NUM] > .*fn()
+-> return
+# f {frame_num_a}
+[NUM] > .*a()
+-> b()
+# p list(sorted(locals().keys()))
+['b', 'x']
+# c
+""".format(frame_num_a=count_frames() + 2))
