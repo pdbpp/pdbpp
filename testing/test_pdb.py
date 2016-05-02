@@ -76,13 +76,16 @@ def runpdb(func, input):
 
         encoding = 'ascii'
 
-        def __init__(self, encoding='ascii'):
+        def __init__(self, encoding='utf-8'):
             self.encoding = encoding
 
         def write(self, msg):
             if isinstance(msg, text_type):
                 msg = msg.encode(self.encoding)
             super(MyBytesIO, self).write(msg)
+
+        def get_unicode_value(self):
+            return self.getvalue().decode(self.encoding)
 
     try:
         sys.stdin = FakeStdin(input)
@@ -92,7 +95,7 @@ def runpdb(func, input):
         sys.stdin = oldstdin
         sys.stdout = oldstdout
 
-    return stdout.getvalue().splitlines()
+    return stdout.get_unicode_value().splitlines()
 
 def remove_comment(line): 
     if '###' in line:
