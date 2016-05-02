@@ -1291,15 +1291,20 @@ def test_unicode_bug():
         y = "this contains a unicode: à"
         return
 
-    check(fn, """
+    check_output = """
 [NUM] > .*fn()
 -> x = "this is plain ascii"
 # n
 [NUM] > .*fn()
 -> y = "this contains a unicode: à"
 # c
-""")
-    
+"""
+
+    if sys.version_info < (3, ):
+        check_output = check_output.decode('utf-8')
+
+    check(fn, check_output)
+
 
 def test_continue_arg():
     def fn():
