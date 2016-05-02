@@ -132,7 +132,7 @@ def run_func(func, expected):
     """
     expected = expected.strip().splitlines()
     commands = extract_commands(expected)
-    expected = map(cook_regexp, expected)
+    expected = list(map(cook_regexp, expected))
     return expected, runpdb(func, commands)
 
 def count_frames():
@@ -148,7 +148,7 @@ def check(func, expected):
     maxlen = max(map(len, expected))
     all_ok = True
     print()
-    for pattern, string in map(None, expected, lines):
+    for pattern, string in zip(expected, lines):
         pattern = remove_comment(pattern)
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
