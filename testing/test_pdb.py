@@ -227,10 +227,10 @@ def test_single_question_mark():
 [NUM] > .*fn()
 -> a = 1
 # f2
-<function f2 at .*>
+<function .*f2 at .*>
 # f2?
 .*Type:.*function
-.*String Form:.*<function f2 at .*>
+.*String Form:.*<function .*f2 at .*>
 .*File:.*test_pdb.py
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
@@ -252,10 +252,10 @@ def test_double_question_mark():
 [NUM] > .*fn()
 -> a = 1
 # f2
-<function f2 at .*>
+<function .*f2 at .*>
 # f2??
 .*Type:.*function
-.*String Form:.*<function f2 at .*>
+.*String Form:.*<function .*f2 at .*>
 .*File:.*test_pdb.py
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
