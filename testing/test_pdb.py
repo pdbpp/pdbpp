@@ -1131,7 +1131,7 @@ False
 # n
 [NUM] > .*fn()
 -> return obj.x
-# print obj.x
+# p obj.x
 0
 # c
 """)
@@ -1206,7 +1206,7 @@ False
 # n
 [NUM] > .*fn()
 -> return obj.x
-# print obj.x
+# p obj.x
 1
 # c
 """)
