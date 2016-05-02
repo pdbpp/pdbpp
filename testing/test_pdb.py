@@ -954,7 +954,7 @@ def test_hideframe():
     @pdb.hideframe
     def g():
         pass
-    assert g.func_code.co_consts[-1] is pdb._HIDE_FRAME
+    assert pdb.get_function_code(g).co_consts[-1] is pdb._HIDE_FRAME
 
 def test_hide_hidden_frames():
     @pdb.hideframe
