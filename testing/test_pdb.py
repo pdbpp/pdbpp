@@ -860,14 +860,14 @@ def test_paste():
         print('hello world')
     def fn():
         set_trace()
-        if False: g()
+        if 4 != 5: g()
         return 42
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
 
     check(fn, r"""
 [NUM] > .*fn()
--> if False: g()
+-> if 4 != 5: g()
 # g()
 hello world
 # paste g()
