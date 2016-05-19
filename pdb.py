@@ -912,8 +912,8 @@ Frames can marked as hidden in the following ways:
         return width, height
 
     def _open_editor(self, editor, lineno, filename):
-        filename = filename.replace("'", "\\'")
-        os.system("%s +%d '%s'" % (editor, lineno, filename))
+        filename = filename.replace('"', '\\"')
+        os.system('%s +%d "%s"' % (editor, lineno, filename))
 
     def _get_current_position(self):
         frame = self.curframe
