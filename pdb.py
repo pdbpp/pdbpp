@@ -433,8 +433,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         data = OrderedDict()
         data['Type'] = type(obj).__name__
         data['String Form'] = str(obj).strip()
-        if hasattr(obj, '__len__'):
+        try:
             data['Length'] = len(obj)
+        except TypeError:
+            pass
         try:
             data['File'] = inspect.getabsfile(obj)
         except TypeError:
