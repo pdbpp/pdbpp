@@ -347,7 +347,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if hasattr(self, '_fmt'):
             return True
         if hasattr(self.config, 'formatter'):
-            self._fmt = (self.config.formatter())
+            self._fmt = self.config.formatter
         else:
             Formatter = (Terminal256Formatter
                          if self.config.use_terminal256formatter
