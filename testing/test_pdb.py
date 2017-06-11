@@ -76,13 +76,16 @@ def runpdb(func, input):
 
         encoding = 'ascii'
 
-        def __init__(self, encoding='ascii'):
+        def __init__(self, encoding='utf-8'):
             self.encoding = encoding
 
         def write(self, msg):
             if isinstance(msg, text_type):
                 msg = msg.encode(self.encoding)
             super(MyBytesIO, self).write(msg)
+
+        def get_unicode_value(self):
+            return self.getvalue().decode(self.encoding)
 
     try:
         sys.stdin = FakeStdin(input)
@@ -92,7 +95,7 @@ def runpdb(func, input):
         sys.stdin = oldstdin
         sys.stdout = oldstdout
 
-    return stdout.getvalue().splitlines()
+    return stdout.get_unicode_value().splitlines()
 
 def remove_comment(line): 
     if '###' in line:
@@ -132,7 +135,7 @@ def run_func(func, expected):
     """
     expected = expected.strip().splitlines()
     commands = extract_commands(expected)
-    expected = map(cook_regexp, expected)
+    expected = list(map(cook_regexp, expected))
     return expected, runpdb(func, commands)
 
 def count_frames():
@@ -148,7 +151,7 @@ def check(func, expected):
     maxlen = max(map(len, expected))
     all_ok = True
     print()
-    for pattern, string in map(None, expected, lines):
+    for pattern, string in zip(expected, lines):
         pattern = remove_comment(pattern)
         ok = pattern is not None and string is not None and re.match(pattern, string)
         pattern = pattern or ''
@@ -224,10 +227,10 @@ def test_single_question_mark():
 [NUM] > .*fn()
 -> a = 1
 # f2
-<function f2 at .*>
+<function .*f2 at .*>
 # f2?
 .*Type:.*function
-.*String Form:.*<function f2 at .*>
+.*String Form:.*<function .*f2 at .*>
 .*File:.*test_pdb.py
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
@@ -249,10 +252,10 @@ def test_double_question_mark():
 [NUM] > .*fn()
 -> a = 1
 # f2
-<function f2 at .*>
+<function .*f2 at .*>
 # f2??
 .*Type:.*function
-.*String Form:.*<function f2 at .*>
+.*String Form:.*<function .*f2 at .*>
 .*File:.*test_pdb.py
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
@@ -857,14 +860,14 @@ def test_paste():
         print('hello world')
     def fn():
         set_trace()
-        if False: g()
+        if 4 != 5: g()
         return 42
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
 
     check(fn, r"""
 [NUM] > .*fn()
--> if False: g()
+-> if 4 != 5: g()
 # g()
 hello world
 # paste g()
@@ -951,7 +954,7 @@ def test_hideframe():
     @pdb.hideframe
     def g():
         pass
-    assert g.func_code.co_consts[-1] is pdb._HIDE_FRAME
+    assert pdb.get_function_code(g).co_consts[-1] is pdb._HIDE_FRAME
 
 def test_hide_hidden_frames():
     @pdb.hideframe
@@ -1128,7 +1131,7 @@ False
 # n
 [NUM] > .*fn()
 -> return obj.x
-# print obj.x
+# p obj.x
 0
 # c
 """)
@@ -1203,7 +1206,7 @@ False
 # n
 [NUM] > .*fn()
 -> return obj.x
-# print obj.x
+# p obj.x
 1
 # c
 """)
@@ -1288,15 +1291,20 @@ def test_unicode_bug():
         y = "this contains a unicode: à"
         return
 
-    check(fn, """
+    check_output = """
 [NUM] > .*fn()
 -> x = "this is plain ascii"
 # n
 [NUM] > .*fn()
 -> y = "this contains a unicode: à"
 # c
-""")
-    
+"""
+
+    if sys.version_info < (3, ):
+        check_output = check_output.decode('utf-8')
+
+    check(fn, check_output)
+
 
 def test_continue_arg():
     def fn():
