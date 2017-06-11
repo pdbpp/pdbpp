@@ -5,18 +5,23 @@ import os.path
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from distutils.core import Command
+import io
 HACK = 'pdbmm_hijack_pdb.pth'
 
-readme = os.path.join(os.path.dirname(__file__), 'README.rst')
-changelog = os.path.join(os.path.dirname(__file__), 'CHANGELOG')
-long_description = open(readme).read() + '\n\n' + open(changelog).read()
+readme_path = os.path.join(os.path.dirname(__file__), 'README.rst')
+changelog_path = os.path.join(os.path.dirname(__file__), 'CHANGELOG')
+
+readme = io.open(readme_path, encoding='utf-8').read()
+changelog = io.open(changelog_path, encoding='utf-8').read()
+
+long_description = readme + '\n\n' + changelog
+
 
 class install_with_pth(install):
     sub_commands = install.sub_commands + [
         ('install_pth_hack', lambda self:
             self.single_version_externally_managed)
     ]
-
 
 
 class install_pth_hack(Command):
