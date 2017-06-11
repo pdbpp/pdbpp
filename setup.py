@@ -65,7 +65,7 @@ setup(
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb', '_pdbpp_path_hack.pdb'],
-    url='http://bitbucket.org/antocuni/pdb',
+    url='http://github.com/antocuni/pdb',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
     description='pdb++, a drop-in replacement for pdb',
