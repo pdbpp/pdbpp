@@ -1,7 +1,15 @@
 CHANGELOG
 =========
 
+Changes between 0.8.2 and 0.9
+===============================
+
 - Install ``ordereddict`` package only on Python versions older than 2.7.
+
+- Python 3 support
+
+- Improved Windows support
+
 
 Changes between 0.8.1 and 0.8.2
 ===============================
