@@ -78,6 +78,13 @@ def get_function_code(func):
         return func.func_code
 
 
+def set_function_code(func, code_obj):
+    if sys.version_info >= (2, 6):
+        func.__code__ = code_obj
+    else:
+        func.func_code = code_obj
+
+
 def get_function_defaults(func):
     if sys.version_info >= (2, 6):
         return func.__defaults__
@@ -346,14 +353,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
         if hasattr(self, '_fmt'):
             return True
-
-        Formatter = (Terminal256Formatter
-                     if self.config.use_terminal256formatter
-                        and '256color' in os.environ.get('TERM', '')
-                     else TerminalFormatter)
-
-        self._fmt = Formatter(bg=self.config.bg,
-                              colorscheme=self.config.colorscheme)
+        if hasattr(self.config, 'formatter'):
+            self._fmt = self.config.formatter
+        else:
+            Formatter = (Terminal256Formatter
+                         if self.config.use_terminal256formatter
+                            and '256color' in os.environ.get('TERM', '')
+                         else TerminalFormatter)
+            self._fmt = Formatter(bg=self.config.bg,
+                                  colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
         return True
 
@@ -1076,7 +1084,7 @@ def hideframe(func):
             c.co_names, c.co_varnames, c.co_filename,
             c.co_name, c.co_firstlineno, c.co_lnotab,
             c.co_freevars, c.co_cellvars)
-    func.func_code = c
+    set_function_code(func, c)
     return func
 
 
