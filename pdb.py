@@ -18,8 +18,8 @@ def get_version():
 
 
 __version__ = get_version()
-__author__ ='Antonio Cuni <anto.cuni@gmail.com>'
-__url__='http://bitbucket.org/antocuni/pdb'
+__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
+__url__ = 'http://github.com/antocuni/pdb'
 
 import sys
 import os.path
