@@ -24,6 +24,13 @@ class install_pth_hack(Command):
         ('install-dir=', 'd', "directory to install to"),
     ]
 
+    @property
+    def target(self):
+        return os.path.join(self.install_dir, HACK)
+
+    def get_outputs(self):
+        return [self.target]
+
     def initialize_options(self):
         self.install_dir = None
 
@@ -32,9 +39,8 @@ class install_pth_hack(Command):
             'install', ('install_lib', 'install_dir'))
 
     def run(self):
-        target = os.path.join(self.install_dir, HACK)
         with open(HACK) as infp:
-            with open(target, 'w') as outfp:
+            with open(self.target, 'w') as outfp:
                 outfp.write(infp.read())
 
 
