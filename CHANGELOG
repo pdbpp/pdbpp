@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-Changes between 0.8.2 and 0.9
+Changes between 0.8.2 and 0.9.1
 ===============================
 
 - Install ``ordereddict`` package only on Python versions older than 2.7.
