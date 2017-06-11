@@ -1,0 +1,15 @@
+sudo: false
+language: python
+
+cache:
+  pip: true
+
+python:
+  - "2.7"
+  - "3.4"
+  
+install:
+  - pip install tox-travis
+  
+script:
+  - tox
