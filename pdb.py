@@ -635,8 +635,8 @@ Frames can marked as hidden in the following ways:
         #
         # inside the original do_debug, there is a call to the global "Pdb" to
         # instantiate the recursive debugger: we want to intercept this call
-        # and instantiate *our* Pdb, passing the our custom config. So, we
-        # dynamically rebind the globals
+        # and instantiate *our* Pdb, passing our custom config. Therefore we
+        # dynamically rebind the globals.
         #
         def new_pdb_with_config(*args):
             kwds = dict(Config=self.ConfigFactory)
