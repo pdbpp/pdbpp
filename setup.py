@@ -50,7 +50,7 @@ class install_pth_hack(Command):
 
 
 install_requires = [
-    "fancycompleter>=0.2",
+    "fancycompleter>=0.8",
     "wmctrl",
     "pygments",
 ]

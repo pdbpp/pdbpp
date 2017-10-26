@@ -8,19 +8,6 @@ more details on pdb++ features.
 
 from __future__ import print_function
 
-def get_version():
-    try:
-        import pkg_resources
-        dist = pkg_resources.get_distribution('pdbpp')
-        return dist.version
-    except Exception:
-        pass
-
-
-__version__ = get_version()
-__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
-__url__ = 'http://github.com/antocuni/pdb'
-
 import sys
 import os.path
 import inspect
@@ -33,6 +20,10 @@ import pprint
 import re
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
+
+__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
+__url__ = 'http://github.com/antocuni/pdb'
+__version__ = fancycompleter.LazyVersion('pdbpp')
 
 try:
     from inspect import signature  # Python >= 3.3
