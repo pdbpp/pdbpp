@@ -468,7 +468,7 @@ NUM  	        a = 1
 NUM  	        set_trace(Config=ConfigTest)
 NUM  ->	        return a
 # c
-""".format(line_num=pdb.get_function_code(fn).co_firstlineno))
+""".format(line_num=fn.__code__.co_firstlineno))
 
 def test_longlist():
     def fn():
@@ -954,7 +954,7 @@ def test_hideframe():
     @pdb.hideframe
     def g():
         pass
-    assert pdb.get_function_code(g).co_consts[-1] is pdb._HIDE_FRAME
+    assert g.__code__.co_consts[-1] is pdb._HIDE_FRAME
 
 def test_hide_hidden_frames():
     @pdb.hideframe

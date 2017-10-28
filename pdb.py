@@ -18,6 +18,7 @@ import traceback
 import subprocess
 import pprint
 import re
+from collections import OrderedDict
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
 
@@ -34,54 +35,15 @@ except ImportError:
         def signature(obj):
             return ' [pip install funcsigs to show the signature]'
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 
 # if it contains only _, digits, letters, [] or dots, it's probably side effects
 # free
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-try:
-    if sys.version_info < (3, ):
-        from io import BytesIO as StringIO
-    else:
-        from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
-
-
-def get_function_name(func):
-    if sys.version_info >= (2, 6):
-        return func.__name__
-    else:
-        return func.func_name
-
-
-def get_function_code(func):
-    if sys.version_info >= (2, 6):
-        return func.__code__
-    else:
-        return func.func_code
-
-
-def set_function_code(func, code_obj):
-    if sys.version_info >= (2, 6):
-        func.__code__ = code_obj
-    else:
-        func.func_code = code_obj
-
-
-def get_function_defaults(func):
-    if sys.version_info >= (2, 6):
-        return func.__defaults__
-    else:
-        return func.func_defaults
-
+if sys.version_info < (3, ):
+    from io import BytesIO as StringIO
+else:
+    from io import StringIO
 
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
@@ -201,7 +163,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self._disable_pytest_capture_maybe()
         pdb.Pdb.__init__(self, *args, **kwds)
         self.prompt = self.config.prompt
-
         self.mycompleter = None
         self.display_list = {} # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
@@ -1056,7 +1017,7 @@ set_tracex._dont_inline_ = True
 _HIDE_FRAME = object()
 
 def hideframe(func):
-    c = get_function_code(func)
+    c = func.__code__
     if sys.version_info < (3, ):
         c = types.CodeType(
             c.co_argcount, c.co_nlocals, c.co_stacksize,
@@ -1075,7 +1036,7 @@ def hideframe(func):
             c.co_names, c.co_varnames, c.co_filename,
             c.co_name, c.co_firstlineno, c.co_lnotab,
             c.co_freevars, c.co_cellvars)
-    set_function_code(func, c)
+    func.__code__ = c
     return func
 
 
