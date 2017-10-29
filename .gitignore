@@ -1,0 +1,30 @@
+# Ignore local virtualenvs
+syntax:glob
+lib/
+bin/
+include/
+.Python/
+
+# These lines are suggested according to the svn:ignore property
+# Feel free to enable them by uncommenting them
+syntax:glob
+*.pyc
+*.pyo
+*.swp
+*.html
+*.class
+*.orig
+*~
+
+build/
+dist/
+*.egg-info
+env/
+.env/
+3rdparty/
+.tox
+.cache
+.coverage
+.ropeproject
+*.sublime-*
+.env/
