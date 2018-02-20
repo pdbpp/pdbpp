@@ -1061,6 +1061,16 @@ def test_list_hidden_frames():
 -> k()
    7 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*k()
 -> return g()
 .*g()
@@ -1086,6 +1096,16 @@ def test_hidden_pytest_frames():
 -> k()
    7 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*k()
 -> return g()
 .*g()
@@ -1107,6 +1127,16 @@ def test_hidden_unittest_frames():
 -> return g()
    6 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*g()
 -> return 'foo'
 # c
