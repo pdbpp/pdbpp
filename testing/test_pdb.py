@@ -311,7 +311,7 @@ def test_frame():
 [NUM] > .*a()
 -> b()
 # c
-""".format(frame_num_a=count_frames() + 2))
+""".format(frame_num_a=count_frames() + 2 - 5))
 
 def test_up_down_arg():
     def a():
@@ -1410,4 +1410,4 @@ def test_frame_cmd_changes_locals():
 # p list(sorted(locals().keys()))
 ['b', 'x']
 # c
-""".format(frame_num_a=count_frames() + 2))
+""".format(frame_num_a=count_frames() + 2 - 5))
