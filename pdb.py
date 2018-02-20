@@ -103,6 +103,9 @@ class DefaultConfig:
     filename_color = Color.yellow
     current_line_color = 44 # blue
 
+    enable_tiny_display = False
+    divinding_line = '-'
+
     def setup(self, pdb):
         pass
 
@@ -173,6 +176,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
+        if self.config.enable_tiny_display:
+            self.divinding_line = self.config.divinding_line
+            # save stdout
+            self.old_stdout = sys.stdout
+            # Switch from StandardOut to MemoryStream
+            sys.stdout = self.mystdout = StringIO()
+            self.stdout = sys.stdout
+
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
         if not hasattr(f, 'stream') and \
@@ -210,6 +221,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.cmdloop()
         completer.config.readline.set_completer(old_completer)
         self.forget()
+
+        if self.config.enable_tiny_display:
+            # Switch from StandardOut to MemoryStream
+            # clear MemoryStream
+            sys.stdout = self.mystdout = StringIO()
+            self.stdout = sys.stdout
 
     def print_hidden_frames_count(self):
         n = len(self.hidden_frames)
@@ -679,14 +696,59 @@ Frames can marked as hidden in the following ways:
 
     def _print_if_sticky(self):
         if self.sticky:
+
+            if self.config.enable_tiny_display:
+                # Colors and lines
+                red     =  '\x1b[31m'
+                green   =  '\x1b[32m'
+                yellow  =  '\x1b[33m'
+                blue    =  '\x1b[34m'
+                magenta =  '\x1b[35m'
+                cyan    =  '\x1b[36m'
+                reset   =  '\x1b[m'
+
+                screen_width, _ = self.get_terminal_size()
+
+                line00 = blue + self.divinding_line * 3 + " " + yellow + "Variables "       + blue + self.divinding_line * (int(screen_width) - 4 - 10) + reset
+                line01 = blue + self.divinding_line * 3 + " " + yellow + "BackTrace "       + blue + self.divinding_line * (int(screen_width) - 4 - 10) + reset
+                line02 = blue + self.divinding_line * 3 + " " + yellow + "Source "          + blue + self.divinding_line * (int(screen_width) - 4 -  7) + reset
+                line03 = blue + self.divinding_line * 3 + " " + yellow + "Output/messages " + blue + self.divinding_line * (int(screen_width) - 4 - 16) + reset
+
+                # Switch from MemoryStream to StandardOut
+                sys.stdout = self.old_stdout
+                self.stdout = sys.stdout
+
+                # read from MemoryStream
+                tmp_value = self.mystdout.getvalue()
+
             self.stdout.write(CLEARSCREEN)
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
-            sticky_range = self.sticky_ranges.get(self.curframe, None)
-            self._printlonglist(sticky_range)
+
+            if not self.config.enable_tiny_display:
+                print(s, file=self.stdout)
+                print(file=self.stdout)
+                sticky_range = self.sticky_ranges.get(self.curframe, None)
+                self._printlonglist(sticky_range)
+
+            if self.config.enable_tiny_display:
+
+                print(line00)
+                if ( '__main__') not in self.curframe_locals and ( '__builtins__') not in self.curframe_locals  :
+                    print( self.curframe_locals )
+                else:
+                    print( red + 'No local variables' + reset )
+
+                print(line01)
+                self.print_stack_trace()
+
+                print(line02)
+                sticky_range = self.sticky_ranges.get(self.curframe, None)
+                self._printlonglist(sticky_range)
+
+                print(line03)
+                print(tmp_value)
 
             if '__exception__' in frame.f_locals:
                 exc = frame.f_locals['__exception__']
