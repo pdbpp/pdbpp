@@ -239,6 +239,14 @@ default value:
 ``sticky_by_default = False``
   Determine whether pdb++ starts in sticky mode or not.
 
+``enable_tiny_display = False``
+  Determine whether pdb++ starts in tiny display mode or not.
+  It needs to ``sticky_by_default = True``
+
+``divinding_line = -``
+  The divinding line to use with tiny display mode.
+
+
 ``line_number_color = Color.turquoise``
   The color to use for line numbers.
 
