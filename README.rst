@@ -243,7 +243,7 @@ default value:
   Determine whether pdb++ starts in tiny display mode or not.
   It needs to ``sticky_by_default = True``
 
-``divinding_line = -``
+``divinding_line = '-'``
   The divinding line to use with tiny display mode.
 
 
