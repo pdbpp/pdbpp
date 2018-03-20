@@ -160,6 +160,12 @@ Note that the "smart" behavior takes place only when there is ambiguity, i.e.
 if there exists a variable with the same name as a command: in all other
 cases, everything works as usual.
 
+Regarding the ``list`` command itself, using ``list(…`` is a special case
+that gets handled as the Python builtin::
+
+    (Pdb++) list([1, 2])
+    [1, 2]
+
 Additional functions in the ``pdb`` module
 ------------------------------------------
 
