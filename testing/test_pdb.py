@@ -42,8 +42,12 @@ class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
     def __init__(self, *args, **kwds):
+        readrc = kwds.pop("readrc", False)
         kwds.setdefault('Config', ConfigTest)
-        pdb.Pdb.__init__(self, *args, **kwds)
+        try:
+            pdb.Pdb.__init__(self, *args, readrc=readrc, **kwds)
+        except TypeError:
+            pdb.Pdb.__init__(self, *args, **kwds)
 
     def _open_editor(self, editor, lineno, filename):
         print("RUN %s +%d '%s'" % (editor, lineno, filename))
@@ -1507,4 +1511,23 @@ def test_recursive_set_trace():
    5 frames hidden .*
 # inner()
 # c
+""")
+
+
+@pytest.mark.skipif(sys.version_info < (3, 2), reason="Requires Python 3.2+")
+def test_pdbrc_continue(tmpdir):
+    """Test that interaction is skipped with continue in pdbrc."""
+    with tmpdir.as_cwd():
+        open(".pdbrc", "w").writelines([
+            "p 'from_pdbrc'\n",
+            "continue\n",
+        ])
+
+        def fn():
+            set_trace(readrc=True)
+            print("after_set_trace")
+
+        check(fn, """
+'from_pdbrc'
+after_set_trace
 """)

@@ -199,9 +199,14 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                  # which this hack does not work
 
     def interaction(self, frame, traceback):
+        ret = self.setup(frame, traceback)
+        if ret:
+            # no interaction desired at this time (happens if .pdbrc contains
+            # a command like "continue")
+            self.forget()
+            return
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
-        self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         self.print_hidden_frames_count()
         completer = fancycompleter.setup()
@@ -233,11 +238,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             os.system(self.config.exec_if_unfocused)
 
     def setup(self, frame, tb):
-        pdb.Pdb.setup(self, frame, tb)
-        while tb:
-            lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
-            self.tb_lineno[tb.tb_frame] = lineno
-            tb = tb.tb_next
+        ret = pdb.Pdb.setup(self, frame, tb)
+        if not ret:
+            while tb:
+                lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
+                self.tb_lineno[tb.tb_frame] = lineno
+                tb = tb.tb_next
+        return ret
 
     def _is_hidden(self, frame):
         if not self.config.enable_hidden_frames:
