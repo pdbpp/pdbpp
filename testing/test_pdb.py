@@ -1526,3 +1526,21 @@ def test_frame_cmd_changes_locals():
 ['b', 'x']
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
+
+
+def test_pdbrc_continue(tmpdir):
+    """Test that interaction is skipped with continue in pdbrc."""
+    with tmpdir.as_cwd():
+        open(".pdbrc", "w").writelines([
+            "p 'from_pdbrc'\n",
+            "continue\n",
+        ])
+
+        def fn():
+            set_trace()
+            print("after_set_trace")
+
+        # expected, lines = run_func(fn, """
+        check(fn, """
+'from_pdbrc'
+""")
