@@ -301,10 +301,15 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def complete(self, text, state):
         if state == 0:
+            if GLOBAL_PDB:
+                GLOBAL_PDB._pdbpp_completing = True
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe.f_locals)
             self.mycompleter = Completer(mydict)
-        return self.mycompleter.complete(text, state)
+        ret = self.mycompleter.complete(text, state)
+        if ret is None and GLOBAL_PDB:
+            del GLOBAL_PDB._pdbpp_completing
+        return ret
 
     def _init_pygments(self):
         if not self.config.use_pygments:
@@ -985,6 +990,11 @@ GLOBAL_PDB = None
 
 def set_trace(frame=None, Pdb=Pdb, **kwds):
     global GLOBAL_PDB
+
+    if GLOBAL_PDB and hasattr(GLOBAL_PDB, '_pdbpp_completing'):
+        # Handle set_trace being called during completion, e.g. with
+        # fancycompleter's attr_matches.
+        return
 
     if frame is None:
         frame = sys._getframe().f_back
