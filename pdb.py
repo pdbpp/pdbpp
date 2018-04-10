@@ -986,9 +986,6 @@ def set_trace(frame=None, Pdb=Pdb, **kwds):
         pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
         GLOBAL_PDB = pdb
 
-    if hasattr(pdb, 'curframe'):
-        del pdb.curframe
-
     pdb.set_trace(frame)
 
 def cleanup():
