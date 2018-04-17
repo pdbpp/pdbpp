@@ -284,6 +284,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self.print_current_stack_entry()
 
     def forget(self):
+        global GLOBAL_PDB
+        GLOBAL_PDB = None
         pdb.Pdb.forget(self)
         self.raise_lineno = {}
 
