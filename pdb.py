@@ -13,6 +13,7 @@ import os.path
 import inspect
 import code
 import codecs
+import copy
 import types
 import traceback
 import subprocess
@@ -289,8 +290,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
 
     def complete(self, text, state):
         if state == 0:
-            mydict = self.curframe.f_globals.copy()
-            mydict.update(self.curframe.f_locals)
+            mydict = copy.deepcopy(self.curframe.f_globals)
+            mydict.update(copy.deepcopy(self.curframe.f_locals))
             self.mycompleter = Completer(mydict)
         return self.mycompleter.complete(text, state)
 
