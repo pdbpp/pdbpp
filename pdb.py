@@ -312,8 +312,11 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                          if self.config.use_terminal256formatter
                             and '256color' in os.environ.get('TERM', '')
                          else TerminalFormatter)
-            self._fmt = Formatter(bg=self.config.bg,
-                                  colorscheme=self.config.colorscheme)
+            if self.config.use_terminal256formatter:
+                self._fmt = Formatter(style=self.config.style)
+            else:
+                self._fmt = Formatter(bg=self.config.bg,
+                                      colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
         return True
 
