@@ -64,7 +64,7 @@ setup(
     use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
-    py_modules=['pdb', '_pdbpp_path_hack.pdb'],
+    py_modules=['pdb', '_pdbpp_path_hack.pdb', 'tox_pdbpp'],
     url='http://github.com/antocuni/pdb',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
@@ -95,6 +95,11 @@ setup(
     install_requires=install_requires,
     extras_require={'funcsigs': ["funcsigs"]},
     setup_requires=['setuptools_scm'],
+    entry_points={
+        'tox': [
+            'pdbpp = tox_pdbpp',
+        ],
+    },
     cmdclass={
         'install': install_with_pth,
         'install_pth_hack': install_pth_hack,
