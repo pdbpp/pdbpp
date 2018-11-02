@@ -11,7 +11,8 @@ import pytest
 
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
-import pdb
+import pdb  # noqa: E402
+
 
 class FakeStdin:
     def __init__(self, lines):
@@ -25,10 +26,11 @@ class FakeStdin:
         except StopIteration:
             return ''
 
+
 class ConfigTest(pdb.DefaultConfig):
     highlight = False
     use_pygments = False
-    prompt = '# ' # because + has a special meaning in the regexp
+    prompt = '# '  # because + has a special meaning in the regexp
     editor = 'emacs'
     stdin_paste = 'epaste'
     disable_pytest_capturing = False
@@ -59,15 +61,17 @@ def set_trace(cleanup=True, **kwds):
     frame = sys._getframe().f_back
     pdb.set_trace(frame, PdbTest, **kwds)
 
+
 def xpm():
     pdb.xpm(PdbTest)
+
 
 def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
 
     if sys.version_info < (3, ):
-        text_type = unicode
+        text_type = unicode  # noqa: F821
     else:
         text_type = str
 
@@ -97,10 +101,12 @@ def runpdb(func, input):
 
     return stdout.get_unicode_value().splitlines()
 
+
 def remove_comment(line):
     if '###' in line:
         line, _ = line.split('###', 1)
     return line
+
 
 def extract_commands(lines):
     cmds = []
@@ -113,6 +119,7 @@ def extract_commands(lines):
                 continue
     return cmds
 
+
 shortcuts = [
     ('[', '\\['),
     (']', '\\]'),
@@ -122,10 +129,12 @@ shortcuts = [
     ('CLEAR', re.escape(pdb.CLEARSCREEN)),
     ]
 
+
 def cook_regexp(s):
     for key, value in shortcuts:
         s = s.replace(key, value)
     return s
+
 
 def run_func(func, expected):
     """Runs given function and returns its output along with expected patterns.
@@ -138,6 +147,7 @@ def run_func(func, expected):
     expected = list(map(cook_regexp, expected))
     return expected, runpdb(func, commands)
 
+
 def count_frames():
     f = sys._getframe()
     i = 0
@@ -146,6 +156,7 @@ def count_frames():
         f = f.f_back
     return i
 
+
 def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
@@ -153,7 +164,8 @@ def check(func, expected):
     print()
     for pattern, string in zip(expected, lines):
         pattern = remove_comment(pattern)
-        ok = pattern is not None and string is not None and re.match(pattern, string)
+        ok = pattern is not None and string is not None and re.match(pattern,
+                                                                     string)
         pattern = pattern or ''
         string = string or ''
         print(pattern.ljust(maxlen+1), '| ', string, end='')
@@ -188,6 +200,7 @@ def test_runpdb():
 # c
 """)
 
+
 def test_set_trace_remembers_previous_state():
     def fn():
         a = 1
@@ -217,6 +230,7 @@ a: 2 --> 3
 # c
 """)
 
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
@@ -244,6 +258,7 @@ def test_single_question_mark():
 # c
 """)
 
+
 def test_double_question_mark():
     def fn():
         def f2(x, y):
@@ -255,7 +270,7 @@ def test_double_question_mark():
         c = 3
         return a+b+c
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
@@ -274,12 +289,14 @@ def test_double_question_mark():
 # c
 """)
 
+
 def test_up_local_vars():
     def nested():
         set_trace()
         return
+
     def fn():
-        xx = 42
+        xx = 42  # noqa: F841
         nested()
 
     check(fn, """
@@ -294,11 +311,14 @@ def test_up_local_vars():
 # c
 """)
 
+
 def test_frame():
     def a():
         b()
+
     def b():
         c()
+
     def c():
         set_trace()
         return
@@ -313,11 +333,14 @@ def test_frame():
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
 
+
 def test_up_down_arg():
     def a():
         b()
+
     def b():
         c()
+
     def c():
         set_trace()
         return
@@ -334,6 +357,7 @@ def test_up_down_arg():
 -> b()
 # c
 """)
+
 
 def test_parseline():
     def fn():
@@ -358,6 +382,7 @@ def test_parseline():
 # !!c
 """)
 
+
 def test_args_name():
     def fn():
         args = 42
@@ -373,12 +398,14 @@ def test_args_name():
 # c
 """)
 
+
 def lineno():
     """Returns the current line number in our program."""
     return inspect.currentframe().f_back.f_lineno
 
+
 @pytest.mark.parametrize("command,expected_regex", [
-    ("", "Documented commands \(type help <topic>\):"),
+    ("", r"Documented commands \(type help <topic>\):"),
     ("EOF", "Handles the receipt of EOF as a command."),
     ("a", "Print the argument"),
     ("alias", "an alias"),
@@ -439,15 +466,15 @@ def lineno():
     ("whatis", "Prints? the type of the argument."),
     ("where", "Print a stack trace"),
     ("hidden_frames", "Some frames might be marked as \"hidden\""),
-    ("exec", "Execute the \(one-line\) statement"),
+    ("exec", r"Execute the \(one-line\) statement"),
 
-    ("hf_list", "\*\*\* No help"),
-    ("paste", "\*\*\* No help"),
-    ("put", "\*\*\* No help"),
-    ("retval", "\*\*\* No help|return value"),
-    ("rv", "\*\*\* No help|return value"),
-    ("source", "\*\*\* No help"),
-    ("unknown_command", "\*\*\* No help"),
+    ("hf_list", r"\*\*\* No help"),
+    ("paste", r"\*\*\* No help"),
+    ("put", r"\*\*\* No help"),
+    ("retval", r"\*\*\* No help|return value"),
+    ("rv", r"\*\*\* No help|return value"),
+    ("source", r"\*\*\* No help"),
+    ("unknown_command", r"\*\*\* No help"),
     ("help", "print the list of available commands."),
 ])
 def test_help(command, expected_regex):
@@ -465,6 +492,7 @@ def test_help(command, expected_regex):
 
     output = instance.stdout.getvalue()
     assert re.search(expected_regex, output)
+
 
 def test_shortlist():
     def fn():
@@ -484,6 +512,7 @@ NUM  ->	        return a
 # c
 """.format(line_num=fn.__code__.co_firstlineno))
 
+
 def test_longlist():
     def fn():
         a = 1
@@ -502,11 +531,12 @@ NUM  ->         return a
 # c
 """)
 
+
 def test_display():
     def fn():
         a = 1
         set_trace()
-        b = 1
+        b = 1  # noqa: F841
         a = 2
         a = 3
         return a
@@ -533,6 +563,7 @@ a: 1 --> 2
 # c
 """)
 
+
 def test_display_undefined():
     def fn():
         set_trace()
@@ -552,12 +583,13 @@ b: <undefined> --> 42
 # c
 """)
 
+
 def test_sticky():
     def fn():
         set_trace()
         a = 1
-        b = 2
-        c = 3
+        b = 2  # noqa: F841
+        c = 3  # noqa: F841
         return a
 
     check(fn, """
@@ -593,12 +625,13 @@ NUM             return a
 # c
 """)
 
+
 def test_sticky_range():
     def fn():
         set_trace()
         a = 1
-        b = 2
-        c = 3
+        b = 2  # noqa: F841
+        c = 3  # noqa: F841
         return a
     _, lineno = inspect.getsourcelines(fn)
     start = lineno + 1
@@ -625,8 +658,8 @@ def test_sticky_by_default():
     def fn():
         set_trace(Config=MyConfig)
         a = 1
-        b = 2
-        c = 3
+        b = 2  # noqa: F841
+        c = 3  # noqa: F841
         return a
 
     check(fn, """
@@ -648,11 +681,12 @@ NUM             return a
 def test_exception_lineno():
     def bar():
         assert False
+
     def fn():
         try:
-            a = 1
+            a = 1  # noqa: F841
             bar()
-            b = 2
+            b = 2  # noqa: F841
         except AssertionError:
             xpm()
 
@@ -685,7 +719,7 @@ def test_postmortem_noargs():
 
     def fn():
         try:
-            a = 1
+            a = 1  # noqa: F841
             1/0
         except ZeroDivisionError:
             pdb.post_mortem(Pdb=PdbTest)
@@ -696,6 +730,7 @@ def test_postmortem_noargs():
 # c
 """)
 
+
 def test_postmortem_needs_exceptioncontext():
     try:
         # py.test bug - doesnt clear the index error from finding the next item
@@ -705,10 +740,12 @@ def test_postmortem_needs_exceptioncontext():
         pass
     py.test.raises(AssertionError, pdb.post_mortem, Pdb=PdbTest)
 
+
 def test_exception_through_generator():
     def gen():
         yield 5
         assert False
+
     def fn():
         try:
             for i in gen():
@@ -732,7 +769,8 @@ AssertionError: assert False
 # c
 """)
 
-def test_py_code_source():
+
+def test_py_code_source():  # noqa: F821
     src = py.code.Source("""
     def fn():
         x = 42
@@ -741,7 +779,8 @@ def test_py_code_source():
     """)
 
     exec(src.compile(), globals())
-    check(fn, """
+    check(fn,  # noqa: F821
+          """
 [NUM] > .*fn()
 -> return x
    5 frames hidden .*
@@ -753,9 +792,11 @@ NUM  ->     return x
 # c
 """)
 
+
 def test_source():
     def bar():
         return 42
+
     def fn():
         set_trace()
         return bar()
@@ -770,6 +811,7 @@ NUM             return 42
 # c
 """)
 
+
 def test_bad_source():
     def fn():
         set_trace()
@@ -782,19 +824,21 @@ def test_bad_source():
 # source 42
 \*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
 # c
-""")
+""")  # noqa: E501
+
 
 def test_edit():
     def fn():
         set_trace()
         return 42
+
     def bar():
         fn()
         return 100
 
     _, lineno = inspect.getsourcelines(fn)
     return42_lineno = lineno + 2
-    call_fn_lineno = lineno + 4
+    call_fn_lineno = lineno + 5
     filename = os.path.abspath(__file__)
     if filename.endswith('.pyc'):
         filename = filename[:-1]
@@ -826,6 +870,7 @@ def test_edit_obj():
         bar()
         set_trace()
         return 42
+
     def bar():
         pass
     _, bar_lineno = inspect.getsourcelines(bar)
@@ -842,6 +887,7 @@ RUN emacs \+%d '%s'
 # c
 """ % (bar_lineno, filename))
 
+
 def test_edit_py_code_source():
     src = py.code.Source("""
     def bar():
@@ -850,7 +896,7 @@ def test_edit_py_code_source():
     """)
     _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
     dic = {'set_trace': set_trace}
-    exec(src.compile(), dic) # 8th line from the beginning of the function
+    exec(src.compile(), dic)  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
     #
@@ -858,7 +904,7 @@ def test_edit_py_code_source():
     if filename.endswith('.pyc'):
         filename = filename[:-1]
     #
-    check(bar, """
+    check(bar, r"""
 [NUM] > .*bar()
 -> return 42
    5 frames hidden .*
@@ -889,12 +935,14 @@ RUN epaste \+%d
 # c
 """ % start_lineno)
 
+
 def test_paste():
     def g():
         print('hello world')
+
     def fn():
         set_trace()
-        if 4 != 5: g()
+        if 4 != 5: g()  # noqa: E701
         return 42
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
@@ -937,6 +985,7 @@ RUN epaste \+%d
 # c
 """ % start_lineno)
 
+
 def test_side_effects_free():
     r = pdb.side_effects_free
     assert r.match('  x')
@@ -945,9 +994,10 @@ def test_side_effects_free():
     assert not r.match('  x = 10')
     assert not r.match('x = 10')
 
+
 def test_put_side_effects_free():
     def fn():
-        x = 10
+        x = 10  # noqa: F841
         set_trace()
         return 42
     _, lineno = inspect.getsourcelines(fn)
@@ -969,6 +1019,7 @@ RUN epaste \+%d
 # c
 """ % start_lineno)
 
+
 def test_enable_disable():
     def fn():
         x = 1
@@ -988,17 +1039,20 @@ def test_enable_disable():
 # c
 """)
 
+
 def test_hideframe():
     @pdb.hideframe
     def g():
         pass
     assert g.__code__.co_consts[-1] is pdb._HIDE_FRAME
 
+
 def test_hide_hidden_frames():
     @pdb.hideframe
     def g():
         set_trace()
         return 'foo'
+
     def fn():
         g()
         return 1
@@ -1022,11 +1076,13 @@ def test_hide_hidden_frames():
 # c
 """)
 
+
 def test_hide_current_frame():
     @pdb.hideframe
     def g():
         set_trace()
         return 'foo'
+
     def fn():
         g()
         return 1
@@ -1045,18 +1101,21 @@ def test_hide_current_frame():
 # c
 """)
 
+
 def test_list_hidden_frames():
     @pdb.hideframe
     def g():
         set_trace()
         return 'foo'
+
     @pdb.hideframe
     def k():
         return g()
+
     def fn():
         k()
         return 1
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> k()
    7 frames hidden .*
@@ -1084,14 +1143,16 @@ def test_hidden_pytest_frames():
         __tracebackhide__ = True
         set_trace()
         return 'foo'
+
     def k(g=g):
         return g()
     k = pdb.rebind_globals(k, {'__tracebackhide__': True})
+
     def fn():
         k()
         return 1
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> k()
    7 frames hidden .*
@@ -1113,16 +1174,18 @@ def test_hidden_pytest_frames():
 # c
     """)
 
+
 def test_hidden_unittest_frames():
 
     def g(set_trace=set_trace):
         set_trace()
         return 'foo'
-    g = pdb.rebind_globals(g, {'__unittest':True})
+    g = pdb.rebind_globals(g, {'__unittest': True})
+
     def fn():
         return g()
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> return g()
    6 frames hidden .*
@@ -1142,6 +1205,7 @@ def test_hidden_unittest_frames():
 # c
     """)
 
+
 def test_dont_show_hidden_frames_count():
     class MyConfig(ConfigTest):
         show_hidden_frames_count = False
@@ -1150,6 +1214,7 @@ def test_dont_show_hidden_frames_count():
     def g():
         set_trace(Config=MyConfig)
         return 'foo'
+
     def fn():
         g()
         return 1
@@ -1169,6 +1234,7 @@ def test_disable_hidden_frames():
     def g():
         set_trace(Config=MyConfig)
         return 'foo'
+
     def fn():
         g()
         return 1
@@ -1185,6 +1251,7 @@ def test_break_on_setattr():
     class Foo(object):
         pass
     Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
+
     def fn():
         obj = Foo()
         obj.x = 0
@@ -1205,13 +1272,16 @@ False
 # c
 """)
 
+
 def test_break_on_setattr_condition():
     def mycond(obj, value):
         return value == 42
-    # we don't use a class decorator to keep 2.5 compatibility
+
     class Foo(object):
         pass
+    # we don't use a class decorator to keep 2.5 compatibility
     Foo = pdb.break_on_setattr('x', condition=mycond, set_trace=set_trace)(Foo)
+
     def fn():
         obj = Foo()
         obj.x = 0
@@ -1233,6 +1303,7 @@ def test_break_on_setattr_condition():
 # c
 """)
 
+
 def test_break_on_setattr_non_decorator():
     class Foo(object):
         pass
@@ -1240,9 +1311,12 @@ def test_break_on_setattr_non_decorator():
     def fn():
         a = Foo()
         b = Foo()
+
         def break_if_a(obj, value):
             return obj is a
-        pdb.break_on_setattr('bar', condition=break_if_a, set_trace=set_trace)(Foo)
+
+        pdb.break_on_setattr('bar', condition=break_if_a,
+                             set_trace=set_trace)(Foo)
         b.bar = 10
         a.bar = 42
 
@@ -1253,12 +1327,14 @@ def test_break_on_setattr_non_decorator():
 # c
 """)
 
+
 def test_break_on_setattr_overridden():
     # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         def __setattr__(self, attr, value):
             object.__setattr__(self, attr, value+1)
     Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
+
     def fn():
         obj = Foo()
         obj.y = 41
@@ -1282,6 +1358,7 @@ False
 # c
 """)
 
+
 def test_track_with_no_args():
     pytest.importorskip('rpython.translator.tool.reftracker')
 
@@ -1297,12 +1374,14 @@ def test_track_with_no_args():
 # c
 """)
 
+
 def test_utf8():
     py.test.skip('fails on python 2.7')
+
     def fn():
         # тест
         a = 1
-        set_trace(Config = ConfigWithHighlight)
+        set_trace(Config=ConfigWithHighlight)
         return a
 
     # we cannot easily use "check" because the output is full of ANSI escape
@@ -1315,6 +1394,7 @@ def test_debug():
     def g():
         a = 1
         return a
+
     def fn():
         g()
         set_trace()
@@ -1340,10 +1420,12 @@ LEAVING RECURSIVE DEBUGGER
 # c
 """)
 
+
 def test_before_interaction_hook():
     class MyConfig(ConfigTest):
         def before_interaction_hook(self, pdb):
             pdb.stdout.write('HOOK!\n')
+
     def fn():
         set_trace(Config=MyConfig)
         return 1
@@ -1360,8 +1442,8 @@ HOOK!
 def test_unicode_bug():
     def fn():
         set_trace()
-        x = "this is plain ascii"
-        y = "this contains a unicode: à"
+        x = "this is plain ascii"  # noqa: F841
+        y = "this contains a unicode: à"  # noqa: F841
         return
 
     check_output = """
@@ -1404,6 +1486,7 @@ Deleted breakpoint 1
 # c
 """ % (line_z, line_z))
 
+
 def test_stdout_encoding_None():
     instance = PdbTest()
     instance.stdout = BytesIO()
@@ -1422,10 +1505,12 @@ def test_stdout_encoding_None():
 
 def test_frame_cmd_changes_locals():
     def a():
-        x = 42
+        x = 42  # noqa: F841
         b()
+
     def b():
         fn()
+
     def fn():
         set_trace()
         return
