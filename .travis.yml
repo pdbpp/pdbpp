@@ -18,12 +18,6 @@ install:
 script:
   - tox
 
-deploy:
-  provider: pypi
-  user: antocuni
-  password:
-    secure: EE0ETWh9RqPr8yF0GeoXYg8zTVaZj23zpIFyHaWshMnnqg6s42QARB4CGrBiXwqjqwL262JV+PruSynOkIpsi8p9r4lju51EwjHWOEmD5qd+2SzAD+XinQD074lA08nayKohk3qVS/ebWKPrVH0lJT7bIZvyN8W6UDhkw6/3P91ixxn7tPgDX0FJpRQpbyc8TXP25GXYMpOyANIV/qtRXHylGtS7aeAJMcVD5HlE+EEXxMQhF5MK+mvmTXuC+WGAtM36Vm48kyLVfalvQEGWY/v1UDq7dKua/EZleoLxSIJ4c6XKnx6zIoYNyKJeJiaYuutb6TYTYKQ18ZVU6jaAKE5wu/9szMIw+XMtud1J9W7Co/UgILR6AZKq/OKd7Kl1eQlF/OU1lXnU5q9wseunxkjVaA/W0tnmzHi95KKV0FebXBYPqA/ybk69tc9nsIBwxH4sNrUv5DtA7WX43WhGxN91nNhfbW3CsTklwbqrrHRkbCB2vCP+JVkQ1ctOwX7XPv+ghLqhetFsvNGNEEk/h9Vo3hiR0iq1g7MMXgqASZ/QSrSvxVbBSdB+hLt5QaS4FIRuHDaMNCD8bH3VumneLgsdaKlg0iELUvC7JyqcdRYQowZbOSlNKwSH6ys3TGyQ5DWnrGWp3Hb1YfU27cweuApZZsg1O3xEC5AMTP1FJbY=
-  on:
-    tags: true
-    distributions: 'sdist bdist_wheel'
-    repo: antocuni/pdb
+branches:
+  only:
+  - master
