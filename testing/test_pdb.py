@@ -747,7 +747,7 @@ Traceback (most recent call last):
     bar()
 .*File.*test_pdb.py.*, line NUM, in bar
     assert False
-AssertionError: assert False
+AssertionError.*
 
 [NUM] > .*bar()
 -> assert False
@@ -810,7 +810,7 @@ Traceback (most recent call last):
 .*for i in gen():
 .*test_pdb.py.*, line NUM, in gen
 .*assert False
-AssertionError: assert False
+AssertionError.*
 
 [NUM] > .*gen()
 -> assert False
