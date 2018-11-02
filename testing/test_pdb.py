@@ -780,7 +780,7 @@ def test_bad_source():
 -> return 42
    5 frames hidden .*
 # source 42
-\*\* Error: .* is not a module, class, method, function, traceback, frame, or code object \*\*
+\*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
 # c
 """)
 
