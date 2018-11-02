@@ -2,6 +2,10 @@
 from __future__ import print_function
 
 import inspect
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
 import os.path
 import sys
 import re
@@ -56,7 +60,7 @@ class PdbTest(pdb.Pdb):
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
         print("RUN %s +%d" % (cmd, lineno))
-        print(text)
+        print(repr(text))
 
 
 def set_trace(cleanup=True, **kwds):
@@ -166,12 +170,16 @@ def check(func, expected):
     maxlen = max(map(len, expected))
     all_ok = True
     print()
-    for pattern, string in zip(expected, lines):
-        pattern = remove_comment(pattern)
-        ok = pattern is not None and string is not None and re.match(pattern,
-                                                                     string)
-        pattern = pattern or ''
-        string = string or ''
+    for pattern, string in zip_longest(expected, lines):
+        if pattern is not None and string is not None:
+            pattern = remove_comment(pattern)
+            ok = re.match(pattern, string)
+        else:
+            ok = False
+            if pattern is None:
+                pattern = '<None>'
+            if string is None:
+                string = '<None>'
         print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
@@ -972,9 +980,7 @@ def test_put():
 # y = 12
 # put
 RUN epaste \+%d
-        x = 10
-        y = 12
-
+'        x = 10\\n        y = 12\\n'
 # c
 """ % start_lineno)
 
@@ -999,9 +1005,9 @@ hello world
 # paste g()
 hello world
 RUN epaste \+%d
-hello world
-
+'hello world\\n'
 # c
+hello world
 """ % start_lineno)
 
 
@@ -1022,9 +1028,7 @@ def test_put_if():
 # y = 12
 # put
 RUN epaste \+%d
-            x = 10
-            y = 12
-
+.*x = 10\\n            y = 12\\n.
 # c
 """ % start_lineno)
 
@@ -1057,8 +1061,7 @@ def test_put_side_effects_free():
 # y = 12
 # put
 RUN epaste \+%d
-        y = 12
-
+'        y = 12\\n'
 # c
 """ % start_lineno)
 
