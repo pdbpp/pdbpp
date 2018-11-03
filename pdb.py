@@ -384,10 +384,9 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                 cmd = 'inspect'
                 return cmd, arg, newline
 
-        if cmd and hasattr(self, 'do_'+cmd) and (
-                self.curframe and (cmd in self.curframe.f_globals or
-                                   cmd in self.curframe.f_locals) or
-                arg.startswith('=')):
+        if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
+                                                 cmd in self.curframe.f_locals or
+                                                 arg.startswith('=')):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
