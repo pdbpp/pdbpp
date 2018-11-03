@@ -166,6 +166,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         self.mycompleter = None
         self.display_list = {} # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
+        self.first_time_sticky = self.sticky
         self.sticky_ranges = {} # frame --> (start, end)
         self.tb_lineno = {} # frame --> lineno where the exception raised
         self.history = []
@@ -679,7 +680,10 @@ Frames can marked as hidden in the following ways:
 
     def _print_if_sticky(self):
         if self.sticky:
-            self.stdout.write(CLEARSCREEN)
+            if self.first_time_sticky:
+                self.first_time_sticky = False
+            else:
+                self.stdout.write(CLEARSCREEN)
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
             s = '> %s(%r)' % (filename, lineno)

@@ -633,12 +633,24 @@ def test_sticky_by_default():
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
-CLEAR>.*
+.*
 
 NUM         def fn():
 NUM             set_trace(Config=MyConfig)
 NUM  ->         a = 1
 NUM             b = 2
+NUM             c = 3
+NUM             return a
+# n
+[NUM] > .*fn()
+-> b = 2
+   5 frames hidden .*
+CLEAR>.*
+
+NUM         def fn():
+NUM             set_trace(Config=MyConfig)
+NUM             a = 1
+NUM  ->         b = 2
 NUM             c = 3
 NUM             return a
 # c
