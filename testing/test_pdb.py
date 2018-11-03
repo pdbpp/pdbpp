@@ -103,6 +103,10 @@ def runpdb(func, input):
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
         func()
+    except Exception:
+        # Make it available for pytests output capturing.
+        print(stdout.get_unicode_value(), file=oldstdout)
+        raise
     finally:
         sys.stdin = oldstdin
         sys.stdout = oldstdout
