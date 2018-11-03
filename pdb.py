@@ -285,7 +285,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self.print_current_stack_entry()
 
     def forget(self):
-        pdb.Pdb.forget(self)
+        global GLOBAL_PDB
+        if not hasattr(GLOBAL_PDB, 'lineno'):
+            # Only forget if not used with recursive set_trace.
+            pdb.Pdb.forget(self)
         self.raise_lineno = {}
 
     def complete(self, text, state):
@@ -982,9 +985,6 @@ def set_trace(frame=None, Pdb=Pdb, **kwds):
         lineno = frame.f_lineno
         pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
         GLOBAL_PDB = pdb
-
-    if hasattr(pdb, 'curframe'):
-        del pdb.curframe
 
     pdb.set_trace(frame)
 
