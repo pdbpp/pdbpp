@@ -90,6 +90,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python',
         'Topic :: Utilities',
+        'Topic :: Software Development :: Debuggers',
     ],
     install_requires=install_requires,
     extras_require={'funcsigs': ["funcsigs"]},
