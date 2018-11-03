@@ -1483,6 +1483,49 @@ def test_frame_cmd_changes_locals():
 """.format(frame_num_a=count_frames() + 2 - 5))
 
 
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "_cmdloop"),
+                    reason="_cmdloop is not available")
+def test_sigint_in_interaction_with_new_cmdloop():
+    def fn():
+        def inner():
+            raise KeyboardInterrupt()
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# debug inner()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) c
+--KeyboardInterrupt--
+# c
+""")
+
+
+@pytest.mark.skipif(hasattr(pdb.pdb.Pdb, "_cmdloop"),
+                    reason="_cmdloop is available")
+def test_sigint_in_interaction_without_new_cmdloop():
+    def fn():
+        def inner():
+            raise KeyboardInterrupt()
+        set_trace()
+
+    with pytest.raises(KeyboardInterrupt):
+        check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# debug inner()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) c
+""")
+
+
 def test_recursive_set_trace():
     def fn():
         global inner
