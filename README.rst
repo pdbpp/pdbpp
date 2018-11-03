@@ -50,10 +50,15 @@ you have to install ``pdbpp`` instead::
 Alternatively, you can just put ``pdb.py`` somewhere inside your
 ``PYTHONPATH``.
 
+Usage
+-----
+
 Note that the module is called ``pdb.py`` so that ``pdb++`` will automatically
-be used in all places that do ``import pdb`` (e.g., ``py.test --pdb`` will
-give you a ``pdb++`` prompt).  The old ``pdb`` module is still available by
-doing e.g. ``import pdb; pdb.pdb.set_trace()``
+be used in all places that do ``import pdb`` (e.g. ``pytest --pdb`` will
+give you a ``pdb++`` prompt).
+
+The old ``pdb`` module is still available by doing e.g. ``import pdb;
+pdb.pdb.set_trace()``
 
 New interactive commands
 ------------------------
