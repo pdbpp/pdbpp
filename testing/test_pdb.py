@@ -97,7 +97,7 @@ def runpdb(func, input):
 
     return stdout.get_unicode_value().splitlines()
 
-def remove_comment(line): 
+def remove_comment(line):
     if '###' in line:
         line, _ = line.split('###', 1)
     return line
@@ -176,12 +176,15 @@ def test_runpdb():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 # n
 [NUM] > .*fn()
 -> b = 2
+   5 frames hidden .*
 # n
 [NUM] > .*fn()
 -> c = 3
+   5 frames hidden .*
 # c
 """)
 
@@ -199,14 +202,17 @@ def test_set_trace_remembers_previous_state():
     check(fn, """
 [NUM] > .*fn()
 -> a = 2
+   5 frames hidden .*
 # display a
 # c
 [NUM] > .*fn()
 -> a = 3
+   5 frames hidden .*
 a: 1 --> 2
 # c
 [NUM] > .*fn()
 -> a = 4
+   5 frames hidden .*
 a: 2 --> 3
 # c
 """)
@@ -226,6 +232,7 @@ def test_single_question_mark():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 # f2
 <function .*f2 at .*>
 # f2?
@@ -251,6 +258,7 @@ def test_double_question_mark():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 # f2
 <function .*f2 at .*>
 # f2??
@@ -277,6 +285,7 @@ def test_up_local_vars():
     check(fn, """
 [NUM] > .*nested()
 -> return
+   5 frames hidden .*
 # up
 [NUM] > .*fn()
 -> nested()
@@ -297,11 +306,12 @@ def test_frame():
     check(a, """
 [NUM] > .*c()
 -> return
+   5 frames hidden .*
 # f {frame_num_a}
 [NUM] > .*a()
 -> b()
 # c
-""".format(frame_num_a=count_frames() + 2))
+""".format(frame_num_a=count_frames() + 2 - 5))
 
 def test_up_down_arg():
     def a():
@@ -315,6 +325,7 @@ def test_up_down_arg():
     check(a, """
 [NUM] > .*c()
 -> return
+   5 frames hidden .*
 # up 3
 [NUM] > .*runpdb()
 -> func()
@@ -333,6 +344,7 @@ def test_parseline():
     check(fn, """
 [NUM] > .*fn()
 -> return c
+   5 frames hidden .*
 # c
 42
 # !c
@@ -355,6 +367,7 @@ def test_args_name():
     check(fn, """
 [NUM] > .*fn()
 -> return args
+   5 frames hidden .*
 # args
 42
 # c
@@ -462,6 +475,7 @@ def test_shortlist():
     check(fn, """
 [NUM] > .*fn()
 -> return a
+   5 frames hidden .*
 # l {line_num}, 3
 NUM  	    def fn():
 NUM  	        a = 1
@@ -479,6 +493,7 @@ def test_longlist():
     check(fn, """
 [NUM] > .*fn()
 -> return a
+   5 frames hidden .*
 # ll
 NUM         def fn():
 NUM             a = 1
@@ -499,18 +514,22 @@ def test_display():
     check(fn, """
 [NUM] > .*fn()
 -> b = 1
+   5 frames hidden .*
 # display a
 # n
 [NUM] > .*fn()
 -> a = 2
+   5 frames hidden .*
 # n
 [NUM] > .*fn()
 -> a = 3
+   5 frames hidden .*
 a: 1 --> 2
 # undisplay a
 # n
 [NUM] > .*fn()
 -> return a
+   5 frames hidden .*
 # c
 """)
 
@@ -523,10 +542,12 @@ def test_display_undefined():
     check(fn, """
 [NUM] > .*fn()
 -> b = 42
+   5 frames hidden .*
 # display b
 # n
 [NUM] > .*fn()
 -> return b
+   5 frames hidden .*
 b: <undefined> --> 42
 # c
 """)
@@ -542,6 +563,7 @@ def test_sticky():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 # sticky
 CLEAR>.*
 
@@ -554,6 +576,7 @@ NUM             return a
 # n
 [NUM] > .*fn()
 -> b = 2
+   5 frames hidden .*
 CLEAR>.*
 
 NUM         def fn():
@@ -566,6 +589,7 @@ NUM             return a
 # n
 [NUM] > .*fn()
 -> c = 3
+   5 frames hidden .*
 # c
 """)
 
@@ -583,6 +607,7 @@ def test_sticky_range():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 # sticky %d %d
 CLEAR>.*
 
@@ -596,7 +621,7 @@ NUM             b = 2
 def test_sticky_by_default():
     class MyConfig(ConfigTest):
         sticky_by_default = True
-    
+
     def fn():
         set_trace(Config=MyConfig)
         a = 1
@@ -607,6 +632,7 @@ def test_sticky_by_default():
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
+   5 frames hidden .*
 CLEAR>.*
 
 NUM         def fn():
@@ -713,11 +739,12 @@ def test_py_code_source():
         set_trace()
         return x
     """)
-    
+
     exec(src.compile(), globals())
     check(fn, """
 [NUM] > .*fn()
 -> return x
+   5 frames hidden .*
 # ll
 NUM     def fn():
 NUM         x = 42
@@ -736,6 +763,7 @@ def test_source():
     check(fn, """
 [NUM] > .*fn()
 -> return bar()
+   5 frames hidden .*
 # source bar
 NUM         def bar():
 NUM             return 42
@@ -750,8 +778,9 @@ def test_bad_source():
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # source 42
-\*\* Error: .* is not a module, class, method, function, traceback, frame, or code object \*\*
+\*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
 # c
 """)
 
@@ -769,10 +798,11 @@ def test_edit():
     filename = os.path.abspath(__file__)
     if filename.endswith('.pyc'):
         filename = filename[:-1]
-    
+
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # edit
 RUN emacs \+%d '%s'
 # c
@@ -781,6 +811,7 @@ RUN emacs \+%d '%s'
     check(bar, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # up
 [NUM] > .*bar()
 -> fn()
@@ -805,6 +836,7 @@ def test_edit_obj():
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # edit bar
 RUN emacs \+%d '%s'
 # c
@@ -829,10 +861,11 @@ def test_edit_py_code_source():
     check(bar, """
 [NUM] > .*bar()
 -> return 42
+   5 frames hidden .*
 # edit bar
 RUN emacs \+%d '%s'
 # c
-""" % (src_compile_lineno, filename)) 
+""" % (src_compile_lineno, filename))
 
 
 def test_put():
@@ -845,6 +878,7 @@ def test_put():
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # x = 10
 # y = 12
 # put
@@ -868,6 +902,7 @@ def test_paste():
     check(fn, r"""
 [NUM] > .*fn()
 -> if 4 != 5: g()
+   5 frames hidden .*
 # g()
 hello world
 # paste g()
@@ -891,6 +926,7 @@ def test_put_if():
     check(fn, r"""
 [NUM] > .*fn()
 -> return x
+   5 frames hidden .*
 # x = 10
 # y = 12
 # put
@@ -920,6 +956,7 @@ def test_put_side_effects_free():
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
+   5 frames hidden .*
 # x
 10
 # x.__add__
@@ -945,12 +982,13 @@ def test_enable_disable():
     check(fn, """
 [NUM] > .*fn()
 -> return x
+   5 frames hidden .*
 # x
 2
 # c
 """)
 
-def test_hideframe(): 
+def test_hideframe():
     @pdb.hideframe
     def g():
         pass
@@ -968,7 +1006,7 @@ def test_hide_hidden_frames():
     check(fn, """
 [NUM] > .*fn()
 -> g()
-   1 frame hidden .*
+   6 frames hidden .*
 # down
 ... Newest frame
 # hf_unhide
@@ -996,7 +1034,7 @@ def test_hide_current_frame():
     check(fn, """
 [NUM] > .*fn()
 -> g()
-   1 frame hidden .*
+   6 frames hidden .*
 # hf_unhide
 # down           ### now the frame is no longer hidden
 [NUM] > .*g()
@@ -1021,15 +1059,25 @@ def test_list_hidden_frames():
     check(fn, """
 [NUM] > .*fn()
 -> k()
-   2 frames hidden .*
+   7 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*k()
 -> return g()
 .*g()
 -> return 'foo'
 # c
 """)
-    
+
 
 def test_hidden_pytest_frames():
     def g():
@@ -1046,8 +1094,18 @@ def test_hidden_pytest_frames():
     check(fn, """
 [NUM] > .*fn()
 -> k()
-   2 frames hidden .*
+   7 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*k()
 -> return g()
 .*g()
@@ -1056,7 +1114,7 @@ def test_hidden_pytest_frames():
     """)
 
 def test_hidden_unittest_frames():
-    
+
     def g(set_trace=set_trace):
         set_trace()
         return 'foo'
@@ -1067,8 +1125,18 @@ def test_hidden_unittest_frames():
     check(fn, """
 [NUM] > .*fn()
 -> return g()
-   1 frame hidden .*
+   6 frames hidden .*
 # hf_list
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
+.*_multicall()
+-> res = hook_impl.function(\*args)
 .*g()
 -> return 'foo'
 # c
@@ -1125,12 +1193,13 @@ def test_break_on_setattr():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 0
-   1 frame hidden .*
+   6 frames hidden .*
 # hasattr(obj, 'x')
 False
 # n
 [NUM] > .*fn()
 -> return obj.x
+   5 frames hidden .*
 # p obj.x
 0
 # c
@@ -1152,12 +1221,13 @@ def test_break_on_setattr_condition():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 42
-   1 frame hidden .*
+   6 frames hidden .*
 # obj.x
 0
 # n
 [NUM] > .*fn()
 -> return obj.x
+   5 frames hidden .*
 # obj.x
 42
 # c
@@ -1179,7 +1249,7 @@ def test_break_on_setattr_non_decorator():
     check(fn, """
 [NUM] > .*fn()
 -> a.bar = 42
-   1 frame hidden .*
+   6 frames hidden .*
 # c
 """)
 
@@ -1198,7 +1268,7 @@ def test_break_on_setattr_overridden():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 0
-   1 frame hidden .*
+   6 frames hidden .*
 # obj.y
 42
 # hasattr(obj, 'x')
@@ -1206,6 +1276,7 @@ False
 # n
 [NUM] > .*fn()
 -> return obj.x
+   5 frames hidden .*
 # p obj.x
 1
 # c
@@ -1252,6 +1323,7 @@ def test_debug():
     check(fn, """
 [NUM] > .*fn()
 -> return 1
+   5 frames hidden .*
 # debug g()
 ENTERING RECURSIVE DEBUGGER
 [NUM] > .*
@@ -1279,6 +1351,7 @@ def test_before_interaction_hook():
     check(fn, """
 [NUM] > .*fn()
 -> return 1
+   5 frames hidden .*
 HOOK!
 # c
 """)
@@ -1294,9 +1367,11 @@ def test_unicode_bug():
     check_output = """
 [NUM] > .*fn()
 -> x = "this is plain ascii"
+   5 frames hidden .*
 # n
 [NUM] > .*fn()
 -> y = "this contains a unicode: à"
+   5 frames hidden .*
 # c
 """
 
@@ -1319,11 +1394,13 @@ def test_continue_arg():
     check(fn, """
 [NUM] > .*fn()
 -> x = 1
+   5 frames hidden .*
 # c %d
 Breakpoint 1 at .*/test_pdb.py:%d
 Deleted breakpoint 1
 [NUM] > .*fn()
 -> z = 3
+   5 frames hidden .*
 # c
 """ % (line_z, line_z))
 
@@ -1356,10 +1433,11 @@ def test_frame_cmd_changes_locals():
     check(a, """
 [NUM] > .*fn()
 -> return
+   5 frames hidden .*
 # f {frame_num_a}
 [NUM] > .*a()
 -> b()
 # p list(sorted(locals().keys()))
 ['b', 'x']
 # c
-""".format(frame_num_a=count_frames() + 2))
+""".format(frame_num_a=count_frames() + 2 - 5))
