@@ -186,7 +186,7 @@ pdb++.
 
 ``@pdb.break_on_setattr(attrname, condition=always)``
 
-  class decorator: break the execution of program every time the
+  class decorator: break the execution of the program every time the
   attribute ``attrname`` is set on any instance of the class. ``condition`` is
   a callable that takes the target object of the ``setattr`` and the actual value;
   by default, it breaks every time the attribute is set. E.g.::
@@ -211,6 +211,12 @@ pdb++.
       break_on_setattr('bar', condition=break_if_a)(Foo)
       b.bar = 10   # no break
       a.bar = 42   # the program breaks here
+
+  This can be used after `pdb.set_trace()` also:
+
+      (Pdb++) import pdb
+      (Pdb++) pdb.break_on_setattr('tree_id')(obj.__class__)
+      (Pdb++) continue
 
 
 Configuration and customization
