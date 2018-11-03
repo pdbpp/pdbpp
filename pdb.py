@@ -208,7 +208,8 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         old_completer = completer.config.readline.get_completer()
         completer.config.readline.set_completer(self.complete)
         self.config.before_interaction_hook(self)
-        self.cmdloop()
+        # Use _cmdloop on py3 which catches KeyboardInterrupt.
+        getattr(self, '_cmdloop', self.cmdloop)()
         completer.config.readline.set_completer(old_completer)
         self.forget()
 
