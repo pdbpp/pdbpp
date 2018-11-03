@@ -484,6 +484,34 @@ NUM  ->	        return a
 # c
 """.format(line_num=fn.__code__.co_firstlineno))
 
+
+def test_shortlist_without_arg():
+    """Ensure that forget was called for lineno."""
+    def fn():
+        a = 1
+        set_trace(Config=ConfigTest)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l
+NUM  \tdef test_shortlist_without_arg():
+NUM  \t    \"""Ensure that forget was called for lineno.\"""
+.*
+.*
+.*
+.*
+.*
+.*
+.*
+NUM  \t-> return a
+NUM  \t   5 frames hidden .*
+# c
+""".format(line_num=fn.__code__.co_firstlineno))
+
+
 def test_longlist():
     def fn():
         a = 1
@@ -1453,3 +1481,30 @@ def test_frame_cmd_changes_locals():
 ['b', 'x']
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
+
+
+def test_recursive_set_trace():
+    def fn():
+        global inner
+        global count
+        count = 0
+
+        def inner():
+            global count
+            count += 1
+
+            if count == 1:
+                set_trace()
+            else:
+                set_trace(cleanup=False)
+
+        inner()
+
+    check(fn, """
+--Return--
+[NUM] > .*inner()
+-> set_trace()
+   5 frames hidden .*
+# inner()
+# c
+""")
