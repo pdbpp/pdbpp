@@ -304,3 +304,36 @@ default value:
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _`py.test`: http://pytest.org
+
+
+Coding guidelines
+-----------------
+
+``pdb++`` is developed using Test Driven Development, and we try to keep test
+coverage high.
+
+As a general rule, every commit should come with its own test. If it's a new
+feature, it should come with one or many tests which excercise it. If it's a
+bug fix, the test should **fail before the fix**, and pass after.
+
+The goal is to make refactoring easier in the future: if you wonder why a
+certain line of code does something, in principle it should be possible to
+comment it out and see which tests fail.
+
+In exceptional cases, the test might be too hard or impossible to write: in
+that cases it is fine to do a commmit without a test, but you should explain
+very precisely in the commit message why it is hard to write a test and how to
+reproduce the buggy behaviour by hand.
+
+It is fine NOT to write a test in the following cases:
+
+  - typos, documentation, and in general any non-coding commit
+
+  - code refactorings which do not add any feature
+
+  - commits which fix an already failing test
+
+  - commits to silence warnings
+  
+  - purely cosmetic changes, such as change the color of the output
+
