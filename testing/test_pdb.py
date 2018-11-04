@@ -1557,9 +1557,11 @@ def test_recursive_set_trace():
 """)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 2), reason="Requires Python 3.2+")
 def test_pdbrc_continue(tmpdir):
     """Test that interaction is skipped with continue in pdbrc."""
+    if "readrc" not in inspect.getargs(pdb.pdb.Pdb.__init__.__code__).args:
+        pytest.skip("Only with readrc support with pdb.Pdb")
+
     with tmpdir.as_cwd():
         open(".pdbrc", "w").writelines([
             "p 'from_pdbrc'\n",
