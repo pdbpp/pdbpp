@@ -1068,5 +1068,4 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
     return decorator
 
 if __name__=='__main__':
-    import pdb
     pdb.main()
