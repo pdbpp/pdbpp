@@ -1574,3 +1574,15 @@ def test_pdbrc_continue(tmpdir):
 'from_pdbrc'
 after_set_trace
 """)
+
+
+def test_python_m_pdb():
+    import subprocess
+
+    p = subprocess.Popen(
+        [sys.executable, "-m", "pdb"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, stderr = p.communicate()
+    assert b"usage: pdb.py" in stdout
+    assert stderr == b""
