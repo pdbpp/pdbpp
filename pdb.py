@@ -397,6 +397,10 @@ class Pdb(pdb.Pdb, ConfigurableClass):
                                                  arg.startswith('=')):
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
+        if cmd == "list" and arg.startswith("("):
+            # heuristic: handle "list(..." as the builtin.
+            line = '!' + line
+            return pdb.Pdb.parseline(self, line)
         return cmd, arg, newline
 
     def do_inspect(self, arg):
