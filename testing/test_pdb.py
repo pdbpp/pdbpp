@@ -1447,8 +1447,6 @@ def test_track_with_no_args():
 
 
 def test_utf8():
-    py.test.skip('fails on python 2.7')
-
     def fn():
         # тест
         a = 1
@@ -1458,7 +1456,7 @@ def test_utf8():
     # we cannot easily use "check" because the output is full of ANSI escape
     # sequences
     expected, lines = run_func(fn, '# ll\n# c')
-    assert 'тест' in lines[4]
+    assert u'тест' in lines[5]
 
 
 def test_debug():
