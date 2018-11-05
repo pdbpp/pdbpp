@@ -556,6 +556,27 @@ NUM  \t   5 frames hidden .*
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
+def test_shortlist_heuristic():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigTest)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# list {line_num}, 3
+NUM  \t    def fn():
+NUM  \t        a = 1
+NUM  \t        set_trace(Config=ConfigTest)
+NUM  ->	        return a
+# list(range(4))
+[0, 1, 2, 3]
+# c
+""".format(line_num=fn.__code__.co_firstlineno))
+
+
 def test_longlist():
     def fn():
         a = 1
