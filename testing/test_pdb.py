@@ -193,6 +193,31 @@ def check(func, expected):
     assert all_ok
 
 
+def test_config_terminalformatter(monkeypatch):
+    from pdb import DefaultConfig, Pdb
+    import pygments.formatters
+
+    assert DefaultConfig.use_terminal256formatter is None
+
+    monkeypatch.setenv("TERM", "")
+
+    p = Pdb(Config=DefaultConfig)
+    assert p._init_pygments() is True
+    assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
+
+    p = Pdb(Config=DefaultConfig)
+    monkeypatch.setenv("TERM", "xterm-256color")
+    assert p._init_pygments() is True
+    assert isinstance(p._fmt, pygments.formatters.Terminal256Formatter)
+
+    class Config(DefaultConfig):
+        use_terminal256formatter = False
+
+    p = Pdb(Config=Config)
+    assert p._init_pygments() is True
+    assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
+
+
 def test_runpdb():
     def fn():
         set_trace()
