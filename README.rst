@@ -223,7 +223,7 @@ pdb++.
       b.bar = 10   # no break
       a.bar = 42   # the program breaks here
 
-  This can be used after `pdb.set_trace()` also::
+  This can be used after ``pdb.set_trace()`` also::
 
       (Pdb++) import pdb
       (Pdb++) pdb.break_on_setattr('tree_id')(obj.__class__)
