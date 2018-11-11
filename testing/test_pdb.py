@@ -1459,7 +1459,7 @@ def test_utf8():
     assert u'тест' in lines[5]
 
 
-def test_debug():
+def test_debug_normal():
     def g():
         a = 1
         return a
@@ -1472,6 +1472,62 @@ def test_debug():
     check(fn, """
 [NUM] > .*fn()
 -> return 1
+   5 frames hidden .*
+# debug g()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) s
+--Call--
+[NUM] > .*g()
+-> def g():
+(#) ll
+NUM  ->     def g():
+NUM             a = 1
+NUM             return a
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
+def test_debug_with_overridden_continue():
+    class CustomPdb(PdbTest, object):
+        """CustomPdb that overrides do_continue like with pytest's wrapper."""
+        def do_continue(self, arg):
+            global count_continue
+            count_continue += 1
+            return super(CustomPdb, self).do_continue(arg)
+
+        do_c = do_cont = do_continue
+
+    def set_trace():
+        pdb.cleanup()
+        frame = sys._getframe().f_back
+        pdb.set_trace(frame, Pdb=CustomPdb)
+
+    def g():
+        a = 1
+        return a
+
+    def fn():
+        global count_continue
+        count_continue = 0
+
+        g()
+
+        set_trace()
+        set_trace()
+
+        assert count_continue == 3
+        return 1
+
+    check(fn, """
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# c
+[NUM] > .*fn()
+-> assert count_continue == 3
    5 frames hidden .*
 # debug g()
 ENTERING RECURSIVE DEBUGGER
