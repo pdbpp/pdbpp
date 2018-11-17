@@ -1779,3 +1779,41 @@ def test_python_m_pdb():
     stdout, stderr = p.communicate()
     assert b"usage: pdb.py" in stdout
     assert stderr == b""
+
+
+def test_set_trace_in_completion():
+    def fn():
+        class CompleteMe(object):
+            attr_called = 0
+
+            @property
+            def set_trace_in_attrib(self):
+                self.attr_called += 1
+                set_trace(cleanup=False)
+                print("inner_set_trace_was_ignored")
+
+        obj = CompleteMe()
+
+        set_trace()
+
+        comps = []
+        while True:
+            val = pdb.GLOBAL_PDB.complete("obj.", len(comps))
+            if val is None:
+                break
+            comps += [val]
+        assert obj.attr_called == 1, "attr was called"
+
+        # Colorization only works with pyrepl, via pyrepl.readline._setup?
+        if pdb.GLOBAL_PDB.mycompleter.config.use_colors:
+            assert any("set_trace_in_attrib" in comp for comp in comps)
+        else:
+            assert "set_trace_in_attrib" in comps
+
+    check(fn, """
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# c
+inner_set_trace_was_ignored
+""")
