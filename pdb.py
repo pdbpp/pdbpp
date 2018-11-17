@@ -89,7 +89,7 @@ class DefaultConfig:
     bg = 'dark'
     use_pygments = True
     colorscheme = None
-    use_terminal256formatter = False
+    use_terminal256formatter = None  # Defaults to `"256color" in $TERM`.
     editor = '${EDITOR:-vi}' # use $EDITOR if set, else default to vi
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
@@ -320,10 +320,12 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if hasattr(self.config, 'formatter'):
             self._fmt = self.config.formatter
         else:
-            Formatter = (Terminal256Formatter
-                         if self.config.use_terminal256formatter
-                            and '256color' in os.environ.get('TERM', '')
-                         else TerminalFormatter)
+            if (self.config.use_terminal256formatter
+                    or (self.config.use_terminal256formatter is None
+                        and "256color" in os.environ.get("TERM", ""))):
+                Formatter = Terminal256Formatter
+            else:
+                Formatter = TerminalFormatter
             self._fmt = Formatter(bg=self.config.bg,
                                   colorscheme=self.config.colorscheme)
         self._lexer = PythonLexer()
