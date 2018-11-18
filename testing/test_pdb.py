@@ -67,7 +67,7 @@ def set_trace(cleanup=True, **kwds):
     if cleanup:
         pdb.cleanup()
     frame = sys._getframe().f_back
-    pdb.set_trace(frame, PdbTest, **kwds)
+    pdb.set_trace(frame, Pdb=PdbTest, **kwds)
 
 
 def xpm():
@@ -1635,6 +1635,21 @@ Deleted breakpoint 1
    5 frames hidden .*
 # c
 """ % (line_z, line_z))
+
+
+def test_set_trace_header():
+    """Handler header kwarg added with Python 3.7 in pdb.set_trace."""
+    def fn():
+        set_trace(header="my_header")
+
+    check(fn, """
+my_header
+--Return--
+[NUM] > .*fn()
+-> set_trace.*
+   5 frames hidden .*
+# c
+""")
 
 
 def test_stdout_encoding_None():
