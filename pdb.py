@@ -990,7 +990,7 @@ def post_mortem(t=None, Pdb=Pdb):
 
 GLOBAL_PDB = None
 
-def set_trace(frame=None, Pdb=Pdb, **kwds):
+def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
     global GLOBAL_PDB
 
     if GLOBAL_PDB and hasattr(GLOBAL_PDB, '_pdbpp_completing'):
@@ -1008,6 +1008,9 @@ def set_trace(frame=None, Pdb=Pdb, **kwds):
         lineno = frame.f_lineno
         pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
         GLOBAL_PDB = pdb
+
+    if header is not None:
+        pdb.message(header)
 
     pdb.set_trace(frame)
 
