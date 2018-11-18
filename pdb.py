@@ -1010,7 +1010,11 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
         GLOBAL_PDB = pdb
 
     if header is not None:
-        pdb.message(header)
+        if hasattr(pdb, "message"):
+            pdb.message(header)
+        else:
+            # py27
+            print(header)
 
     pdb.set_trace(frame)
 
