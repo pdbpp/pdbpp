@@ -1631,8 +1631,8 @@ def test_continue_arg():
 -> x = 1
    5 frames hidden .*
 # c %d
-Breakpoint 1 at .*/test_pdb.py:%d
-Deleted breakpoint 1
+Breakpoint NUM at .*/test_pdb.py:%d
+Deleted breakpoint NUM
 [NUM] > .*fn()
 -> z = 3
    5 frames hidden .*
@@ -1799,7 +1799,17 @@ def test_python_m_pdb():
     assert stderr == b""
 
 
-def test_set_trace_in_completion():
+def get_completions(text):
+    comps = []
+    while True:
+        val = pdb.GLOBAL_PDB.complete(text, len(comps))
+        if val is None:
+            break
+        comps += [val]
+    return comps
+
+
+def test_set_trace_in_completion(monkeypatch):
     def fn():
         class CompleteMe(object):
             attr_called = 0
@@ -1814,19 +1824,14 @@ def test_set_trace_in_completion():
 
         set_trace()
 
-        comps = []
-        while True:
-            val = pdb.GLOBAL_PDB.complete("obj.", len(comps))
-            if val is None:
-                break
-            comps += [val]
+        monkeypatch.setattr("readline.get_line_buffer", lambda: "obj.")
+        monkeypatch.setattr("readline.get_begidx", lambda: 4)
+        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        comps = get_completions("obj.")
         assert obj.attr_called == 1, "attr was called"
 
-        # Colorization only works with pyrepl, via pyrepl.readline._setup?
-        if pdb.GLOBAL_PDB.mycompleter.config.use_colors:
-            assert any("set_trace_in_attrib" in comp for comp in comps)
-        else:
-            assert "set_trace_in_attrib" in comps
+        # Colorization only works with pyrepl, via pyrepl.readline._setup.
+        assert any("set_trace_in_attrib" in comp for comp in comps), comps
 
     check(fn, """
 [NUM] > .*fn()
@@ -1835,3 +1840,59 @@ def test_set_trace_in_completion():
 # c
 inner_set_trace_was_ignored
 """)
+
+
+def test_completes_from_pdb(monkeypatch):
+    """Test that pdb's original completion is used."""
+    def fn():
+        where = 1  # noqa: F841
+        set_trace()
+
+        # Patch readline to return expected results for "wher".
+        monkeypatch.setattr("readline.get_line_buffer", lambda: "wher")
+        monkeypatch.setattr("readline.get_begidx", lambda: 4)
+        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        assert get_completions("wher") == ["where"]
+
+        if sys.version_info > (3, ):
+            # Patch readline to return expected results for "disable ".
+            monkeypatch.setattr("readline.get_line_buffer", lambda: "disable")
+            monkeypatch.setattr("readline.get_begidx", lambda: 8)
+            monkeypatch.setattr("readline.get_endidx", lambda: 8)
+
+            # NOTE: number depends on bpb.Breakpoint class state, just ensure that
+            #       is a number.
+            completion = pdb.GLOBAL_PDB.complete("", 0)
+            assert int(completion) > 0
+
+            # Patch readline to return expected results for "p ".
+            monkeypatch.setattr("readline.get_line_buffer", lambda: "p ")
+            monkeypatch.setattr("readline.get_begidx", lambda: 2)
+            monkeypatch.setattr("readline.get_endidx", lambda: 2)
+            comps = get_completions("")
+            assert "__name__" in comps
+
+        # Patch readline to return expected results for "help ".
+        monkeypatch.setattr("readline.get_line_buffer", lambda: "help ")
+        monkeypatch.setattr("readline.get_begidx", lambda: 5)
+        monkeypatch.setattr("readline.get_endidx", lambda: 5)
+        comps = get_completions("")
+        assert "help" in comps
+
+        set_trace()
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# break %d
+Breakpoint NUM at .*
+# c
+--Return--
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# c
+""" % lineno)
