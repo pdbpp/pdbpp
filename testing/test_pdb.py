@@ -142,7 +142,7 @@ shortcuts = [
     (')', '\\)'),
     ('NUM', ' *[0-9]*'),
     ('CLEAR', re.escape(pdb.CLEARSCREEN)),
-    ]
+]
 
 
 def cook_regexp(s):
@@ -1044,14 +1044,15 @@ def test_paste():
 
     def fn():
         set_trace()
-        if 4 != 5: g()  # noqa: E701
+        if 4 != 5:
+            g()
         return 42
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
 
     check(fn, r"""
 [NUM] > .*fn()
--> if 4 != 5: g()
+-> if 4 != 5:
    5 frames hidden .*
 # g()
 hello world
@@ -1521,6 +1522,7 @@ LEAVING RECURSIVE DEBUGGER
 def test_debug_with_overridden_continue():
     class CustomPdb(PdbTest, object):
         """CustomPdb that overrides do_continue like with pytest's wrapper."""
+
         def do_continue(self, arg):
             global count_continue
             count_continue += 1
