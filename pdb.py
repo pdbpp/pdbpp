@@ -148,7 +148,7 @@ class Undefined:
         return '<undefined>'
 undefined = Undefined()
 
-class Pdb(pdb.Pdb, ConfigurableClass):
+class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     DefaultConfig = DefaultConfig
     config_filename = '.pdbrc.py'
@@ -163,7 +163,6 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             self._disable_pytest_capture_maybe()
         pdb.Pdb.__init__(self, *args, **kwds)
         self.prompt = self.config.prompt
-        self.mycompleter = None
         self.display_list = {} # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
         self.first_time_sticky = self.sticky
@@ -299,17 +298,44 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             pdb.Pdb.forget(self)
         self.raise_lineno = {}
 
+    @classmethod
+    def _get_all_completions(cls, complete, text):
+        r = []
+        i = 0
+        while True:
+            comp = complete(text, i)
+            if comp is None:
+                break
+            i += 1
+            r.append(comp)
+        return r
+
     def complete(self, text, state):
+        """Handle completions from fancycompleter and original pdb."""
         if state == 0:
             if GLOBAL_PDB:
                 GLOBAL_PDB._pdbpp_completing = True
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe.f_locals)
-            self.mycompleter = Completer(mydict)
-        ret = self.mycompleter.complete(text, state)
-        if ret is None and GLOBAL_PDB:
-            del GLOBAL_PDB._pdbpp_completing
-        return ret
+            completer = Completer(mydict)
+            self._completions = self._get_all_completions(completer.complete, text)
+
+            real_pdb = super(Pdb, self)
+            for x in self._get_all_completions(real_pdb.complete, text):
+                if x not in self._completions:
+                    self._completions.append(x)
+
+            if GLOBAL_PDB:
+                del GLOBAL_PDB._pdbpp_completing
+
+            # Remove "\t" from fancycompleter if there are pdb completions.
+            if len(self._completions) > 1 and self._completions[0] == "\t":
+                self._completions.pop(0)
+
+        try:
+            return self._completions[state]
+        except IndexError:
+            return None
 
     def _init_pygments(self):
         if not self.config.use_pygments:
@@ -381,6 +407,7 @@ class Pdb(pdb.Pdb, ConfigurableClass):
             # command, then for the variable name to display
             line = line[2:]
             return pdb.Pdb.parseline(self, line)
+
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exits in the current contex; this prevents pdb to quit
         # if you type e.g. 'r[0]' by mystake.
@@ -402,12 +429,13 @@ class Pdb(pdb.Pdb, ConfigurableClass):
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
                                                  arg.startswith('=')):
-            line = '!' + line
-            return pdb.Pdb.parseline(self, line)
+            return pdb.Pdb.parseline(self, '!' + line)
+
         if cmd == "list" and arg.startswith("("):
             # heuristic: handle "list(..." as the builtin.
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
+
         return cmd, arg, newline
 
     def do_inspect(self, arg):
