@@ -49,11 +49,14 @@ class PdbTest(pdb.Pdb):
 
     def __init__(self, *args, **kwds):
         readrc = kwds.pop("readrc", False)
+        nosigint = kwds.pop("nosigint", True)
         kwds.setdefault('Config', ConfigTest)
         try:
             pdb.Pdb.__init__(self, *args, readrc=readrc, **kwds)
         except TypeError:
             pdb.Pdb.__init__(self, *args, **kwds)
+        # Do not install sigint_handler in do_continue by default.
+        self.nosigint = nosigint
 
     def _open_editor(self, editor, lineno, filename):
         print("RUN %s +%d '%s'" % (editor, lineno, filename))
