@@ -407,6 +407,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # command, then for the variable name to display
             line = line[2:]
             return pdb.Pdb.parseline(self, line)
+
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exits in the current contex; this prevents pdb to quit
         # if you type e.g. 'r[0]' by mystake.
@@ -428,12 +429,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
                                                  arg.startswith('=')):
-            line = '!' + line
-            return pdb.Pdb.parseline(self, line)
+            return pdb.Pdb.parseline(self, '!' + line)
+
         if cmd == "list" and arg.startswith("("):
             # heuristic: handle "list(..." as the builtin.
             line = '!' + line
             return pdb.Pdb.parseline(self, line)
+
         return cmd, arg, newline
 
     def do_inspect(self, arg):

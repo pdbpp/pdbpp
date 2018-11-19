@@ -1824,19 +1824,11 @@ def test_set_trace_in_completion(monkeypatch):
         monkeypatch.setattr("readline.get_line_buffer", lambda: "obj.")
         monkeypatch.setattr("readline.get_begidx", lambda: 4)
         monkeypatch.setattr("readline.get_endidx", lambda: 4)
-        comps = []
-        while True:
-            val = pdb.GLOBAL_PDB.complete("obj.", len(comps))
-            if val is None:
-                break
-            comps += [val]
+        comps = get_completions("obj.")
         assert obj.attr_called == 1, "attr was called"
 
-        # Colorization only works with pyrepl, via pyrepl.readline._setup?
-        if pdb.GLOBAL_PDB.mycompleter.config.use_colors:
-            assert any("set_trace_in_attrib" in comp for comp in comps)
-        else:
-            assert "set_trace_in_attrib" in comps
+        # Colorization only works with pyrepl, via pyrepl.readline._setup.
+        assert any("set_trace_in_attrib" in comp for comp in comps), comps
 
     check(fn, """
 [NUM] > .*fn()
