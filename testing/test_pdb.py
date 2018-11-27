@@ -1768,6 +1768,32 @@ def test_recursive_set_trace():
 """)
 
 
+def test_steps_over_set_trace():
+    def fn():
+        set_trace()
+        print(1)
+
+        set_trace(cleanup=False)
+        print(2)
+
+    check(fn, """
+[NUM] > .*fn()
+-> print(1)
+   5 frames hidden .*
+# n
+1
+[NUM] > .*fn()
+-> set_trace(cleanup=False)
+   5 frames hidden .*
+# n
+[NUM] > .*fn()
+-> print(2)
+   5 frames hidden .*
+# c
+2
+""")
+
+
 def test_pdbrc_continue(tmpdir):
     """Test that interaction is skipped with continue in pdbrc."""
     if "readrc" not in inspect.getargs(pdb.pdb.Pdb.__init__.__code__).args:
