@@ -1,6 +1,55 @@
 CHANGELOG
 =========
 
+Changes between 0.9.2 and 0.9.3
+===============================
+
+- Features
+  - Improve sticky_by_default: don't clear screen the first time (#83)
+  - Handle header kwarg added with Python 3.7 in pdb.set_trace (#115)
+  - config: allow to force use_terminal256formatter (#112)
+  - Add heuristic for which 'list' is meant (#82)
+
+- Fixes
+  - Skip/step over ``pdb.set_trace()`` (#119)
+  - Handle completions from original pdb (#116)
+  - Handle set_trace being invoked during completion (#89)
+  - _pdbpp_path_hack/pdb.py: fix ResourceWarning (#97)
+  - Fix "python -m pdb" (#108)
+  - setup/interaction: use/handle return value from pdb.Pdb.setup (#107)
+  - interaction: use _cmdloop if available (#106)
+  - Fixed virtualenv sys.path shuffling issue (#85)
+  - set_trace: do not delete pdb.curframe (#103)
+  - forget: only call pdb.Pdb.forget with GLOBAL_PDB once
+
+- Tests
+  - Travis: test pypy3
+  - Travis/tox: add py37, remove nightly
+  - tests: PdbTest: use nosigint=True (#117)
+  - Add test_debug_with_overridden_continue (#113)
+  - tests: re-enable/fix test_utf8 (#110)
+  - tests: fix conditional skipping with test_pdbrc_continue
+  - tests: runpdb: print output on Exceptions
+  - pytest.ini: addopts: -ra
+  - tests: handle pytest's ``--assert=plain`` mode
+  - tests: harden check: match all lines
+  - tests: fix flake8 errors and invalid-escape DeprecationWarnings
+
+- Misc
+  - setup.py: add trove classifier for "… :: Debuggers"
+  - doc: separate usage section (#105)
+  - Format code: flake8 clean, using autopep8 mainly (#118)
+  - Add wheels support
+  - README: grammar and example for break_on_setattr (#99)
+  - README: fix formatting
+  - Simplify the code, since we no longer support python 2.6
+
+Changes between 0.9.1 and 0.9.2
+===============================
+
+- Add ``LICENSE.txt``.
+- Improved import time for `__version__`.
+
 Changes between 0.8.2 and 0.9.1
 ===============================
 
