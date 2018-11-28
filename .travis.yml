@@ -1,4 +1,4 @@
-sudo: false
+dist: xenial
 language: python
 
 cache:
@@ -6,18 +6,19 @@ cache:
 
 python:
   - '2.7'
-  - pypy
   - '3.4'
   - '3.5'
   - '3.6'
-  - pypy3
+  - '3.7'
 
 jobs:
   include:
-    - python: '3.7'
-      sudo: required
-      dist: xenial
-
+    - python: pypy
+      dist: trusty
+      sudo: false
+    - python: pypy3
+      dist: trusty
+      sudo: false
     - stage: release
       script: skip
       install: skip
@@ -35,7 +36,6 @@ stages:
   - name: test
   - name: release
     if: tag IS present
-
 
 install:
   - pip install tox-travis
