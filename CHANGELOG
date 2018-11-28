@@ -5,12 +5,14 @@ Changes between 0.9.2 and 0.9.3
 ===============================
 
 - Features
+
   - Improve sticky_by_default: don't clear screen the first time (#83)
   - Handle header kwarg added with Python 3.7 in pdb.set_trace (#115)
   - config: allow to force use_terminal256formatter (#112)
   - Add heuristic for which 'list' is meant (#82)
 
 - Fixes
+
   - Skip/step over ``pdb.set_trace()`` (#119)
   - Handle completions from original pdb (#116)
   - Handle set_trace being invoked during completion (#89)
@@ -23,6 +25,7 @@ Changes between 0.9.2 and 0.9.3
   - forget: only call pdb.Pdb.forget with GLOBAL_PDB once
 
 - Tests
+
   - Travis: test pypy3
   - Travis/tox: add py37, remove nightly
   - tests: PdbTest: use nosigint=True (#117)
@@ -36,6 +39,7 @@ Changes between 0.9.2 and 0.9.3
   - tests: fix flake8 errors and invalid-escape DeprecationWarnings
 
 - Misc
+
   - setup.py: add trove classifier for "… :: Debuggers"
   - doc: separate usage section (#105)
   - Format code: flake8 clean, using autopep8 mainly (#118)

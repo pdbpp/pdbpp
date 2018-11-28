@@ -58,7 +58,7 @@ be used in all places that do ``import pdb`` (e.g. ``pytest --pdb`` will
 give you a ``pdb++`` prompt).
 
 The old ``pdb`` module is still available by doing e.g. ``import pdb;
-pdb.pdb.set_trace()``
+pdb.pdb.set_trace()``.
 
 New interactive commands
 ------------------------
@@ -196,7 +196,6 @@ pdb++.
   as ``up``, ``down`` or ``where``, unless ``hf_unhide`` is invoked.
 
 ``@pdb.break_on_setattr(attrname, condition=always)``
-
   class decorator: break the execution of the program every time the
   attribute ``attrname`` is set on any instance of the class. ``condition`` is
   a callable that takes the target object of the ``setattr`` and the actual value;
