@@ -300,7 +300,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
-        self.first_time_sticky = self.sticky
         self.sticky_ranges = {}  # frame --> (start, end)
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
@@ -1308,17 +1307,14 @@ except for when using the function decorator.
         except KeyError:
             print('** %s not in the display list **' % arg, file=self.stdout)
 
-    def _print_if_sticky(self):
+    def _print_if_sticky(self, clear):
         if self.sticky:
-            if self.first_time_sticky:
-                self.first_time_sticky = False
-            else:
+            if clear:
                 self.stdout.write(CLEARSCREEN)
+                self.print_stack_entry(self.stack[self.curindex])
+
             frame, lineno = self.stack[self.curindex]
-            filename = self.canonic(frame.f_code.co_filename)
-            s = '> %s(%r)' % (filename, lineno)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
+            print()
             sticky_range = self.sticky_ranges.get(self.curframe, None)
             self._printlonglist(sticky_range)
 
@@ -1372,8 +1368,8 @@ except for when using the function decorator.
         """
         sticky [start end]
 
-        Toggle sticky mode. When in sticky mode, it clear the screen
-        and longlist the current functions, making the source
+        Toggle sticky mode. When in sticky mode, it clears the screen
+        and longlists the current functions, making the source
         appearing always in the same position. Useful to follow the
         flow control of a function when doing step-by-step execution.
 
@@ -1393,7 +1389,7 @@ except for when using the function decorator.
         else:
             self.sticky = not self.sticky
             self.sticky_range = None
-        self._print_if_sticky()
+        self._print_if_sticky(True)
 
     def print_stack_trace(self):
         try:
@@ -1431,7 +1427,7 @@ except for when using the function decorator.
 
     def print_current_stack_entry(self):
         if self.sticky:
-            self._print_if_sticky()
+            self._print_if_sticky(True)
         else:
             self.print_stack_entry(self.stack[self.curindex])
 
@@ -1443,7 +1439,7 @@ except for when using the function decorator.
         if getattr(self, "_skip_sticky", False):
             del self._skip_sticky
         else:
-            self._print_if_sticky()
+            self._print_if_sticky(False)
 
         display_list = self._get_display_list()
         for expr, oldvalue in display_list.items():
@@ -1455,6 +1451,12 @@ except for when using the function decorator.
                 display_list[expr] = newvalue
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
+
+    def postcmd(self, stop, line):
+        super(Pdb, self).postloop()
+        if stop and self.sticky:
+            self.stdout.write(CLEARSCREEN)
+        return stop
 
     def _get_position_of_arg(self, arg):
         try:
