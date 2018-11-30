@@ -175,7 +175,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
-        self.first_time_sticky = self.sticky
         self.sticky_ranges = {}  # frame --> (start, end)
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
@@ -744,17 +743,14 @@ Frames can marked as hidden in the following ways:
         except KeyError:
             print('** %s not in the display list **' % arg, file=self.stdout)
 
-    def _print_if_sticky(self):
+    def _print_if_sticky(self, clear):
         if self.sticky:
-            if self.first_time_sticky:
-                self.first_time_sticky = False
-            else:
+            if clear:
                 self.stdout.write(CLEARSCREEN)
+                self.print_stack_entry(self.stack[self.curindex])
+
             frame, lineno = self.stack[self.curindex]
-            filename = self.canonic(frame.f_code.co_filename)
-            s = '> %s(%r)' % (filename, lineno)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
+            print()
             sticky_range = self.sticky_ranges.get(self.curframe, None)
             self._printlonglist(sticky_range)
 
@@ -793,8 +789,8 @@ Frames can marked as hidden in the following ways:
         """
         sticky [start end]
 
-        Toggle sticky mode. When in sticky mode, it clear the screen
-        and longlist the current functions, making the source
+        Toggle sticky mode. When in sticky mode, it clears the screen
+        and longlists the current functions, making the source
         appearing always in the same position. Useful to follow the
         flow control of a function when doing step-by-step execution.
 
@@ -814,7 +810,7 @@ Frames can marked as hidden in the following ways:
         else:
             self.sticky = not self.sticky
             self.sticky_range = None
-        self._print_if_sticky()
+        self._print_if_sticky(True)
 
     def print_stack_trace(self):
         try:
@@ -836,12 +832,12 @@ Frames can marked as hidden in the following ways:
 
     def print_current_stack_entry(self):
         if self.sticky:
-            self._print_if_sticky()
+            self._print_if_sticky(True)
         else:
             self.print_stack_entry(self.stack[self.curindex])
 
     def preloop(self):
-        self._print_if_sticky()
+        self._print_if_sticky(False)
         display_list = self._get_display_list()
         for expr, oldvalue in display_list.items():
             newvalue = self._getval_or_undefined(expr)
@@ -852,6 +848,12 @@ Frames can marked as hidden in the following ways:
                 display_list[expr] = newvalue
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
+
+    def postcmd(self, stop, line):
+        super(Pdb, self).postloop()
+        if stop and self.sticky:
+            self.stdout.write(CLEARSCREEN)
+        return stop
 
     def _get_position_of_arg(self, arg):
         try:
