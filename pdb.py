@@ -930,21 +930,27 @@ Frames can marked as hidden in the following ways:
     do_d = do_down
 
     def get_terminal_size(self):
+        fallback = (80, 24)
         try:
-            import termios
-            import fcntl
-            import struct
-            call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00"*8)
-            height, width = struct.unpack("hhhh", call)[:2]
-        except (SystemExit, KeyboardInterrupt):
-            raise
-        except:
-            width = int(os.environ.get('COLUMNS', 80))
-            height = int(os.environ.get('COLUMNS', 24))
-        # Work around above returning width, height = 0, 0 in Emacs
-        width = width if width != 0 else 80
-        height = height if height != 0 else 24
-        return width, height
+            from shutil import get_terminal_size
+        except ImportError:
+            try:
+                import termios
+                import fcntl
+                import struct
+                call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00"*8)
+                height, width = struct.unpack("hhhh", call)[:2]
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except:
+                width = int(os.environ.get('COLUMNS', fallback[0]))
+                height = int(os.environ.get('COLUMNS', fallback[1]))
+            # Work around above returning width, height = 0, 0 in Emacs
+            width = width if width != 0 else fallback[0]
+            height = height if height != 0 else fallback[1]
+            return width, height
+        else:
+            return get_terminal_size(fallback)
 
     def _open_editor(self, editor, lineno, filename):
         filename = filename.replace('"', '\\"')
