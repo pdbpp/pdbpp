@@ -1741,6 +1741,32 @@ ENTERING RECURSIVE DEBUGGER
 """)
 
 
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "_previous_sigint_handler"),
+                    reason="_previous_sigint_handler is not available")
+def test_interaction_restores_previous_sigint_handler():
+    """Test is based on cpython's test_pdb_issue_20766."""
+    def fn():
+        i = 1
+        while i <= 2:
+            sess = PdbTest(nosigint=False)
+            sess.set_trace(sys._getframe())
+            print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+            i += 1
+
+    check(fn, """
+[NUM] > .*fn()
+-> print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+   5 frames hidden .*
+# c
+pdb 1: <built-in function default_int_handler>
+[NUM] > .*fn()
+-> sess.set_trace(sys._getframe())
+   5 frames hidden .*
+# c
+pdb 2: <built-in function default_int_handler>
+""")
+
+
 def test_recursive_set_trace():
     def fn():
         global inner

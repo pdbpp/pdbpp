@@ -18,6 +18,7 @@ import traceback
 import subprocess
 import pprint
 import re
+import signal
 from collections import OrderedDict
 from fancycompleter import Completer, ConfigurableClass, Color
 import fancycompleter
@@ -209,6 +210,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             pass
 
     def interaction(self, frame, traceback):
+        # Restore the previous signal handler at the Pdb prompt.
+        if getattr(pdb.Pdb, '_previous_sigint_handler', None):
+            signal.signal(signal.SIGINT, pdb.Pdb._previous_sigint_handler)
+            pdb.Pdb._previous_sigint_handler = None
         ret = self.setup(frame, traceback)
         if ret:
             # no interaction desired at this time (happens if .pdbrc contains
