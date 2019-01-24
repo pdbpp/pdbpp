@@ -1924,3 +1924,19 @@ Breakpoint NUM at .*
    5 frames hidden .*
 # c
 """ % lineno)
+
+
+def test_ensure_file_can_write_unicode():
+    import io
+    from pdb import DefaultConfig, Pdb
+
+    out = io.BytesIO(b"")
+    stdout = io.TextIOWrapper(out, encoding="latin1")
+
+    p = Pdb(Config=DefaultConfig, stdout=stdout)
+
+    assert p.stdout.stream is out
+
+    p.stdout.write("test äöüß")
+    out.seek(0)
+    assert out.read().decode("utf-8") == "test äöüß"
