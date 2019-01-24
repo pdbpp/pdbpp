@@ -1937,6 +1937,6 @@ def test_ensure_file_can_write_unicode():
 
     assert p.stdout.stream is out
 
-    p.stdout.write("test äöüß")
+    p.stdout.write(u"test äöüß")
     out.seek(0)
-    assert out.read().decode("utf-8") == "test äöüß"
+    assert out.read().decode("utf-8") == u"test äöüß"
