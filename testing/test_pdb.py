@@ -1760,7 +1760,7 @@ def test_interaction_restores_previous_sigint_handler():
 # c
 pdb 1: <built-in function default_int_handler>
 [NUM] > .*fn()
--> sess.set_trace(sys._getframe())
+-> .*
    5 frames hidden .*
 # c
 pdb 2: <built-in function default_int_handler>
