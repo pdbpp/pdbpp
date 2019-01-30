@@ -50,27 +50,13 @@ else:
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
     result = types.ModuleType(name)
-    imported = False
 
-    if hasattr(code, '__loader__'):
-        try:
-            code = code.__loader__.get_code('pdb')
-        except ImportError:
-            pass
-        else:
-            resultd = {}
-            exec(code, resultd)
-            for k, v in resultd.items():
-                setattr(result, k, v)
-            imported = True
-
-    if not imported:
-        stdlibdir, _ = os.path.split(code.__file__)
-        pyfile = os.path.join(stdlibdir, name + '.py')
-        with open(pyfile) as f:
-            src = f.read()
-        co_module = compile(src, pyfile, 'exec', dont_inherit=True)
-        exec(co_module, result.__dict__)
+    stdlibdir, _ = os.path.split(code.__file__)
+    pyfile = os.path.join(stdlibdir, name + '.py')
+    with open(pyfile) as f:
+        src = f.read()
+    co_module = compile(src, pyfile, 'exec', dont_inherit=True)
+    exec(co_module, result.__dict__)
 
     return result
 
