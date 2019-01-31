@@ -15,6 +15,12 @@ python:
 
 jobs:
   include:
+    - stage: test
+      python: '3.2'
+      dist: trusty
+    - python: '3.3'
+      dist: trusty
+
     - stage: release
       script: skip
       install: skip
