@@ -1019,6 +1019,9 @@ Frames can marked as hidden in the following ways:
 if hasattr(pdb, 'Restart'):
     Restart = pdb.Restart
 
+if hasattr(pdb, '_usage'):
+    _usage = pdb._usage
+
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
@@ -1160,4 +1163,5 @@ def break_on_setattr(attrname, condition=always, set_trace=set_trace):
 
 
 if __name__ == '__main__':
+    import pdb
     pdb.main()

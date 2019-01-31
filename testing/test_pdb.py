@@ -1841,7 +1841,7 @@ after_set_trace
 """)
 
 
-def test_python_m_pdb():
+def test_python_m_pdb_usage():
     import subprocess
 
     p = subprocess.Popen(
@@ -1849,8 +1849,33 @@ def test_python_m_pdb():
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = p.communicate()
-    assert b"usage: pdb.py" in stdout
-    assert stderr == b""
+    out = stdout.decode("utf8")
+    err = stderr.decode("utf8")
+    assert err == ""
+    assert "usage: pdb.py" in out
+
+
+def test_python_m_pdb_uses_pdbpp(tmpdir):
+    import subprocess
+
+    with tmpdir.as_cwd():
+        f = tmpdir.ensure("test.py")
+        f.write("import os\n__import__('pdb').set_trace()")
+
+        p = subprocess.Popen(
+            [sys.executable, "-m", "pdb", str(f)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE
+        )
+    stdout, stderr = p.communicate(b"c\n")
+    out = stdout.decode("utf8")
+    err = stderr.decode("utf8")
+    print(out)
+    print(err, file=sys.stderr)
+    assert err == ""
+    assert "(Pdb)" not in out
+    assert "(Pdb++)" in out
+    assert out.endswith("-> import os\n(Pdb++) \n")
 
 
 def get_completions(text):
