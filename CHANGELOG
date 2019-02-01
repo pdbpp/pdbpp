@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-Changes between 0.9.3 and 0.9.4
+Changes between 0.9.3 and 0.9.5
 ===============================
 
 - Fixes
@@ -16,6 +16,7 @@ Changes between 0.9.3 and 0.9.4
   - Use ``shutil.get_terminal_size`` if available (#125)
   - Slightly improve loading of pdb from stdlib (#133)
 
+NOTE: 0.9.4 was not released to PyPI due to Travis CI misconfiguration.
 
 Changes between 0.9.2 and 0.9.3
 ===============================
