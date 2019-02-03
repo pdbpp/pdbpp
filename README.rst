@@ -39,7 +39,7 @@ Installation
 -------------
 
 Since ``pdb++`` is not a valid identifier for ``pip`` and ``easy_install``,
-you have to install ``pdbpp`` instead::
+the package is named ``pdbpp``::
 
     $ pip install pdbpp
 
@@ -47,8 +47,14 @@ you have to install ``pdbpp`` instead::
 
     $ easy_install pdbpp
 
+``pdb++`` is also available via `conda`_::
+
+    $ conda install -c conda-forge pdbpp
+
 Alternatively, you can just put ``pdb.py`` somewhere inside your
 ``PYTHONPATH``.
+
+.. _conda: https://anaconda.org/conda-forge/pdbpp
 
 Usage
 -----
