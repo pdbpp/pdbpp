@@ -432,6 +432,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 cmd = 'inspect'
                 return cmd, arg, newline
 
+        # f-strings.
+        if (cmd == 'f' and len(newline) > 1
+                and (newline[1] == "'" or newline[1] == '"')):
+            return pdb.Pdb.parseline(self, '!' + line)
+
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
                                                  arg.startswith('=')):
