@@ -378,6 +378,23 @@ def test_frame():
 """.format(frame_num_a=count_frames() + 2 - 5))
 
 
+@pytest.mark.skipif(sys.version_info < (3, 6),
+                    reason="only with f-strings")
+def test_fstrings():
+    def f():
+        set_trace()
+
+    check(f, """
+--Return--
+[NUM] > .*
+-> set_trace()
+   5 frames hidden .*
+# f"fstring"
+'fstring'
+# c
+""".format(frame_num_a=count_frames() + 2 - 5))
+
+
 def test_up_down_arg():
     def a():
         b()
