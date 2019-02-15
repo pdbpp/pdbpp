@@ -662,7 +662,20 @@ Frames can marked as hidden in the following ways:
             do_debug_func = pdb.Pdb.do_debug
 
         orig_do_debug = rebind_globals(do_debug_func, newglobals)
-        return orig_do_debug(self, arg)
+
+        # Compile the code already to not crash on SyntaxErrors.
+        # Error handling is copied from pdb.Pdb.default.
+        cmd = arg
+        if isinstance(cmd, str):
+            try:
+                cmd = compile(cmd, "<string>", "exec")
+            except SyntaxError:
+                import traceback
+                exc_info = sys.exc_info()[:2]
+                self.error(traceback.format_exception_only(*exc_info)[-1].strip())
+                return
+
+        return orig_do_debug(self, cmd)
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):

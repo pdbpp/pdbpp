@@ -1519,6 +1519,23 @@ LEAVING RECURSIVE DEBUGGER
 """)
 
 
+def test_syntaxerror_in_command():
+    def f():
+        set_trace()
+
+    check(f, """
+--Return--
+[NUM] > .*f()
+-> set_trace
+   5 frames hidden .*
+# print(
+\\*\\*\\* SyntaxError: .*
+# debug print(
+\\*\\*\\* SyntaxError: .*
+# c
+""")
+
+
 def test_debug_with_overridden_continue():
     class CustomPdb(PdbTest, object):
         """CustomPdb that overrides do_continue like with pytest's wrapper."""
