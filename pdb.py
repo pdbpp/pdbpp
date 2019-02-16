@@ -642,27 +642,6 @@ Frames can marked as hidden in the following ways:
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
-        # this is a hack (as usual :-))
-        #
-        # inside the original do_debug, there is a call to the global "Pdb" to
-        # instantiate the recursive debugger: we want to intercept this call
-        # and instantiate *our* Pdb, passing our custom config. Therefore we
-        # dynamically rebind the globals.
-        #
-        def new_pdb_with_config(*args):
-            kwds = dict(Config=self.ConfigFactory)
-            return self.__class__(*args, **kwds)
-        newglobals = {
-            'Pdb': new_pdb_with_config,
-            'sys': sys,
-        }
-        if sys.version_info < (3, ):
-            do_debug_func = pdb.Pdb.do_debug.im_func
-        else:
-            do_debug_func = pdb.Pdb.do_debug
-
-        orig_do_debug = rebind_globals(do_debug_func, newglobals)
-
         # Compile the code already to not crash on SyntaxErrors.
         # Error handling is copied from pdb.Pdb.default.
         cmd = arg
@@ -676,9 +655,29 @@ Frames can marked as hidden in the following ways:
                 if hasattr(self, 'error'):
                     self.error(msg)
                 else:
-                    # For pypy2.7-6.0.
+                    # For py27.
                     print('***', msg, file=self.stdout)
                 return
+
+        # this is a hack (as usual :-))
+        #
+        # inside the original do_debug, there is a call to the global "Pdb" to
+        # instantiate the recursive debugger: we want to intercept this call
+        # and instantiate *our* Pdb, passing our custom config. Therefore we
+        # dynamically rebind the globals.
+        def new_pdb_with_config(*args):
+            kwds = dict(Config=self.ConfigFactory)
+            return self.__class__(*args, **kwds)
+        newglobals = {
+            'Pdb': new_pdb_with_config,
+            'sys': sys,
+        }
+        if sys.version_info < (3, ):
+            do_debug_func = pdb.Pdb.do_debug.im_func
+        else:
+            do_debug_func = pdb.Pdb.do_debug
+
+        orig_do_debug = rebind_globals(do_debug_func, newglobals)
 
         return orig_do_debug(self, cmd)
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
