@@ -1,8 +1,7 @@
 dist: xenial
 language: python
 
-cache:
-  pip: true
+cache: false
 
 python:
   - '2.7'
