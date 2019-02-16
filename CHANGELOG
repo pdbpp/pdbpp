@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+Changes between 0.9.5 and 0.9.6
+===============================
+
+- Fixes
+
+  - do_debug: handle SyntaxError (#139)
+  - parseline: handle f-strings with py36 (#138)
+
 Changes between 0.9.3 and 0.9.5
 ===============================
 
