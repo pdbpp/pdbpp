@@ -678,7 +678,6 @@ Frames can marked as hidden in the following ways:
             do_debug_func = pdb.Pdb.do_debug
 
         orig_do_debug = rebind_globals(do_debug_func, newglobals)
-
         return orig_do_debug(self, cmd)
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
