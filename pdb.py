@@ -647,13 +647,29 @@ Frames can marked as hidden in the following ways:
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
+        # Compile the code already to not crash on SyntaxErrors.
+        # Error handling is copied from pdb.Pdb.default.
+        cmd = arg
+        if isinstance(cmd, str):
+            try:
+                cmd = compile(cmd, "<string>", "exec")
+            except SyntaxError:
+                import traceback
+                exc_info = sys.exc_info()[:2]
+                msg = traceback.format_exception_only(*exc_info)[-1].strip()
+                if hasattr(self, 'error'):
+                    self.error(msg)
+                else:
+                    # For py27.
+                    print('***', msg, file=self.stdout)
+                return
+
         # this is a hack (as usual :-))
         #
         # inside the original do_debug, there is a call to the global "Pdb" to
         # instantiate the recursive debugger: we want to intercept this call
         # and instantiate *our* Pdb, passing our custom config. Therefore we
         # dynamically rebind the globals.
-        #
         def new_pdb_with_config(*args):
             kwds = dict(Config=self.ConfigFactory)
             return self.__class__(*args, **kwds)
@@ -667,7 +683,7 @@ Frames can marked as hidden in the following ways:
             do_debug_func = pdb.Pdb.do_debug
 
         orig_do_debug = rebind_globals(do_debug_func, newglobals)
-        return orig_do_debug(self, arg)
+        return orig_do_debug(self, cmd)
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):
