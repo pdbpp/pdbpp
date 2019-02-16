@@ -672,7 +672,12 @@ Frames can marked as hidden in the following ways:
             except SyntaxError:
                 import traceback
                 exc_info = sys.exc_info()[:2]
-                self.error(traceback.format_exception_only(*exc_info)[-1].strip())
+                msg = traceback.format_exception_only(*exc_info)[-1].strip()
+                if hasattr(self, 'error'):
+                    self.error(msg)
+                else:
+                    # For pypy2.7-6.0.
+                    print('***', msg, file=self.stdout)
                 return
 
         return orig_do_debug(self, cmd)
