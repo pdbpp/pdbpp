@@ -1536,6 +1536,60 @@ LEAVING RECURSIVE DEBUGGER
 """)
 
 
+def test_debug_rawinput():
+    use_rawinput_set_count = 0
+
+    class UseRawInput:
+        def __set__(self, obj, value):
+            nonlocal use_rawinput_set_count
+
+            if use_rawinput_set_count == 0:
+                assert value is True
+            elif use_rawinput_set_count == 1:
+                assert value == 0
+            elif use_rawinput_set_count == 2:
+                assert value is True
+
+            use_rawinput_set_count += 1
+            obj.__dict__["use_rawinput"] = True
+
+    def custom_set_trace(**kwds):
+        """Custom set_trace with Pdb that uses True for use_rawinput."""
+        class CustomPdbTest(PdbTest):
+            use_rawinput = UseRawInput()
+
+        frame = sys._getframe().f_back
+        pdb.set_trace(frame, Pdb=CustomPdbTest)
+
+    def g():
+        pass
+
+    def fn():
+        nonlocal use_rawinput_set_count
+
+        g()
+        custom_set_trace()
+        assert use_rawinput_set_count == 3
+
+    check(fn, """
+[NUM] > .*fn()
+-> assert use_rawinput_set_count == 3
+   5 frames hidden .*
+# from pdb import GLOBAL_PDB
+# GLOBAL_PDB.use_rawinput = True
+# debug g()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) s
+--Call--
+[NUM] > .*g()
+-> def g():
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
 def test_syntaxerror_in_command():
     def f():
         set_trace()
