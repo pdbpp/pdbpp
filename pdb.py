@@ -649,6 +649,7 @@ Frames can marked as hidden in the following ways:
     def do_debug(self, arg):
         # Compile the code already to not crash on SyntaxErrors.
         # Error handling is copied from pdb.Pdb.default.
+        # This will be fixed in cpython 3.7.3 (bpo-35931).
         cmd = arg
         if isinstance(cmd, str):
             try:
@@ -672,7 +673,12 @@ Frames can marked as hidden in the following ways:
         # dynamically rebind the globals.
         def new_pdb_with_config(*args):
             kwds = dict(Config=self.ConfigFactory)
-            return self.__class__(*args, **kwds)
+            p = self.__class__(*args, **kwds)
+
+            # Backport of fix for bpo-31078 (not yet merged).
+            p.use_rawinput = self.use_rawinput
+
+            return p
         newglobals = {
             'Pdb': new_pdb_with_config,
             'sys': sys,
