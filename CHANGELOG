@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+Changes between 0.9.6 and 0.9.7
+===============================
+
+- Fixes
+
+  - do_debug: fix setting of use_rawinput (#141)
+
 Changes between 0.9.5 and 0.9.6
 ===============================
 
