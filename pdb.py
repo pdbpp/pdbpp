@@ -81,6 +81,11 @@ def import_from_stdlib(name):
 
 pdb = import_from_stdlib('pdb')
 
+# Make the original pdb's set_trace available, for e.g.
+# PYTHONBREAKPOINT=pdb.orig_set_trace.
+# It does not handle "pdb.pdb.set_trace" there.
+orig_set_trace = pdb.set_trace
+
 
 def rebind_globals(func, newglobals):
     newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,

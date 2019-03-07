@@ -3928,3 +3928,18 @@ def test_do_source_without_truncating():
 \d\d         pass
 # c
 """)
+
+
+def test_orig_pdb_set_trace():
+    def fn():
+        set_trace()
+
+    check(fn, """
+--Return-
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# import pdb
+# assert pdb.orig_set_trace is pdb.pdb.set_trace
+# c
+""")
