@@ -1567,6 +1567,7 @@ def test_debug_with_overridden_continue():
         def do_continue(self, arg):
             global count_continue
             count_continue += 1
+            print("do_continue_%d" % count_continue)
             return super(CustomPdb, self).do_continue(arg)
 
         do_c = do_cont = do_continue
@@ -1597,6 +1598,7 @@ def test_debug_with_overridden_continue():
 -> set_trace()
    5 frames hidden .*
 # c
+do_continue_1
 [NUM] > .*fn()
 -> assert count_continue == 3
    5 frames hidden .*
@@ -1612,8 +1614,10 @@ NUM  ->     def g():
 NUM             a = 1
 NUM             return a
 (#) c
+do_continue_2
 LEAVING RECURSIVE DEBUGGER
 # c
+do_continue_3
 """)
 
 
