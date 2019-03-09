@@ -675,16 +675,18 @@ Frames can marked as hidden in the following ways:
         # instantiate the recursive debugger: we want to intercept this call
         # and instantiate *our* Pdb, passing our custom config. Therefore we
         # dynamically rebind the globals.
-        def new_pdb_with_config(*args):
-            kwds = dict(Config=self.ConfigFactory)
-            p = self.__class__(*args, **kwds)
+        Config = self.ConfigFactory
 
-            # Backport of fix for bpo-31078 (not yet merged).
-            p.use_rawinput = self.use_rawinput
+        class PdbppWithConfig(self.__class__):
+            def __init__(self, *args):
+                kwds = dict(Config=Config)
+                super(PdbppWithConfig, self).__init__(*args, **kwds)
 
-            return p
+                # Backport of fix for bpo-31078 (not yet merged).
+                self.use_rawinput = self.use_rawinput
+
         newglobals = {
-            'Pdb': new_pdb_with_config,
+            'Pdb': PdbppWithConfig,
             'sys': sys,
         }
         if sys.version_info < (3, ):
