@@ -347,6 +347,17 @@ default value:
 .. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 
 
+Tox plugin
+----------
+
+``pdb++`` ships a plugin for tox_, which installs ``pdbpp`` automatically in
+Tox environments.
+This gets skipped for isolated builds, and can be skipped by setting
+``PDBPP_SKIP_TOX=1`` in the environment.
+
+.. _tox: https://github.com/tox-dev/tox
+
+
 Coding guidelines
 -----------------
 
