@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+Changes between 0.9.7 and 0.9.8
+===============================
+
+- Fixes
+
+  - interaction: fix ValueError ("signal only works in main thread") (#143)
+  - rebind_globals: update globals() (#151)
+  - Fix do_debug for py38 (#150)
+
+- Misc
+
+  - do_debug: use PdbppWithConfig class (#147)
+  - tests: harden test_debug_with_overridden_continue (#146)
+  - tests: add test_signal_in_nonmain_thread_with_continue
+  - tests: fail if there is anything on stderr
+  - ci: Travis: add Python 3.8-dev
+
 Changes between 0.9.6 and 0.9.7
 ===============================
 
