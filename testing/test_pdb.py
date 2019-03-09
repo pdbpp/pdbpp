@@ -52,9 +52,9 @@ class PdbTest(pdb.Pdb):
         nosigint = kwds.pop("nosigint", True)
         kwds.setdefault('Config', ConfigTest)
         try:
-            pdb.Pdb.__init__(self, *args, readrc=readrc, **kwds)
+            super(PdbTest, self).__init__(*args, readrc=readrc, **kwds)
         except TypeError:
-            pdb.Pdb.__init__(self, *args, **kwds)
+            super(PdbTest, self).__init__(*args, **kwds)
         # Do not install sigint_handler in do_continue by default.
         self.nosigint = nosigint
 

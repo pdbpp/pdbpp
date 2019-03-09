@@ -160,7 +160,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.config.setup(self)
         if self.config.disable_pytest_capturing:
             self._disable_pytest_capture_maybe()
-        pdb.Pdb.__init__(self, *args, **kwds)
+        super(Pdb, self).__init__(*args, **kwds)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
@@ -249,7 +249,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             os.system(self.config.exec_if_unfocused)
 
     def setup(self, frame, tb):
-        ret = pdb.Pdb.setup(self, frame, tb)
+        ret = super(Pdb, self).setup(frame, tb)
         if not ret:
             while tb:
                 lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
@@ -271,7 +271,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
-        fullstack, _ = pdb.Pdb.get_stack(self, f, t)
+        fullstack, _ = super(Pdb, self).get_stack(f, t)
         self.fullstack = fullstack
         return self.compute_stack(fullstack)
 
@@ -306,7 +306,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         global GLOBAL_PDB
         if not hasattr(GLOBAL_PDB, 'lineno'):
             # Only forget if not used with recursive set_trace.
-            pdb.Pdb.forget(self)
+            super(Pdb, self).forget()
         self.raise_lineno = {}
 
     @classmethod
@@ -378,7 +378,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     #
 
     def format_stack_entry(self, frame_lineno, lprefix=': '):
-        entry = pdb.Pdb.format_stack_entry(self, frame_lineno, lprefix)
+        entry = super(Pdb, self).format_stack_entry(frame_lineno, lprefix)
         entry = self.try_to_decode(entry)
         if self.config.highlight:
             match = self.stack_entry_regexp.match(entry)
@@ -418,12 +418,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display
             line = line[2:]
-            return pdb.Pdb.parseline(self, line)
+            return super(Pdb, self).parseline(line)
 
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exits in the current contex; this prevents pdb to quit
         # if you type e.g. 'r[0]' by mystake.
-        cmd, arg, newline = pdb.Pdb.parseline(self, line)
+        cmd, arg, newline = super(Pdb, self).parseline(line)
 
         if arg and arg.endswith('?'):
             if hasattr(self, 'do_' + cmd):
@@ -441,17 +441,17 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         # f-strings.
         if (cmd == 'f' and len(newline) > 1
                 and (newline[1] == "'" or newline[1] == '"')):
-            return pdb.Pdb.parseline(self, '!' + line)
+            return super(Pdb, self).parseline('!' + line)
 
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
                                                  cmd in self.curframe.f_locals or
                                                  arg.startswith('=')):
-            return pdb.Pdb.parseline(self, '!' + line)
+            return super(Pdb, self).parseline('!' + line)
 
         if cmd == "list" and arg.startswith("("):
             # heuristic: handle "list(..." as the builtin.
             line = '!' + line
-            return pdb.Pdb.parseline(self, line)
+            return super(Pdb, self).parseline(line)
 
         return cmd, arg, newline
 
@@ -494,11 +494,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def default(self, line):
         self.history.append(line)
-        return pdb.Pdb.default(self, line)
+        return super(Pdb, self).default(line)
 
     def do_help(self, arg):
         try:
-            return pdb.Pdb.do_help(self, arg)
+            return super(Pdb, self).do_help(arg)
         except AttributeError:
             print("*** No help for '{command}'".format(command=arg),
                   file=self.stdout)
@@ -629,7 +629,7 @@ Frames can marked as hidden in the following ways:
     def do_list(self, arg):
         oldstdout = self.stdout
         self.stdout = StringIO()
-        pdb.Pdb.do_list(self, arg)
+        super(Pdb, self).do_list(arg)
         src = self.format_source(self.stdout.getvalue())
         self.stdout = oldstdout
         print(src, file=self.stdout, end='')
@@ -640,7 +640,7 @@ Frames can marked as hidden in the following ways:
     def do_continue(self, arg):
         if arg != '':
             self.do_tbreak(arg)
-        return pdb.Pdb.do_continue(self, '')
+        return super(Pdb, self).do_continue('')
     do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
 
