@@ -2060,3 +2060,31 @@ def test_signal_in_nonmain_thread_with_interaction():
 -> set_trace(nosigint=False)
 # c
 """)
+
+
+def test_signal_in_nonmain_thread_with_continue():
+    """Test for cpython issue 13120 (test_issue13120).
+
+    Without the try/execept for ValueError in its do_continue it would
+    display the exception, but work otherwise.
+    """
+    def fn():
+        import threading
+
+        def start_thread():
+            a = 42  # noqa F841
+            set_trace(nosigint=False)
+
+        t = threading.Thread(target=start_thread)
+        t.start()
+        # set_trace(nosigint=False)
+        t.join()
+
+    check(fn, """
+--Return--
+[NUM] > .*start_thread()->None
+-> set_trace(nosigint=False)
+# p a
+42
+# c
+""")
