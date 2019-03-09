@@ -64,9 +64,11 @@ def import_from_stdlib(name):
 pdb = import_from_stdlib('pdb')
 
 
-def rebind_globals(func, newglobals=None):
-    if newglobals is None:
-        newglobals = globals()
+def rebind_globals(func, updateglobals=None):
+    newglobals = globals()
+    if updateglobals:
+        newglobals = newglobals.copy()
+        newglobals.update(**updateglobals)
     newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
                                  func.__defaults__)
     return newfunc
@@ -685,16 +687,15 @@ Frames can marked as hidden in the following ways:
                 # Backport of fix for bpo-31078 (not yet merged).
                 self.use_rawinput = self.use_rawinput
 
-        newglobals = {
-            'Pdb': PdbppWithConfig,
-            'sys': sys,
-        }
         if sys.version_info < (3, ):
             do_debug_func = pdb.Pdb.do_debug.im_func
         else:
             do_debug_func = pdb.Pdb.do_debug
 
-        orig_do_debug = rebind_globals(do_debug_func, newglobals)
+        updateglobals = {
+            'Pdb': PdbppWithConfig,
+        }
+        orig_do_debug = rebind_globals(do_debug_func, updateglobals)
         return orig_do_debug(self, cmd)
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
