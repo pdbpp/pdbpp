@@ -80,6 +80,7 @@ def xpm():
 def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
+    oldstderr = sys.stderr
 
     if sys.version_info < (3, ):
         text_type = unicode  # noqa: F821
@@ -105,6 +106,7 @@ def runpdb(func, input):
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
+        sys.stderr = stderr = MyBytesIO()
         func()
     except Exception:
         # Make it available for pytests output capturing.
@@ -113,6 +115,11 @@ def runpdb(func, input):
     finally:
         sys.stdin = oldstdin
         sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    stderr = stderr.get_unicode_value()
+    if stderr:
+        raise AssertionError("Unexpected output on stderr: %s" % stderr)
 
     return stdout.get_unicode_value().splitlines()
 
