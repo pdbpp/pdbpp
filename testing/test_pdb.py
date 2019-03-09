@@ -80,6 +80,7 @@ def xpm():
 def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
+    oldstderr = sys.stderr
 
     if sys.version_info < (3, ):
         text_type = unicode  # noqa: F821
@@ -105,6 +106,7 @@ def runpdb(func, input):
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
+        sys.stderr = stderr = MyBytesIO()
         func()
     except Exception:
         # Make it available for pytests output capturing.
@@ -113,6 +115,11 @@ def runpdb(func, input):
     finally:
         sys.stdin = oldstdin
         sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    stderr = stderr.get_unicode_value()
+    if stderr:
+        raise AssertionError("Unexpected output on stderr: %s" % stderr)
 
     return stdout.get_unicode_value().splitlines()
 
@@ -2051,5 +2058,33 @@ def test_signal_in_nonmain_thread_with_interaction():
 --Return--
 [NUM] > .*start_thread()->None
 -> set_trace(nosigint=False)
+# c
+""")
+
+
+def test_signal_in_nonmain_thread_with_continue():
+    """Test for cpython issue 13120 (test_issue13120).
+
+    Without the try/execept for ValueError in its do_continue it would
+    display the exception, but work otherwise.
+    """
+    def fn():
+        import threading
+
+        def start_thread():
+            a = 42  # noqa F841
+            set_trace(nosigint=False)
+
+        t = threading.Thread(target=start_thread)
+        t.start()
+        # set_trace(nosigint=False)
+        t.join()
+
+    check(fn, """
+--Return--
+[NUM] > .*start_thread()->None
+-> set_trace(nosigint=False)
+# p a
+42
 # c
 """)
