@@ -2058,13 +2058,13 @@ def test_signal_in_nonmain_thread_with_interaction():
         t = threading.Thread(target=start_thread)
         t.start()
         set_trace(nosigint=False)
+        evt.set()
         t.join()
 
     check(fn, """
 [NUM] > .*fn()
--> t.join()
+-> evt.set()
    5 frames hidden .*
-# evt.set()
 # c
 --Return--
 [NUM] > .*start_thread()->None
