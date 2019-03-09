@@ -199,8 +199,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def interaction(self, frame, traceback):
         # Restore the previous signal handler at the Pdb prompt.
         if getattr(pdb.Pdb, '_previous_sigint_handler', None):
-            signal.signal(signal.SIGINT, pdb.Pdb._previous_sigint_handler)
-            pdb.Pdb._previous_sigint_handler = None
+            try:
+                signal.signal(signal.SIGINT, pdb.Pdb._previous_sigint_handler)
+            except ValueError:  # ValueError: signal only works in main thread
+                pass
+            else:
+                pdb.Pdb._previous_sigint_handler = None
         ret = self.setup(frame, traceback)
         if ret:
             # no interaction desired at this time (happens if .pdbrc contains

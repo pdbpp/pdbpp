@@ -2025,3 +2025,31 @@ def test_ensure_file_can_write_unicode():
     p.stdout.write(u"test äöüß")
     out.seek(0)
     assert out.read().decode("utf-8") == u"test äöüß"
+
+
+def test_signal_in_nonmain_thread_with_interaction():
+    def fn():
+        import threading
+
+        evt = threading.Event()
+
+        def start_thread():
+            evt.wait()
+            set_trace(nosigint=False)
+
+        t = threading.Thread(target=start_thread)
+        t.start()
+        set_trace(nosigint=False)
+        t.join()
+
+    check(fn, """
+[NUM] > .*fn()
+-> t.join()
+   5 frames hidden .*
+# evt.set()
+# c
+--Return--
+[NUM] > .*start_thread()->None
+-> set_trace(nosigint=False)
+# c
+""")
