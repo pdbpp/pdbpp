@@ -653,24 +653,6 @@ Frames can marked as hidden in the following ways:
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
-        # Compile the code already to not crash on SyntaxErrors.
-        # Error handling is copied from pdb.Pdb.default.
-        # This will be fixed in cpython 3.7.3 (bpo-35931).
-        cmd = arg
-        if isinstance(cmd, str):
-            try:
-                cmd = compile(cmd, "<string>", "exec")
-            except SyntaxError:
-                import traceback
-                exc_info = sys.exc_info()[:2]
-                msg = traceback.format_exception_only(*exc_info)[-1].strip()
-                if hasattr(self, 'error'):
-                    self.error(msg)
-                else:
-                    # For py27.
-                    print('***', msg, file=self.stdout)
-                return
-
         # this is a hack (as usual :-))
         #
         # inside the original do_debug, there is a call to the global "Pdb" to
@@ -696,7 +678,20 @@ Frames can marked as hidden in the following ways:
             'Pdb': PdbppWithConfig,
         }
         orig_do_debug = rebind_globals(do_debug_func, updateglobals)
-        return orig_do_debug(self, cmd)
+
+        # Handle any exception, e.g. SyntaxErrors.
+        # This is about to be improved in Python itself (3.8, 3.7.3?).
+        try:
+            return orig_do_debug(self, arg)
+        except Exception:
+            exc_info = sys.exc_info()[:2]
+            msg = traceback.format_exception_only(*exc_info)[-1].strip()
+            if hasattr(self, 'error'):
+                self.error(msg)
+            else:
+                # For py27.
+                print('***', msg, file=self.stdout)
+
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
     def do_interact(self, arg):
