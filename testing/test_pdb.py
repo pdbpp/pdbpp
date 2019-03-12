@@ -1544,13 +1544,6 @@ LEAVING RECURSIVE DEBUGGER
 
 
 def test_syntaxerror_in_command():
-    # Python 3.8.0a2 handles the SyntaxError itself.
-    # Ref/followup: https://github.com/python/cpython/pull/12103
-    if sys.version_info == (3, 8, 0, "alpha", 2):
-        expected_debug_err = "\\*\\*\\* SyntaxError: .*"
-    else:
-        expected_debug_err = "ENTERING RECURSIVE DEBUGGER\n\\*\\*\\* SyntaxError: .*"
-
     def f():
         set_trace()
 
@@ -1562,9 +1555,9 @@ def test_syntaxerror_in_command():
 # print(
 \\*\\*\\* SyntaxError: .*
 # debug print(
-%s
+\\*\\*\\* SyntaxError: .*
 # c
-""" % expected_debug_err)
+""")
 
 
 def test_debug_with_overridden_continue():
