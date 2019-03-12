@@ -18,10 +18,10 @@ env:
     - PYTEST_ADDOPTS=-vv
 
 stages:
-- name: test
-  if: tag IS NOT present
-- name: release
-  if: repo = antocuni/pdb AND tag IS present
+  - name: test
+    if: tag IS NOT present
+  - name: release
+    if: tag IS present
 
 jobs:
   include:
@@ -37,11 +37,6 @@ jobs:
           tags: true
           distributions: 'sdist bdist_wheel'
           repo: antocuni/pdb
-
-stages:
-  - name: test
-  - name: release
-    if: tag IS present
 
 install:
   - pip install tox-travis
