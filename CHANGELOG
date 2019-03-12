@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-Changes between 0.9.8 and 0.9.10
+Changes between 0.9.8 and 0.9.11
 ================================
 
 - Fixes
@@ -9,7 +9,8 @@ Changes between 0.9.8 and 0.9.10
   - Make wrapper compatible with python2's sys.stdout (#155)
     This was broken since 0.9.4/0.9.5.
 
-NOTE: 0.9.9 was not released to PyPI due to Travis CI misconfiguration.
+NOTE: 0.9.9 and 0.9.10 were not released to PyPI due to Travis CI
+      misconfiguration.
 
 Changes between 0.9.7 and 0.9.8
 ===============================
