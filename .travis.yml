@@ -17,6 +17,12 @@ env:
   global:
     - PYTEST_ADDOPTS=-vv
 
+stages:
+- name: test
+  if: tag IS NOT present
+- name: release
+  if: repo = antocuni/pdb AND tag IS present
+
 jobs:
   include:
     - stage: release
