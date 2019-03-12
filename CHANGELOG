@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+Changes between 0.9.8 and 0.9.9
+===============================
+
+- Fixes
+
+  - Make wrapper compatible with python2's sys.stdout (#155)
+    This was broken since 0.9.4/0.9.5.
+
 Changes between 0.9.7 and 0.9.8
 ===============================
 
