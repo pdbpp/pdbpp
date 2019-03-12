@@ -1550,7 +1550,7 @@ def test_syntaxerror_in_command():
     # Ref/followup: https://github.com/python/cpython/pull/12103
     # https://github.com/python/cpython/commit/3e93643
     if sys.version_info >= (3, 8, 0, "alpha", 2):
-        expected_debug_err += "LEAVING RECURSIVE DEBUGGER\n"
+        expected_debug_err += "\nLEAVING RECURSIVE DEBUGGER"
 
     def f():
         set_trace()
