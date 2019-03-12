@@ -177,7 +177,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if (not hasattr(f, 'stream')
                 and getattr(f, 'encoding', False)
                 and f.encoding.lower() != 'utf-8'):
-            f = codecs.getwriter('utf-8')(getattr(f, 'buffer', f) )
+            f = codecs.getwriter('utf-8')(getattr(f, 'buffer', f))
 
         return f
 

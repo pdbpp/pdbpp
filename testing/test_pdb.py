@@ -2045,6 +2045,7 @@ def test_ensure_file_can_write_unicode():
     out.seek(0)
     assert out.read().decode("utf-8") == u"test äöüß"
 
+
 @pytest.mark.skipif(sys.version_info >= (3, 0),
                     reason="test is python2 specific")
 def test_py2_ensure_file_can_write_unicode():
