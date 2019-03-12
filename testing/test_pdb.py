@@ -2044,6 +2044,23 @@ def test_ensure_file_can_write_unicode():
     out.seek(0)
     assert out.read().decode("utf-8") == u"test äöüß"
 
+@pytest.mark.skipif(sys.version_info >= (3, 0),
+                    reason="test is python2 specific")
+def test_py2_ensure_file_can_write_unicode():
+    import StringIO
+    from pdb import DefaultConfig, Pdb
+
+    stdout = StringIO.StringIO()
+    stdout.encoding = 'ascii'
+
+    p = Pdb(Config=DefaultConfig, stdout=stdout)
+
+    assert p.stdout.stream is stdout
+
+    p.stdout.write(u"test äöüß")
+    stdout.seek(0)
+    assert stdout.read().decode('utf-8') == u"test äöüß"
+
 
 def test_signal_in_nonmain_thread_with_interaction():
     def fn():
