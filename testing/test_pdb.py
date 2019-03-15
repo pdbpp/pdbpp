@@ -1790,6 +1790,39 @@ ENTERING RECURSIVE DEBUGGER
 """)
 
 
+def test_debug_rebind_globals(monkeypatch):
+    class PdbWithCustomDebug(pdb.pdb.Pdb):
+        def do_debug(self, arg):
+            if "PdbTest" not in globals():
+                # Do not use assert here, since it might fail with "NameError:
+                # name '@pytest_ar' is not defined" via pytest's assertion
+                # rewriting then.
+                import pytest
+                pytest.fail("PdbTest is not in globals.")
+            print("called_do_debug", Pdb, self)  # noqa: F821
+
+    monkeypatch.setattr(pdb.pdb, "Pdb", PdbWithCustomDebug)
+
+    class CustomPdbTest(PdbTest, PdbWithCustomDebug):
+        pass
+
+    def fn():
+        def inner():
+            pass
+
+        set_trace(Pdb=CustomPdbTest)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace(.*)
+   5 frames hidden .*
+# debug inner()
+called_do_debug.*
+# c
+""")
+
+
 @pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "_previous_sigint_handler"),
                     reason="_previous_sigint_handler is not available")
 def test_interaction_restores_previous_sigint_handler():
