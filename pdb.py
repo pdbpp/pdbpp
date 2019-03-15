@@ -64,13 +64,9 @@ def import_from_stdlib(name):
 pdb = import_from_stdlib('pdb')
 
 
-def rebind_globals(func, updateglobals=None):
-    newglobals = globals()
-    if updateglobals:
-        newglobals = newglobals.copy()
-        newglobals.update(**updateglobals)
+def rebind_globals(func, newglobals):
     newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
-                                 func.__defaults__)
+                                 func.__defaults__, func.__closure__)
     return newfunc
 
 
@@ -674,10 +670,9 @@ Frames can marked as hidden in the following ways:
         else:
             do_debug_func = pdb.Pdb.do_debug
 
-        updateglobals = {
-            'Pdb': PdbppWithConfig,
-        }
-        orig_do_debug = rebind_globals(do_debug_func, updateglobals)
+        newglobals = do_debug_func.__globals__.copy()
+        newglobals['Pdb'] = PdbppWithConfig
+        orig_do_debug = rebind_globals(do_debug_func, newglobals)
 
         # Handle any exception, e.g. SyntaxErrors.
         # This is about to be improved in Python itself (3.8, 3.7.3?).
@@ -1054,7 +1049,7 @@ if hasattr(pdb, '_usage'):
 # copy some functions from pdb.py, but rebind the global dictionary
 for name in 'run runeval runctx runcall pm main'.split():
     func = getattr(pdb, name)
-    globals()[name] = rebind_globals(func)
+    globals()[name] = rebind_globals(func, globals())
 del name, func
 
 
