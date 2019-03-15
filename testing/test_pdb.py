@@ -70,7 +70,8 @@ def set_trace(cleanup=True, **kwds):
     if cleanup:
         pdb.cleanup()
     frame = sys._getframe().f_back
-    pdb.set_trace(frame, Pdb=PdbTest, **kwds)
+    Pdb = kwds.pop("Pdb", PdbTest)
+    pdb.set_trace(frame, Pdb=Pdb, **kwds)
 
 
 def xpm():
@@ -1580,11 +1581,6 @@ def test_debug_with_overridden_continue():
 
         do_c = do_cont = do_continue
 
-    def set_trace():
-        pdb.cleanup()
-        frame = sys._getframe().f_back
-        pdb.set_trace(frame, Pdb=CustomPdb)
-
     def g():
         a = 1
         return a
@@ -1595,15 +1591,15 @@ def test_debug_with_overridden_continue():
 
         g()
 
-        set_trace()
-        set_trace()
+        set_trace(Pdb=CustomPdb)
+        set_trace(Pdb=CustomPdb)
 
         assert count_continue == 3
         return 1
 
     check(fn, """
 [NUM] > .*fn()
--> set_trace()
+-> set_trace(Pdb=CustomPdb)
    5 frames hidden .*
 # c
 do_continue_1
