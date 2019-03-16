@@ -296,7 +296,7 @@ def test_forget_with_new_pdb():
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                super(NewPdb, self).set_trace(*args)
+                return super(NewPdb, self).set_trace(*args)
 
         new_pdb = NewPdb()
         new_pdb.set_trace()
@@ -309,7 +309,7 @@ def test_forget_with_new_pdb():
 new_set_trace
 --Return--
 [NUM] .*set_trace()->None
--> .*(\\*args)
+-> return super(NewPdb, self).set_trace(\\*args)
    5 frames hidden .*
 # l
 NUM .*
@@ -1271,6 +1271,29 @@ def test_hide_current_frame():
 """)
 
 
+def test_hide_frame_for_set_trace_on_class():
+    def g():
+        # Simulate set_trace, with frame=None.
+        pdb.cleanup()
+        _pdb = PdbTest()
+        _pdb.set_trace()
+        return 'foo'
+
+    def fn():
+        g()
+        return 1
+
+    check(fn, """
+[NUM] > .*g()
+-> return 'foo'
+   5 frames hidden .*
+# hf_unhide
+# down
+\\*\\*\\* Newest frame
+# c
+""")
+
+
 def test_list_hidden_frames():
     @pdb.hideframe
     def g():
@@ -1308,10 +1331,14 @@ def test_list_hidden_frames():
 
 
 def test_hidden_pytest_frames():
-    def g():
-        __tracebackhide__ = True
+    def s():
+        __tracebackhide__ = True  # Ignored for set_trace in here.
         set_trace()
         return 'foo'
+
+    def g(s=s):
+        __tracebackhide__ = True
+        return s()
 
     def k(g=g):
         return g()
@@ -1322,8 +1349,8 @@ def test_hidden_pytest_frames():
         return 1
 
     check(fn, r"""
-[NUM] > .*fn()
--> k()
+[NUM] > .*s()
+-> return 'foo'
    7 frames hidden .*
 # hf_list
 .*_multicall()
@@ -1339,24 +1366,27 @@ def test_hidden_pytest_frames():
 .*k()
 -> return g()
 .*g()
--> return 'foo'
+-> return s()
 # c
     """)
 
 
 def test_hidden_unittest_frames():
 
-    def g(set_trace=set_trace):
+    def s(set_trace=set_trace):
         set_trace()
         return 'foo'
+
+    def g(s=s):
+        return s()
     g = pdb.rebind_globals(g, {'__unittest': True})
 
     def fn():
         return g()
 
     check(fn, r"""
-[NUM] > .*fn()
--> return g()
+[NUM] > .*s()
+-> return 'foo'
    6 frames hidden .*
 # hf_list
 .*_multicall()
@@ -1370,7 +1400,7 @@ def test_hidden_unittest_frames():
 .*_multicall()
 -> res = hook_impl.function(\*args)
 .*g()
--> return 'foo'
+-> return s()
 # c
     """)
 
