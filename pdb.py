@@ -272,10 +272,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return self.compute_stack(fullstack)
 
     def compute_stack(self, fullstack):
+        if self.show_hidden_frames:
+            return fullstack, len(fullstack) - 1
+
         self.hidden_frames = []
         newstack = []
         for frame, lineno in fullstack:
-            if self._is_hidden(frame) and not self.show_hidden_frames:
+            if self._is_hidden(frame):
                 self.hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))

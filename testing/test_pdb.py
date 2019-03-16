@@ -2191,3 +2191,29 @@ def test_signal_in_nonmain_thread_with_continue():
 42
 # c
 """)
+
+
+def test_next_at_end_of_stack_after_unhide():
+    """Test that compute_stack returns correct length with show_hidden_frames."""
+    class MyConfig(ConfigTest):
+        def before_interaction_hook(self, pdb):
+            pdb.stdout.write('before_interaction_hook\n')
+            pdb.do_hf_unhide(arg=None)
+
+    def fn():
+        set_trace(Config=MyConfig)
+        return 1
+
+    check(fn, """
+[NUM] > .*fn()
+-> return 1
+   5 frames hidden .*
+before_interaction_hook
+# n
+--Return--
+[NUM] > .*fn()->1
+-> return 1
+   5 frames hidden .*
+before_interaction_hook
+# c
+""")
