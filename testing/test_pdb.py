@@ -283,6 +283,50 @@ a: 2 --> 3
 """)
 
 
+def test_forget_with_new_pdb():
+    """Regression test for having used GLOBAL_PDB in forget.
+
+    This caused "AttributeError: 'NewPdb' object has no attribute 'lineno'",
+    e.g. when pdbpp was used before pytest's debugging plugin was setup, which
+    then later uses a custom Pdb wrapper.
+    """
+    def fn():
+        set_trace()
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                super(NewPdb, self).set_trace(*args)
+
+        new_pdb = NewPdb()
+        new_pdb.set_trace()
+
+    check(fn, """
+[NUM] > .*fn()
+-> class NewPdb(PdbTest, pdb.Pdb):
+   5 frames hidden .*
+# c
+new_set_trace
+--Return--
+[NUM] .*set_trace()->None
+-> .*(\\*args)
+   5 frames hidden .*
+# l
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+NUM .*
+# c
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
