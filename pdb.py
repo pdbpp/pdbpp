@@ -256,9 +256,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def _is_hidden(self, frame):
         if not self.config.enable_hidden_frames:
             return False
+
+        # Decorated code is always considered to be hidden.
         consts = frame.f_code.co_consts
         if consts and consts[-1] is _HIDE_FRAME:
             return True
+
+        # Do not hide if this frame contains the initial set_trace.
+        if frame is getattr(self, "_via_set_trace_frame", None):
+            return False
+
         if frame.f_globals.get('__unittest'):
             return True
         if frame.f_locals.get('__tracebackhide__') \
@@ -1035,6 +1042,16 @@ Frames can marked as hidden in the following ways:
         sys.stdout.write(text)
         self._put(text)
 
+    def set_trace(self, frame=None):
+        """Remember starting frame.
+
+        This is used with pytest, which does not use pdb.set_trace().
+        """
+        if frame is None:
+            frame = sys._getframe().f_back
+        self._via_set_trace_frame = frame
+        return super(Pdb, self).set_trace(frame)
+
 
 # simplified interface
 
@@ -1095,6 +1112,8 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
         else:
             # py27
             print(header)
+
+    pdb._via_set_trace_frame = frame
 
     pdb.set_trace(frame)
 
