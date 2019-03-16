@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+Changes between 0.9.11 and 0.9.12
+=================================
+
+- Fixes
+
+  - Fix forget(): check self.lineno, not GLOBAL_PDB.lineno (#160)
+  - do_debug: use func.__globals__ with rebind_globals (#159)
+  - Use super() (#145)
+
+- Misc
+
+  - tests: set_trace: allow to pass in Pdb class (#158)
+
 Changes between 0.9.8 and 0.9.11
 ================================
 
