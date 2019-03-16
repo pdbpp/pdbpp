@@ -299,8 +299,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.print_current_stack_entry()
 
     def forget(self):
-        global GLOBAL_PDB
-        if not hasattr(GLOBAL_PDB, 'lineno'):
+        if not hasattr(self, 'lineno'):
             # Only forget if not used with recursive set_trace.
             super(Pdb, self).forget()
         self.raise_lineno = {}
@@ -371,7 +370,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return True
 
     stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
-    #
 
     def format_stack_entry(self, frame_lineno, lprefix=': '):
         entry = super(Pdb, self).format_stack_entry(frame_lineno, lprefix)
