@@ -296,7 +296,7 @@ def test_forget_with_new_pdb():
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                super().set_trace(*args)
+                super(NewPdb, self).set_trace(*args)
 
         new_pdb = NewPdb()
         new_pdb.set_trace()
@@ -309,7 +309,7 @@ def test_forget_with_new_pdb():
 new_set_trace
 --Return--
 [NUM] .*set_trace()->None
--> super().set_trace(\\*args)
+-> .*(\\*args)
    5 frames hidden .*
 # l
 NUM .*
