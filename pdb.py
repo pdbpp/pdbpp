@@ -1056,7 +1056,10 @@ Frames can marked as hidden in the following ways:
         return super(Pdb, self).set_trace(frame)
 
     def is_skipped_module(self, module_name):
-        """Backport for https://bugs.python.org/issue36130."""
+        """Backport for https://bugs.python.org/issue36130.
+
+        Fixed in Python 3.8+.
+        """
         if module_name is None:
             return False
         return super(Pdb, self).is_skipped_module(module_name)
