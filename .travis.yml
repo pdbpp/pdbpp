@@ -15,21 +15,21 @@ stages:
 jobs:
   include:
     - python: 'pypy2.7-6.0'
-      TOXENV: pypy-coverage
+      env: TOXENV=pypy-coverage
     - python: 'pypy3.5-6.0'
-      TOXENV: pypy3-coverage
+      env: TOXENV=pypy3-coverage
     - python: '3.7'
-      TOXENV: py37-coverage
+      env: TOXENV=py37-coverage
     - python: '3.6'
-      TOXENV: py36-coverage
+      env: TOXENV=py36-coverage
     - python: '3.5'
-      TOXENV: py35-coverage
+      env: TOXENV=py35-coverage
     - python: '3.4'
-      TOXENV: py34-coverage
+      env: TOXENV=py34-coverage
     - python: '2.7'
-      TOXENV: py27-coverage
+      env: TOXENV=py27-coverage
     - python: '3.8-dev'
-      TOXENV: py38-coverage
+      env: TOXENV=py38-coverage
 
     - stage: release
       python: '3.7'
