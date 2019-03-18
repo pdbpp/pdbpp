@@ -70,7 +70,7 @@ def rebind_globals(func, newglobals):
     return newfunc
 
 
-class DefaultConfig:
+class DefaultConfig(object):
     prompt = '(Pdb++) '
     highlight = True
     sticky_by_default = False
