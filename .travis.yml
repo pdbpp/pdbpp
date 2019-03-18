@@ -1,17 +1,6 @@
 dist: xenial
 language: python
-
 cache: false
-
-python:
-  - 'pypy2.7-6.0'
-  - 'pypy3.5-6.0'
-  - '3.7'
-  - '3.6'
-  - '3.5'
-  - '3.4'
-  - '2.7'
-  - '3.8-dev'
 
 env:
   global:
@@ -25,6 +14,23 @@ stages:
 
 jobs:
   include:
+    - python: 'pypy2.7-6.0'
+      env: TOXENV=pypy-coverage
+    - python: 'pypy3.5-6.0'
+      env: TOXENV=pypy3-coverage
+    - python: '3.7'
+      env: TOXENV=py37-coverage
+    - python: '3.6'
+      env: TOXENV=py36-coverage
+    - python: '3.5'
+      env: TOXENV=py35-coverage
+    - python: '3.4'
+      env: TOXENV=py34-coverage
+    - python: '2.7'
+      env: TOXENV=py27-coverage
+    - python: '3.8-dev'
+      env: TOXENV=py38-coverage
+
     - stage: release
       python: '3.7'
       script: skip
@@ -44,6 +50,9 @@ install:
 
 script:
   - tox
+
+after_script:
+  - bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n ${TRAVIS_PYTHON_VERSION}
 
 branches:
   only:
