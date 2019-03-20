@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+Changes between 0.9.12 and 0.9.13
+=================================
+
+- Fixes
+
+  - Fix crash in is_skipped_module with no module name (#163)
+
+- Features
+
+  - Optimize get_stack for show_hidden_frames (#162)
+  - Do not consider the frame with set_trace() as hidden (#161)
+
+- Misc
+
+  - DefaultConfig: make it a new-style class (#166)
+  - Setup coverage reporting (#164)
+
 Changes between 0.9.11 and 0.9.12
 =================================
 
