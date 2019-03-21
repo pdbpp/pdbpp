@@ -18,15 +18,22 @@ sys.modules.pop('pdb', None)
 import pdb  # noqa: E402
 
 
+_orig_trace = sys.gettrace()
+
+
 @pytest.fixture(autouse=True)
 def restore_settrace():
     """(Re)store sys.gettrace after test run.
 
     This is required to re-enable coverage tracking.
     """
-    oldtrace = sys.gettrace()
-    yield
-    sys.settrace(oldtrace)
+    if sys.gettrace() is _orig_trace:
+        yield
+        newtrace = sys.gettrace()
+        if newtrace and newtrace is not _orig_trace:
+            sys.settrace(_orig_trace)
+    else:
+        yield
 
 
 class FakeStdin:
