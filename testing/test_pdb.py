@@ -2247,3 +2247,26 @@ before_interaction_hook
 before_interaction_hook
 # c
 """)
+
+
+def test_rawinput_with_debug():
+    """Test backport of fix for bpo-31078."""
+    def fn():
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[NUM] > <string>(1)<module>()->None
+(#) import pdb; print(pdb.GLOBAL_PDB.use_rawinput)
+1
+(#) p sys._getframe().f_back.f_locals['self'].use_rawinput
+1
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
