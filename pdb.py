@@ -91,6 +91,11 @@ class DefaultConfig(object):
     filename_color = Color.yellow
     current_line_color = 44  # blue
 
+    # Default keyword arguments passed to ``Pdb`` constructor.
+    default_pdb_kwargs = {
+        "skip": ["importlib._bootstrap"],
+    }
+
     def setup(self, pdb):
         pass
 
@@ -156,7 +161,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.config.setup(self)
         if self.config.disable_pytest_capturing:
             self._disable_pytest_capture_maybe()
-        super(Pdb, self).__init__(*args, **kwds)
+        kwargs = self.config.default_pdb_kwargs.copy()
+        kwargs.update(**kwds)
+        super(Pdb, self).__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.sticky = self.config.sticky_by_default
@@ -512,19 +519,25 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         print("""\
 Some frames might be marked as "hidden": by default, hidden frames are not
 shown in the stack trace, and cannot be reached using ``up`` and ``down``.
-You can use ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to
+You can use ``hf_unhide`` to tell pdb++ to ignore the hidden status (i.e., to
 treat hidden frames as normal ones), and ``hf_hide`` to hide them again.
 ``hf_list`` prints a list of hidden frames.
 
-Frames can marked as hidden in the following ways:
+Frames can be marked as hidden in the following ways:
 
-- by using the @pdb.hideframe function decorator
+- by using the ``@pdb.hideframe`` function decorator
 
-- by having __tracebackhide__=True in the locals or the globals of the function
-  (this hides py.test internal stuff)
+- by having ``__tracebackhide__=True`` in the locals or the globals of the
+  function (this is used by pytest)
 
-- by having __unittest=True in the globals of the function (this hides
+- by having ``__unittest=True`` in the globals of the function (this hides
   unittest internal stuff)
+
+- by providing a list of skip patterns to the Pdb class constructor.  This
+  list defaults to ``skip=["importlib._bootstrap"]``.
+
+Note that the initial frame where ``set_trace`` was called from is not hidden,
+except for when using the function decorator.
 """, file=self.stdout)
 
     def do_hf_unhide(self, arg):
