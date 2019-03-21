@@ -18,6 +18,14 @@ sys.modules.pop('pdb', None)
 import pdb  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def restore_settrace():
+    "(Re)store sys.gettrace after test run."
+    oldtrace = sys.gettrace()
+    yield
+    sys.settrace(oldtrace)
+
+
 class FakeStdin:
     def __init__(self, lines):
         self.lines = iter(lines)
