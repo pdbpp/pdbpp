@@ -30,7 +30,8 @@ def restore_settrace():
     if sys.gettrace() is _orig_trace:
         yield
         newtrace = sys.gettrace()
-        if newtrace and newtrace is not _orig_trace:
+        if newtrace is not _orig_trace:
+            assert newtrace is None
             sys.settrace(_orig_trace)
     else:
         yield
