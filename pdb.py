@@ -679,12 +679,12 @@ except for when using the function decorator.
         Config = self.ConfigFactory
 
         class PdbppWithConfig(self.__class__):
-            def __init__(self, *args):
+            def __init__(self_withcfg, *args):
                 kwds = dict(Config=Config)
-                super(PdbppWithConfig, self).__init__(*args, **kwds)
+                super(PdbppWithConfig, self_withcfg).__init__(*args, **kwds)
 
                 # Backport of fix for bpo-31078 (not yet merged).
-                self.use_rawinput = self.use_rawinput
+                self_withcfg.use_rawinput = self.use_rawinput
 
         if sys.version_info < (3, ):
             do_debug_func = pdb.Pdb.do_debug.im_func
