@@ -1863,6 +1863,11 @@ ENTERING RECURSIVE DEBUGGER
 (#) c
 """)
 
+    # Reset pdb, which did not clean up correctly.
+    # Needed for PyPy (Python 2.7.13[pypy-7.1.0-final]) with coverage and
+    # restoring trace function.
+    pdb.GLOBAL_PDB.reset()
+
 
 def test_debug_rebind_globals(monkeypatch):
     class PdbWithCustomDebug(pdb.pdb.Pdb):
