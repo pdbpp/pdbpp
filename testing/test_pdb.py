@@ -133,7 +133,7 @@ def remove_comment(line):
 
 def extract_commands(lines):
     cmds = []
-    prompts = ('# ', '(#) ')
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) '}
     for line in lines:
         line = remove_comment(line)
         for prompt in prompts:
@@ -1618,6 +1618,36 @@ LEAVING RECURSIVE DEBUGGER
 """)
 
 
+def test_debug_thrice():
+    def fn():
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) debug 2
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+((#)) debug 34
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(((#))) p 42
+42
+(((#))) c
+LEAVING RECURSIVE DEBUGGER
+((#)) c
+LEAVING RECURSIVE DEBUGGER
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
 def test_syntaxerror_in_command():
     expected_debug_err = "ENTERING RECURSIVE DEBUGGER\n\\*\\*\\* SyntaxError: .*"
 
@@ -1678,7 +1708,7 @@ def test_debug_with_overridden_continue():
 # c
 do_continue_1
 [NUM] > .*fn()
--> assert count_continue == 3
+-> return 1
    5 frames hidden .*
 # debug g()
 ENTERING RECURSIVE DEBUGGER
