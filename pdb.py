@@ -681,9 +681,9 @@ except for when using the function decorator.
         Config = self.ConfigFactory
 
         class PdbppWithConfig(self.__class__):
-            def __init__(self_withcfg, *args):
-                kwds = dict(Config=Config)
-                super(PdbppWithConfig, self_withcfg).__init__(*args, **kwds)
+            def __init__(self_withcfg, *args, **kwargs):
+                kwargs.setdefault("Config", Config)
+                super(PdbppWithConfig, self_withcfg).__init__(*args, **kwargs)
 
                 # Backport of fix for bpo-31078 (not yet merged).
                 self_withcfg.use_rawinput = self.use_rawinput
