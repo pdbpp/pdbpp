@@ -133,7 +133,7 @@ def remove_comment(line):
 
 def extract_commands(lines):
     cmds = []
-    prompts = ('# ', '(#) ')
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) '}
     for line in lines:
         line = remove_comment(line)
         for prompt in prompts:
@@ -1612,6 +1612,36 @@ ENTERING RECURSIVE DEBUGGER
 NUM  ->     def g():
 NUM             a = 1
 NUM             return a
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
+def test_debug_thrice():
+    def fn():
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(#) debug 2
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+((#)) debug 34
+ENTERING RECURSIVE DEBUGGER
+[NUM] > .*
+(((#))) p 42
+42
+(((#))) c
+LEAVING RECURSIVE DEBUGGER
+((#)) c
+LEAVING RECURSIVE DEBUGGER
 (#) c
 LEAVING RECURSIVE DEBUGGER
 # c
