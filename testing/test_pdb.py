@@ -2016,8 +2016,13 @@ def test_python_m_pdb_usage():
     assert "usage: pdb.py" in out
 
 
-def test_python_m_pdb_uses_pdbpp(tmpdir):
+def test_python_m_pdb_uses_pdbpp(tmpdir, monkeypatch):
     import subprocess
+
+    # Ignore ~/.pdbrc.py.
+    # This gets tried to read here, because no ConfigFactory is passed in.
+    monkeypatch.setenv("HOME", str(tmpdir))
+    monkeypatch.setenv("USERPROFILE", str(tmpdir))
 
     with tmpdir.as_cwd():
         f = tmpdir.ensure("test.py")
