@@ -93,7 +93,6 @@ class DefaultConfig(object):
 
     # Default keyword arguments passed to ``Pdb`` constructor.
     default_pdb_kwargs = {
-        "skip": ["importlib._bootstrap"],
     }
 
     def setup(self, pdb):
