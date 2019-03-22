@@ -225,7 +225,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         completer.config.readline.set_completer(self.complete)
         self.config.before_interaction_hook(self)
         # Use _cmdloop on py3 which catches KeyboardInterrupt.
-        getattr(self, '_cmdloop', self.cmdloop)()
+        if hasattr(self, '_cmdloop'):
+            self._cmdloop()
+        else:
+            self.cmdloop()
         completer.config.readline.set_completer(old_completer)
         self.forget()
 
