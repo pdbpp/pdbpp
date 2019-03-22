@@ -1708,7 +1708,7 @@ def test_debug_with_overridden_continue():
 # c
 do_continue_1
 [NUM] > .*fn()
--> return 1
+-> assert count_continue == 3
    5 frames hidden .*
 # debug g()
 ENTERING RECURSIVE DEBUGGER
