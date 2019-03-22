@@ -1,6 +1,26 @@
 CHANGELOG
 =========
 
+Changes between 0.9.13 and 0.9.14
+=================================
+
+- Fixes
+
+  - Fix using the debug command multiple times (#174)
+  - Fix backport for bpo-31078 (keeping use_rawinput) (#169)
+
+- Features
+
+  - new config attribute: default_pdb_kwargs, which can be used to pass
+    default keyword arguments for the Pdb class (#167, #173)
+    This can be used to e.g. pass ``skip=["importlib._bootstrap_external"]``.
+
+- Misc
+
+  - test_python_m_pdb_uses_pdbpp: set HOME to tmpdir (#172)
+  - interaction: expand expression to call _cmdloop/cmdloop (#171)
+  - tests: restore sys.gettrace after test, for more coverage (#170)
+
 Changes between 0.9.12 and 0.9.13
 =================================
 
