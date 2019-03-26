@@ -704,11 +704,7 @@ except for when using the function decorator.
         except Exception:
             exc_info = sys.exc_info()[:2]
             msg = traceback.format_exception_only(*exc_info)[-1].strip()
-            if hasattr(self, 'error'):
-                self.error(msg)
-            else:
-                # For py27.
-                print('***', msg, file=self.stdout)
+            self.error(msg)
 
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
@@ -1079,6 +1075,15 @@ except for when using the function decorator.
             return False
         return super(Pdb, self).is_skipped_module(module_name)
 
+    if not hasattr(pdb.Pdb, 'message'):  # For py27.
+
+        def message(self, msg):
+            print(msg, file=self.stdout)
+
+    if not hasattr(pdb.Pdb, 'error'):  # For py27.
+
+        def error(self, msg):
+            print('***', msg, file=self.stdout)
 
 # simplified interface
 
@@ -1134,11 +1139,7 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
         GLOBAL_PDB = pdb
 
     if header is not None:
-        if hasattr(pdb, "message"):
-            pdb.message(header)
-        else:
-            # py27
-            print(header)
+        pdb.message(header)
 
     pdb._via_set_trace_frame = frame
 
