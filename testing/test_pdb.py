@@ -3,20 +3,22 @@ from __future__ import print_function
 
 import bdb
 import inspect
+import os.path
+import re
+import sys
+from io import BytesIO
+
+import py
+import pytest
+
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
-import os.path
-import sys
-import re
-from io import BytesIO
-import py
-import pytest
 
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
-import pdb  # noqa: E402
+import pdb  # noqa: E402 isort:skip
 
 
 class FakeStdin:
