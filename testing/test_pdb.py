@@ -117,6 +117,8 @@ def runpdb(func, input):
         sys.stdout = stdout = MyBytesIO()
         sys.stderr = stderr = MyBytesIO()
         func()
+    except InnerTestException:
+        pass
     except bdb.BdbQuit:
         print("!! Received unexpected bdb.BdbQuit !!")
     except Exception:
@@ -183,6 +185,11 @@ def count_frames():
         i += 1
         f = f.f_back
     return i
+
+
+class InnerTestException(Exception):
+    """Ignored by check()."""
+    pass
 
 
 def check(func, expected):
@@ -856,6 +863,46 @@ NUM             a = 1
 NUM  ->         b = 2
 NUM             c = 3
 NUM             return a
+# c
+""")
+
+
+def test_sticky_dunder_exception():
+    """Test __exception__ being displayed in sticky mode."""
+
+    def fn():
+        def raises():
+            raise InnerTestException()
+
+        set_trace()
+        raises()
+
+    check(fn, """
+[NUM] > .*fn()
+-> raises()
+   5 frames hidden (try 'help hidden_frames')
+# n
+.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+[NUM] > .*raises()
+-> raise InnerTestException()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM             def raises():
+NUM  ->             raise InnerTestException()
+# u
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+NUM         def fn():
+NUM             def raises():
+NUM                 raise InnerTestException()
+NUM
+NUM             set_trace(.*)
+NUM  ->         raises()
+InnerTestException:
 # c
 """)
 

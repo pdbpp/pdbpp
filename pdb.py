@@ -811,10 +811,13 @@ except for when using the function decorator.
                         raise
                     except:
                         s += '(unprintable exception)'
-                    print(Color.set(self.config.line_number_color, ' ' + s),
-                          file=self.stdout)
-                    return
-            if '__return__' in frame.f_locals:
+
+                    if self.config.highlight:
+                        s = Color.set(self.config.line_number_color, s)
+
+                    print('%s' % s, file=self.stdout)
+
+            elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
                 try:
                     s = repr(rv)
@@ -1124,6 +1127,7 @@ except for when using the function decorator.
                 removed_bdb_context.__context__ = None
                 break
             removed_bdb_context = removed_bdb_context.__context__
+
 
 
 # simplified interface
