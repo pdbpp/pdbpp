@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+import bdb
 import inspect
 try:
     from itertools import zip_longest
@@ -109,6 +110,8 @@ def runpdb(func, input):
         sys.stdout = stdout = MyBytesIO()
         sys.stderr = stderr = MyBytesIO()
         func()
+    except bdb.BdbQuit:
+        print("!! Received unexpected bdb.BdbQuit !!")
     except Exception:
         # Make it available for pytests output capturing.
         print(stdout.get_unicode_value(), file=oldstdout)
