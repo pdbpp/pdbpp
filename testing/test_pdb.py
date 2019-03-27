@@ -212,8 +212,10 @@ def check(func, expected):
                 pattern = '<None>'
             if string is None:
                 string = '<None>'
-        # Use "$" to mark end of line.
-        print(pattern.ljust(maxlen+1), '| ', string, end='$')
+        # Use "$" to mark end of line with trailing space
+        if re.search(r'\s+$', string):
+            string += '$'
+        print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
         else:
@@ -982,6 +984,50 @@ def test_format_exc_for_sticky():
     )
 
     assert f((1, 3, 3)) == 'pdbpp: got unexpected __exception__: (1, 3, 3)'
+
+
+def test_sticky_dunder_return():
+    """Test __return__ being displayed in sticky mode."""
+
+    def fn():
+        def returns():
+            return 40 + 2
+
+        set_trace()
+        returns()
+
+    check(fn, """
+[NUM] > .*fn()
+-> returns()
+   5 frames hidden (try 'help hidden_frames')
+# s
+--Call--
+[NUM] > .*returns()
+-> def returns()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM  ->         def returns():
+NUM                 return 40 \\+ 2
+# retval
+\\*\\*\\* Not yet returned!
+# r
+--Return--
+[NUM] > .*(NUM)returns()->42
+-> return 40 \\+ 2
+   5 frames hidden .*
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+NUM             def returns():
+NUM  ->             return 40 \\+ 2
+ return 42
+# retval
+42
+# c
+""")
 
 
 def test_exception_lineno():
