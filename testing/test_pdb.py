@@ -1030,6 +1030,23 @@ NUM  ->             return 40 \\+ 2
 """)
 
 
+def test_sticky_dunder_return_with_highlight():
+    def fn():
+        def returns():
+            return 40 + 2
+
+        set_trace(Config=ConfigWithHighlight)
+        returns()
+
+    expected, lines = run_func(fn, '# s\n# sticky\n# r\n# retval\n# c')
+    assert lines[-4:] == [
+        '^[[36;01m return 42^[[00m',
+        '# retval',
+        '42',
+        '# c',
+    ]
+
+
 def test_exception_lineno():
     def bar():
         assert False
