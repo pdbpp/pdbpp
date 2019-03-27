@@ -130,17 +130,10 @@ def runpdb(func, input):
     return stdout.get_unicode_value().splitlines()
 
 
-def remove_comment(line):
-    if '###' in line:
-        line, _ = line.split('###', 1)
-    return line
-
-
 def extract_commands(lines):
     cmds = []
     prompts = {'# ', '(#) ', '((#)) ', '(((#))) '}
     for line in lines:
-        line = remove_comment(line)
         for prompt in prompts:
             if line.startswith(prompt):
                 cmds.append(line[len(prompt):])
@@ -171,6 +164,8 @@ def run_func(func, expected):
     lines, use `check` function.
     """
     expected = expected.strip().splitlines()
+    # Remove comments.
+    expected = [re.split(r'\s+###', line)[0] for line in expected]
     commands = extract_commands(expected)
     expected = list(map(cook_regexp, expected))
     return expected, runpdb(func, commands)
@@ -192,7 +187,6 @@ def check(func, expected):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            pattern = remove_comment(pattern)
             ok = re.match(pattern, string)
         else:
             ok = False
