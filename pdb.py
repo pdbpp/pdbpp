@@ -624,6 +624,8 @@ except for when using the function decorator.
             maxlength = max(map(len, lines))
 
         if self.config.highlight:
+            # Fill with spaces.  This is important when a bg color is used,
+            # e.g. for highlighting the current line (via setbgcolor).
             lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
