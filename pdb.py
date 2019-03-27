@@ -965,7 +965,8 @@ except for when using the function decorator.
     do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
-    def get_terminal_size(self):
+    @staticmethod
+    def get_terminal_size():
         fallback = (80, 24)
         try:
             from shutil import get_terminal_size

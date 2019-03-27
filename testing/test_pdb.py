@@ -85,6 +85,8 @@ def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
+    # Use __dict__ to avoid class descriptor (staticmethod).
+    old_get_terminal_size = pdb.Pdb.__dict__["get_terminal_size"]
 
     if sys.version_info < (3, ):
         text_type = unicode  # noqa: F821
@@ -108,6 +110,8 @@ def runpdb(func, input):
             return self.getvalue().decode(self.encoding).replace(
                 pdb.CLEARSCREEN, "<CLEARSCREEN>\n")
 
+    # Use a predictable terminal size.
+    pdb.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
@@ -123,6 +127,7 @@ def runpdb(func, input):
         sys.stdin = oldstdin
         sys.stdout = oldstdout
         sys.stderr = oldstderr
+        pdb.Pdb.get_terminal_size = old_get_terminal_size
 
     stderr = stderr.get_unicode_value()
     if stderr:
