@@ -811,8 +811,11 @@ except for when using the function decorator.
                     raise
                 except:
                     s = '(unprintable return value)'
-                print(Color.set(self.config.line_number_color, ' return ' + s),
-                      file=self.stdout)
+
+                s = ' return ' + s
+                if self.config.highlight:
+                    s = Color.set(self.config.line_number_color, s)
+                print(s, file=self.stdout)
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
