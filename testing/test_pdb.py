@@ -954,6 +954,36 @@ def test_sticky_dunder_exception_with_highlight():
 """)
 
 
+def test_format_exc_for_sticky():
+    _pdb = PdbTest()
+    f = _pdb._format_exc_for_sticky
+
+    assert f((Exception, Exception())) == "Exception: "
+
+    exc_from_str = Exception("exc_from_str")
+
+    class UnprintableExc:
+        def __str__(self):
+            raise exc_from_str
+
+    assert f((UnprintableExc, UnprintableExc())) == (
+        "UnprintableExc: (unprintable exception: %r)" % exc_from_str
+    )
+
+    class UnprintableExc:
+        def __str__(self):
+            class RaisesInRepr(Exception):
+                def __repr__(self):
+                    raise Exception()
+            raise RaisesInRepr()
+
+    assert f((UnprintableExc, UnprintableExc())) == (
+        "UnprintableExc: (unprintable exception)"
+    )
+
+    assert f((1, 3, 3)) == 'pdbpp: got unexpected __exception__: (1, 3, 3)'
+
+
 def test_exception_lineno():
     def bar():
         assert False

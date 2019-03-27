@@ -799,27 +799,9 @@ except for when using the function decorator.
             self._printlonglist(sticky_range)
 
             if '__exception__' in frame.f_locals:
-                exc = frame.f_locals['__exception__']
-                if len(exc) == 2:
-                    exc_type, exc_value = exc
-                    s = ''
-                    try:
-                        try:
-                            s = exc_type.__name__
-                        except AttributeError:
-                            s = str(exc_type)
-                        if exc_value is not None:
-                            s += ': '
-                            s += str(exc_value)
-                    except KeyboardInterrupt:
-                        raise
-                    except:
-                        s += '(unprintable exception)'
-
-                    if self.config.highlight:
-                        s = Color.set(self.config.line_number_color, s)
-
-                    print('%s' % s, file=self.stdout)
+                s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
+                if s:
+                    print(s, file=self.stdout)
 
             elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -831,6 +813,33 @@ except for when using the function decorator.
                     s = '(unprintable return value)'
                 print(Color.set(self.config.line_number_color, ' return ' + s),
                       file=self.stdout)
+
+    def _format_exc_for_sticky(self, exc):
+        if len(exc) != 2:
+            return "pdbpp: got unexpected __exception__: %r" % (exc,)
+
+        exc_type, exc_value = exc
+        s = ''
+        try:
+            try:
+                s = exc_type.__name__
+            except AttributeError:
+                s = str(exc_type)
+            if exc_value is not None:
+                s += ': '
+                s += str(exc_value)
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            try:
+                s += '(unprintable exception: %r)' % (exc,)
+            except:
+                s += '(unprintable exception)'
+
+        if self.config.highlight:
+            s = Color.set(self.config.line_number_color, s)
+
+        return s
 
     def do_sticky(self, arg):
         """
