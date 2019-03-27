@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+import bdb
 import inspect
+import os.path
+import re
+import sys
+from io import BytesIO
+
+import py
+import pytest
+
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
-import os.path
-import sys
-import re
-from io import BytesIO
-import py
-import pytest
 
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
-import pdb  # noqa: E402
+import pdb  # noqa: E402 isort:skip
 
 
 class FakeStdin:
@@ -109,6 +112,8 @@ def runpdb(func, input):
         sys.stdout = stdout = MyBytesIO()
         sys.stderr = stderr = MyBytesIO()
         func()
+    except bdb.BdbQuit:
+        print("!! Received unexpected bdb.BdbQuit !!")
     except Exception:
         # Make it available for pytests output capturing.
         print(stdout.get_unicode_value(), file=oldstdout)
@@ -125,17 +130,10 @@ def runpdb(func, input):
     return stdout.get_unicode_value().splitlines()
 
 
-def remove_comment(line):
-    if '###' in line:
-        line, _ = line.split('###', 1)
-    return line
-
-
 def extract_commands(lines):
     cmds = []
     prompts = {'# ', '(#) ', '((#)) ', '(((#))) '}
     for line in lines:
-        line = remove_comment(line)
         for prompt in prompts:
             if line.startswith(prompt):
                 cmds.append(line[len(prompt):])
@@ -166,6 +164,8 @@ def run_func(func, expected):
     lines, use `check` function.
     """
     expected = expected.strip().splitlines()
+    # Remove comments.
+    expected = [re.split(r'\s+###', line)[0] for line in expected]
     commands = extract_commands(expected)
     expected = list(map(cook_regexp, expected))
     return expected, runpdb(func, commands)
@@ -187,7 +187,6 @@ def check(func, expected):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            pattern = remove_comment(pattern)
             ok = re.match(pattern, string)
         else:
             ok = False
