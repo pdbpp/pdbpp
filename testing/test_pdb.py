@@ -105,7 +105,8 @@ def runpdb(func, input):
             super(MyBytesIO, self).write(msg)
 
         def get_unicode_value(self):
-            return self.getvalue().decode(self.encoding)
+            return self.getvalue().decode(self.encoding).replace(
+                pdb.CLEARSCREEN, "<CLEARSCREEN>\n")
 
     try:
         sys.stdin = FakeStdin(input)
@@ -147,7 +148,6 @@ shortcuts = [
     ('(', '\\('),
     (')', '\\)'),
     ('NUM', ' *[0-9]*'),
-    ('CLEAR', re.escape(pdb.CLEARSCREEN)),
 ]
 
 
@@ -758,7 +758,8 @@ def test_sticky():
 -> a = 1
    5 frames hidden .*
 # sticky
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace()
@@ -770,7 +771,8 @@ NUM             return a
 [NUM] > .*fn()
 -> b = 2
    5 frames hidden .*
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace()
@@ -803,7 +805,8 @@ def test_sticky_range():
 -> a = 1
    5 frames hidden .*
 # sticky %d %d
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
  %d             set_trace()
 NUM  ->         a = 1
@@ -839,7 +842,8 @@ NUM             return a
 [NUM] > .*fn()
 -> b = 2
    5 frames hidden .*
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace(Config=MyConfig)
