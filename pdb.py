@@ -367,14 +367,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def _init_pygments(self):
         if not self.config.use_pygments:
             return False
+
+        if hasattr(self, '_fmt'):
+            return True
+
         try:
             from pygments.lexers import PythonLexer
             from pygments.formatters import TerminalFormatter, Terminal256Formatter
         except ImportError:
             return False
 
-        if hasattr(self, '_fmt'):
-            return True
         if hasattr(self.config, 'formatter'):
             self._fmt = self.config.formatter
         else:
