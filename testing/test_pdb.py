@@ -212,7 +212,8 @@ def check(func, expected):
                 pattern = '<None>'
             if string is None:
                 string = '<None>'
-        print(pattern.ljust(maxlen+1), '| ', string, end='')
+        # Use "$" to mark end of line.
+        print(pattern.ljust(maxlen+1), '| ', string, end='$')
         if ok:
             print()
         else:
