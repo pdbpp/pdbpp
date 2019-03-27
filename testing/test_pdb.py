@@ -108,7 +108,8 @@ def runpdb(func, input):
 
         def get_unicode_value(self):
             return self.getvalue().decode(self.encoding).replace(
-                pdb.CLEARSCREEN, "<CLEARSCREEN>\n")
+                pdb.CLEARSCREEN, "<CLEARSCREEN>\n"
+            ).replace(chr(27), "^[")
 
     # Use a predictable terminal size.
     pdb.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
@@ -154,7 +155,12 @@ shortcuts = [
     (']', '\\]'),
     ('(', '\\('),
     (')', '\\)'),
-    ('NUM', ' *[0-9]*'),
+    ('^', '\\^'),
+    ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
+    ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
+    ('<COLORLNUM>', r'\^\[\[36;01m'),
+    ('<COLORRESET>', r'\^\[\[00m'),
+    ('NUM', ' *[0-9]+'),
 ]
 
 
@@ -903,6 +909,46 @@ NUM
 NUM             set_trace(.*)
 NUM  ->         raises()
 InnerTestException:
+# c
+""")
+
+
+def test_sticky_dunder_exception_with_highlight():
+    """Test __exception__ being displayed in sticky mode."""
+
+    def fn():
+        def raises():
+            raise InnerTestException()
+
+        set_trace(Config=ConfigWithHighlight)
+        raises()
+
+    check(fn, """
+[NUM] > .*fn()
+-> raises()
+   5 frames hidden (try 'help hidden_frames')
+# n
+.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+[NUM] > .*raises()
+-> raise InnerTestException()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+<COLORNUM>             def raises():
+<COLORCURLINE>  ->             raise InnerTestException()
+# u
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+<COLORNUM>         def fn():
+<COLORNUM>             def raises():
+<COLORNUM>                 raise InnerTestException()
+<COLORNUM>
+<COLORNUM>             set_trace(.*)
+<COLORCURLINE>  ->         raises().*
+<COLORLNUM>InnerTestException: <COLORRESET>
 # c
 """)
 
@@ -2439,7 +2485,7 @@ Traceback (most recent call last):
     compile.*
   File "<stdin>", line 1
     invalid(
-    .*\\^
+    .*^
 SyntaxError: .*
 
 During handling of the above exception, another exception occurred:
