@@ -1086,7 +1086,7 @@ RUN emacs \+%d '%s'
 """ % (src_compile_lineno, filename))
 
 
-def test_put():
+def test_put(tmphome):
     def fn():
         set_trace()
         return 42
@@ -1164,7 +1164,7 @@ def test_side_effects_free():
     assert not r.match('x = 10')
 
 
-def test_put_side_effects_free():
+def test_put_side_effects_free(tmphome):
     def fn():
         x = 10  # noqa: F841
         set_trace()
@@ -2045,23 +2045,17 @@ def test_python_m_pdb_usage():
     assert "usage: pdb.py" in out
 
 
-def test_python_m_pdb_uses_pdbpp(tmpdir, monkeypatch):
+def test_python_m_pdb_uses_pdbpp(tmphome):
     import subprocess
 
-    # Ignore ~/.pdbrc.py.
-    # This gets tried to read here, because no ConfigFactory is passed in.
-    monkeypatch.setenv("HOME", str(tmpdir))
-    monkeypatch.setenv("USERPROFILE", str(tmpdir))
+    f = tmphome.ensure("test.py")
+    f.write("import os\n__import__('pdb').set_trace()")
 
-    with tmpdir.as_cwd():
-        f = tmpdir.ensure("test.py")
-        f.write("import os\n__import__('pdb').set_trace()")
-
-        p = subprocess.Popen(
-            [sys.executable, "-m", "pdb", str(f)],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE
-        )
+    p = subprocess.Popen(
+        [sys.executable, "-m", "pdb", str(f)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE
+    )
     stdout, stderr = p.communicate(b"c\n")
     out = stdout.decode("utf8")
     err = stderr.decode("utf8")
