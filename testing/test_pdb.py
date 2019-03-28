@@ -247,6 +247,8 @@ def test_config_terminalformatter(monkeypatch):
     p = Pdb(Config=Config)
     assert p._init_pygments() is True
     assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
+    # Cover using cached _fmt.
+    assert p._init_pygments() is True
 
 
 def test_runpdb():
