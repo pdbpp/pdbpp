@@ -1031,11 +1031,14 @@ NUM  ->             return 40 \\+ 2
 
 
 def test_sticky_dunder_return_with_highlight():
+    class ConfigWithPygments(ConfigWithHighlight):
+        use_pygments = True
+
     def fn():
         def returns():
             return 40 + 2
 
-        set_trace(Config=ConfigWithHighlight)
+        set_trace(Config=ConfigWithPygments)
         returns()
 
     expected, lines = run_func(fn, '# s\n# sticky\n# r\n# retval\n# c')
@@ -1045,6 +1048,12 @@ def test_sticky_dunder_return_with_highlight():
         '42',
         '# c',
     ]
+
+    colored_cur_lines = [
+        x for x in lines
+        if x.startswith('^[[44m^[[36;01;44m') and '->' in x
+    ]
+    assert len(colored_cur_lines) == 2
 
 
 def test_exception_lineno():
