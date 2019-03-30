@@ -48,12 +48,6 @@ class install_pth_hack(Command):
                 outfp.write(infp.read())
 
 
-install_requires = [
-    "fancycompleter>=0.8",
-    "wmctrl",
-    "pygments",
-]
-
 setup(
     name='pdbpp',
     use_scm_version=True,
@@ -86,7 +80,11 @@ setup(
         'Topic :: Utilities',
         'Topic :: Software Development :: Debuggers',
     ],
-    install_requires=install_requires,
+    install_requires=[
+        "fancycompleter>=0.8",
+        "wmctrl",
+        "pygments",
+    ],
     extras_require={
         'funcsigs': ["funcsigs"],
         'testing': [
