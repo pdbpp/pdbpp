@@ -596,11 +596,12 @@ def test_help(command, expected_regex):
 
     # Redirect sys.stdout because Python 2 pdb.py has `print >>self.stdout` for
     # some functions and plain ol' `print` for others.
+    oldstdout = sys.stdout
+    sys.stdout = instance.stdout
     try:
-        sys.stdout = instance.stdout
         instance.do_help(command)
     finally:
-        sys.stdout == sys.__stdout__
+        sys.stdout = oldstdout
 
     output = instance.stdout.getvalue()
     assert re.search(expected_regex, output)
