@@ -92,7 +92,12 @@ setup(
         'Topic :: Software Development :: Debuggers',
     ],
     install_requires=install_requires,
-    extras_require={'funcsigs': ["funcsigs"]},
+    extras_require={
+        'funcsigs': ["funcsigs"],
+        'testing': [
+            'pytest',
+        ],
+    },
     setup_requires=['setuptools_scm'],
     cmdclass={
         'install': install_with_pth,
