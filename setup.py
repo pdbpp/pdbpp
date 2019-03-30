@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import sys
 import os.path
 from setuptools import setup
 from setuptools.command.install import install
@@ -54,10 +53,6 @@ install_requires = [
     "wmctrl",
     "pygments",
 ]
-
-if sys.version_info < (2, 7):
-    install_requires.append("ordereddict")
-
 
 setup(
     name='pdbpp',
