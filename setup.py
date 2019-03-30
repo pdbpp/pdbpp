@@ -88,6 +88,7 @@ setup(
     extras_require={
         'funcsigs': ["funcsigs"],
         'testing': [
+            'funcsigs',
             'pytest',
         ],
     },
