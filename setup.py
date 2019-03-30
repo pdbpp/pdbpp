@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import sys
 import os.path
 from setuptools import setup
 from setuptools.command.install import install
@@ -49,16 +48,6 @@ class install_pth_hack(Command):
                 outfp.write(infp.read())
 
 
-install_requires = [
-    "fancycompleter>=0.8",
-    "wmctrl",
-    "pygments",
-]
-
-if sys.version_info < (2, 7):
-    install_requires.append("ordereddict")
-
-
 setup(
     name='pdbpp',
     use_scm_version=True,
@@ -91,8 +80,18 @@ setup(
         'Topic :: Utilities',
         'Topic :: Software Development :: Debuggers',
     ],
-    install_requires=install_requires,
-    extras_require={'funcsigs': ["funcsigs"]},
+    install_requires=[
+        "fancycompleter>=0.8",
+        "wmctrl",
+        "pygments",
+    ],
+    extras_require={
+        'funcsigs': ["funcsigs"],
+        'testing': [
+            'funcsigs',
+            'pytest',
+        ],
+    },
     setup_requires=['setuptools_scm'],
     cmdclass={
         'install': install_with_pth,
