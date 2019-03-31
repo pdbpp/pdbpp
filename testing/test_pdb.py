@@ -1654,7 +1654,7 @@ def test_syntaxerror_in_command():
     # Python 3.8.0a2+ handles the SyntaxError itself.
     # Ref/followup: https://github.com/python/cpython/pull/12103
     # https://github.com/python/cpython/commit/3e93643
-    if sys.version_info >= (3, 8, 0, "alpha", 2):
+    if sys.version_info >= (3, 7, 3):
         expected_debug_err += "\nLEAVING RECURSIVE DEBUGGER"
 
     def f():
