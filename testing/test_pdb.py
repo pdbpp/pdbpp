@@ -2167,6 +2167,31 @@ Breakpoint NUM at .*
 """ % lineno)
 
 
+def test_completer_after_debug():
+    """Test that pdb's original completion is used."""
+    def fn():
+        myvar = 1  # noqa: F841
+
+        set_trace()
+
+        print("ok_end")
+    check(fn, """
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# import pdb, readline
+# completer = readline.get_completer()
+# assert isinstance(completer.__self__, pdb.Pdb), completer
+# c
+ok_end
+""")
+
+
 def test_ensure_file_can_write_unicode():
     import io
     from pdb import DefaultConfig, Pdb
