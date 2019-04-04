@@ -220,7 +220,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.print_stack_entry(self.stack[self.curindex])
         self.print_hidden_frames_count()
         completer = fancycompleter.setup()
-        old_completer = completer.config.readline.get_completer()
         completer.config.readline.set_completer(self.complete)
         self.config.before_interaction_hook(self)
         # Use _cmdloop on py3 which catches KeyboardInterrupt.
@@ -228,7 +227,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._cmdloop()
         else:
             self.cmdloop()
-        completer.config.readline.set_completer(old_completer)
         self.forget()
 
     def print_hidden_frames_count(self):
