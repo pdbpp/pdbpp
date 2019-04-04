@@ -1141,8 +1141,6 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
     if header is not None:
         pdb.message(header)
 
-    pdb._via_set_trace_frame = frame
-
     pdb.set_trace(frame)
 
 
