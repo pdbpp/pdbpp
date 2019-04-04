@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+Changes between 0.9.14 and 0.9.15
+=================================
+
+- Fixes
+
+  - Fix completion after debug command (#183)
+
+- Misc
+
+  - tests: fix test_syntaxerror_in_command for Python 3.7.3 (#182)
+  - setup.py: cleanup, testing extra (#181)
+  - test_help: fix restoring of sys.stdout (#180)
+  - tests: move pytest config to setup.cfg, use --pdbcls=pdb:pdb.Pdb (#179)
+  - tests: fix put tests on py27 with user pdbrc (#178)
+  - Improve tests (#176)
+  - Provide message/error methods for py27 (#175)
+
 Changes between 0.9.13 and 0.9.14
 =================================
 
