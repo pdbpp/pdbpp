@@ -85,6 +85,8 @@ def runpdb(func, input):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
+    # Use __dict__ to avoid class descriptor (staticmethod).
+    old_get_terminal_size = pdb.Pdb.__dict__["get_terminal_size"]
 
     if sys.version_info < (3, ):
         text_type = unicode  # noqa: F821
@@ -105,13 +107,19 @@ def runpdb(func, input):
             super(MyBytesIO, self).write(msg)
 
         def get_unicode_value(self):
-            return self.getvalue().decode(self.encoding)
+            return self.getvalue().decode(self.encoding).replace(
+                pdb.CLEARSCREEN, "<CLEARSCREEN>\n"
+            ).replace(chr(27), "^[")
 
+    # Use a predictable terminal size.
+    pdb.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
         sys.stderr = stderr = MyBytesIO()
         func()
+    except InnerTestException:
+        pass
     except bdb.BdbQuit:
         print("!! Received unexpected bdb.BdbQuit !!")
     except Exception:
@@ -122,6 +130,7 @@ def runpdb(func, input):
         sys.stdin = oldstdin
         sys.stdout = oldstdout
         sys.stderr = oldstderr
+        pdb.Pdb.get_terminal_size = old_get_terminal_size
 
     stderr = stderr.get_unicode_value()
     if stderr:
@@ -146,8 +155,12 @@ shortcuts = [
     (']', '\\]'),
     ('(', '\\('),
     (')', '\\)'),
-    ('NUM', ' *[0-9]*'),
-    ('CLEAR', re.escape(pdb.CLEARSCREEN)),
+    ('^', '\\^'),
+    ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
+    ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
+    ('<COLORLNUM>', r'\^\[\[36;01m'),
+    ('<COLORRESET>', r'\^\[\[00m'),
+    ('NUM', ' *[0-9]+'),
 ]
 
 
@@ -180,6 +193,11 @@ def count_frames():
     return i
 
 
+class InnerTestException(Exception):
+    """Ignored by check()."""
+    pass
+
+
 def check(func, expected):
     expected, lines = run_func(func, expected)
     maxlen = max(map(len, expected))
@@ -194,6 +212,9 @@ def check(func, expected):
                 pattern = '<None>'
             if string is None:
                 string = '<None>'
+        # Use "$" to mark end of line with trailing space
+        if re.search(r'\s+$', string):
+            string += '$'
         print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
@@ -226,6 +247,8 @@ def test_config_terminalformatter(monkeypatch):
     p = Pdb(Config=Config)
     assert p._init_pygments() is True
     assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
+    # Cover using cached _fmt.
+    assert p._init_pygments() is True
 
 
 def test_runpdb():
@@ -758,7 +781,8 @@ def test_sticky():
 -> a = 1
    5 frames hidden .*
 # sticky
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace()
@@ -770,7 +794,8 @@ NUM             return a
 [NUM] > .*fn()
 -> b = 2
    5 frames hidden .*
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace()
@@ -803,7 +828,8 @@ def test_sticky_range():
 -> a = 1
    5 frames hidden .*
 # sticky %d %d
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
  %d             set_trace()
 NUM  ->         a = 1
@@ -839,7 +865,8 @@ NUM             return a
 [NUM] > .*fn()
 -> b = 2
    5 frames hidden .*
-CLEAR>.*
+<CLEARSCREEN>
+>.*
 
 NUM         def fn():
 NUM             set_trace(Config=MyConfig)
@@ -849,6 +876,186 @@ NUM             c = 3
 NUM             return a
 # c
 """)
+
+
+def test_sticky_dunder_exception():
+    """Test __exception__ being displayed in sticky mode."""
+
+    def fn():
+        def raises():
+            raise InnerTestException()
+
+        set_trace()
+        raises()
+
+    check(fn, """
+[NUM] > .*fn()
+-> raises()
+   5 frames hidden (try 'help hidden_frames')
+# n
+.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+[NUM] > .*raises()
+-> raise InnerTestException()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM             def raises():
+NUM  ->             raise InnerTestException()
+# u
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+NUM         def fn():
+NUM             def raises():
+NUM                 raise InnerTestException()
+NUM
+NUM             set_trace(.*)
+NUM  ->         raises()
+InnerTestException:
+# c
+""")
+
+
+def test_sticky_dunder_exception_with_highlight():
+    """Test __exception__ being displayed in sticky mode."""
+
+    def fn():
+        def raises():
+            raise InnerTestException()
+
+        set_trace(Config=ConfigWithHighlight)
+        raises()
+
+    check(fn, """
+[NUM] > .*fn()
+-> raises()
+   5 frames hidden (try 'help hidden_frames')
+# n
+.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+[NUM] > .*raises()
+-> raise InnerTestException()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+<COLORNUM>             def raises():
+<COLORCURLINE>  ->             raise InnerTestException()
+# u
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+<COLORNUM>         def fn():
+<COLORNUM>             def raises():
+<COLORNUM>                 raise InnerTestException()
+<COLORNUM>
+<COLORNUM>             set_trace(.*)
+<COLORCURLINE>  ->         raises().*
+<COLORLNUM>InnerTestException: <COLORRESET>
+# c
+""")
+
+
+def test_format_exc_for_sticky():
+    _pdb = PdbTest()
+    f = _pdb._format_exc_for_sticky
+
+    assert f((Exception, Exception())) == "Exception: "
+
+    exc_from_str = Exception("exc_from_str")
+
+    class UnprintableExc:
+        def __str__(self):
+            raise exc_from_str
+
+    assert f((UnprintableExc, UnprintableExc())) == (
+        "UnprintableExc: (unprintable exception: %r)" % exc_from_str
+    )
+
+    class UnprintableExc:
+        def __str__(self):
+            class RaisesInRepr(Exception):
+                def __repr__(self):
+                    raise Exception()
+            raise RaisesInRepr()
+
+    assert f((UnprintableExc, UnprintableExc())) == (
+        "UnprintableExc: (unprintable exception)"
+    )
+
+    assert f((1, 3, 3)) == 'pdbpp: got unexpected __exception__: (1, 3, 3)'
+
+
+def test_sticky_dunder_return():
+    """Test __return__ being displayed in sticky mode."""
+
+    def fn():
+        def returns():
+            return 40 + 2
+
+        set_trace()
+        returns()
+
+    check(fn, """
+[NUM] > .*fn()
+-> returns()
+   5 frames hidden (try 'help hidden_frames')
+# s
+--Call--
+[NUM] > .*returns()
+-> def returns()
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM  ->         def returns():
+NUM                 return 40 \\+ 2
+# retval
+\\*\\*\\* Not yet returned!
+# r
+--Return--
+[NUM] > .*(NUM)returns()->42
+-> return 40 \\+ 2
+   5 frames hidden .*
+<CLEARSCREEN>
+> .*test_pdb.py(NUM)
+
+NUM             def returns():
+NUM  ->             return 40 \\+ 2
+ return 42
+# retval
+42
+# c
+""")
+
+
+def test_sticky_dunder_return_with_highlight():
+    class ConfigWithPygments(ConfigWithHighlight):
+        use_pygments = True
+
+    def fn():
+        def returns():
+            return 40 + 2
+
+        set_trace(Config=ConfigWithPygments)
+        returns()
+
+    expected, lines = run_func(fn, '# s\n# sticky\n# r\n# retval\n# c')
+    assert lines[-4:] == [
+        '^[[36;01m return 42^[[00m',
+        '# retval',
+        '42',
+        '# c',
+    ]
+
+    colored_cur_lines = [
+        x for x in lines
+        if x.startswith('^[[44m^[[36;01;44m') and '->' in x
+    ]
+    assert len(colored_cur_lines) == 2
 
 
 def test_exception_lineno():
@@ -2383,7 +2590,7 @@ Traceback (most recent call last):
     compile.*
   File "<stdin>", line 1
     invalid(
-    .*\\^
+    .*^
 SyntaxError: .*
 
 During handling of the above exception, another exception occurred:

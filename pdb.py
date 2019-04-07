@@ -367,14 +367,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def _init_pygments(self):
         if not self.config.use_pygments:
             return False
+
+        if hasattr(self, '_fmt'):
+            return True
+
         try:
             from pygments.lexers import PythonLexer
             from pygments.formatters import TerminalFormatter, Terminal256Formatter
         except ImportError:
             return False
 
-        if hasattr(self, '_fmt'):
-            return True
         if hasattr(self.config, 'formatter'):
             self._fmt = self.config.formatter
         else:
@@ -622,6 +624,8 @@ except for when using the function decorator.
             maxlength = max(map(len, lines))
 
         if self.config.highlight:
+            # Fill with spaces.  This is important when a bg color is used,
+            # e.g. for highlighting the current line (via setbgcolor).
             lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
@@ -795,26 +799,11 @@ except for when using the function decorator.
             self._printlonglist(sticky_range)
 
             if '__exception__' in frame.f_locals:
-                exc = frame.f_locals['__exception__']
-                if len(exc) == 2:
-                    exc_type, exc_value = exc
-                    s = ''
-                    try:
-                        try:
-                            s = exc_type.__name__
-                        except AttributeError:
-                            s = str(exc_type)
-                        if exc_value is not None:
-                            s += ': '
-                            s += str(exc_value)
-                    except KeyboardInterrupt:
-                        raise
-                    except:
-                        s += '(unprintable exception)'
-                    print(Color.set(self.config.line_number_color, ' ' + s),
-                          file=self.stdout)
-                    return
-            if '__return__' in frame.f_locals:
+                s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
+                if s:
+                    print(s, file=self.stdout)
+
+            elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
                 try:
                     s = repr(rv)
@@ -822,8 +811,38 @@ except for when using the function decorator.
                     raise
                 except:
                     s = '(unprintable return value)'
-                print(Color.set(self.config.line_number_color, ' return ' + s),
-                      file=self.stdout)
+
+                s = ' return ' + s
+                if self.config.highlight:
+                    s = Color.set(self.config.line_number_color, s)
+                print(s, file=self.stdout)
+
+    def _format_exc_for_sticky(self, exc):
+        if len(exc) != 2:
+            return "pdbpp: got unexpected __exception__: %r" % (exc,)
+
+        exc_type, exc_value = exc
+        s = ''
+        try:
+            try:
+                s = exc_type.__name__
+            except AttributeError:
+                s = str(exc_type)
+            if exc_value is not None:
+                s += ': '
+                s += str(exc_value)
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            try:
+                s += '(unprintable exception: %r)' % (exc,)
+            except:
+                s += '(unprintable exception)'
+
+        if self.config.highlight:
+            s = Color.set(self.config.line_number_color, s)
+
+        return s
 
     def do_sticky(self, arg):
         """
@@ -965,7 +984,8 @@ except for when using the function decorator.
     do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
-    def get_terminal_size(self):
+    @staticmethod
+    def get_terminal_size():
         fallback = (80, 24)
         try:
             from shutil import get_terminal_size
@@ -1123,6 +1143,7 @@ except for when using the function decorator.
                 removed_bdb_context.__context__ = None
                 break
             removed_bdb_context = removed_bdb_context.__context__
+
 
 
 # simplified interface
