@@ -2329,3 +2329,124 @@ ENTERING RECURSIVE DEBUGGER
 LEAVING RECURSIVE DEBUGGER
 # c
 """)
+
+
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_error_with_traceback():
+    def fn():
+        def error():
+            raise ValueError("error")
+
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# error()
+\\*\\*\\* ValueError: error
+Traceback (most recent call last):
+  File .*, in error
+    raise ValueError("error")
+# c
+""")
+
+
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_chained_syntaxerror_with_traceback():
+    def fn():
+        def compile_error():
+            compile("invalid(", "<stdin>", "single")
+
+        def error():
+            try:
+                compile_error()
+            except Exception:
+                raise AttributeError
+
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# error()
+\\*\\*\\* AttributeError.*
+Traceback (most recent call last):
+  File .*, in error
+    compile_error()
+  File .*, in compile_error
+    compile.*
+  File "<stdin>", line 1
+    invalid(
+    .*\\^
+SyntaxError: .*
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File .*, in error
+    raise AttributeError
+# c
+""")
+
+
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_error_with_traceback_disabled():
+    class ConfigWithoutTraceback(ConfigTest):
+        show_traceback_on_error = False
+
+    def fn():
+        def error():
+            raise ValueError("error")
+
+        set_trace(Config=ConfigWithoutTraceback)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace(Config=ConfigWithoutTraceback)
+   5 frames hidden .*
+# error()
+\\*\\*\\* ValueError: error
+# c
+""")
+
+
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_error_with_traceback_limit():
+    class ConfigWithLimit(ConfigTest):
+        show_traceback_on_error_limit = 2
+
+    def fn():
+        def f(i):
+            i -= 1
+            if i <= 0:
+                raise ValueError("the_end")
+            f(i)
+
+        def error():
+            f(10)
+
+        set_trace(Config=ConfigWithLimit)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace(Config=ConfigWithLimit)
+   5 frames hidden .*
+# error()
+\\*\\*\\* ValueError: the_end
+Traceback (most recent call last):
+  File .*, in error
+    f(10)
+  File .*, in f
+    f(i)
+# c
+""")

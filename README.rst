@@ -312,6 +312,18 @@ default value:
   This method is called during the initialization of the ``Pdb`` class. Useful
   to do complex setup.
 
+``show_traceback_on_error = True``
+  Display tracebacks for errors via ``Pdb.error``, that come from
+  ``Pdb.default`` (i.e. the execution of an unrecognized pdb command),
+  and are not a direct cause of the expression itself (e.g. ``NameError``
+  with a command like ``doesnotexist``).
+
+  With this option disabled only ``*** exception string`` gets printed, which
+  often misses useful context.
+
+``show_traceback_on_error_limit = None``
+  This option sets the limit to be used with ``traceback.format_exception``,
+  when ``show_traceback_on_error`` is enabled.
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _`py.test`: http://pytest.org
