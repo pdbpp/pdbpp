@@ -1145,7 +1145,6 @@ except for when using the function decorator.
             removed_bdb_context = removed_bdb_context.__context__
 
 
-
 # simplified interface
 
 if hasattr(pdb, 'Restart'):
