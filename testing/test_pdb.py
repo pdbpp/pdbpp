@@ -2416,3 +2416,37 @@ def test_error_with_traceback_disabled():
 \\*\\*\\* ValueError: error
 # c
 """)
+
+
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_error_with_traceback_limit():
+    class ConfigWithLimit(ConfigTest):
+        show_traceback_on_error_limit = 2
+
+    def fn():
+        def f(i):
+            i -= 1
+            if i <= 0:
+                raise ValueError("the_end")
+            f(i)
+
+        def error():
+            f(10)
+
+        set_trace(Config=ConfigWithLimit)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace(Config=ConfigWithLimit)
+   5 frames hidden .*
+# error()
+\\*\\*\\* ValueError: the_end
+Traceback (most recent call last):
+  File .*, in error
+    f(10)
+  File .*, in f
+    f(i)
+# c
+""")
