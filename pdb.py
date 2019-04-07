@@ -1127,7 +1127,6 @@ except for when using the function decorator.
 
 # simplified interface
 
-
 if hasattr(pdb, 'Restart'):
     Restart = pdb.Restart
 
