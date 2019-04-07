@@ -92,6 +92,7 @@ class DefaultConfig(object):
     current_line_color = 44  # blue
 
     show_traceback_on_error = True
+    show_traceback_on_error_limit = None
 
     # Default keyword arguments passed to ``Pdb`` constructor.
     default_pdb_kwargs = {
@@ -1080,10 +1081,9 @@ except for when using the function decorator.
         def message(self, msg):
             print(msg, file=self.stdout)
 
-
     def error(self, msg):
         """Override/enhance default error method to display tracebacks."""
-        print('***', msg, file=self.stdout)
+        print("***", msg, file=self.stdout)
 
         if not self.config.show_traceback_on_error:
             return
@@ -1094,26 +1094,36 @@ except for when using the function decorator.
             if tb and tb.tb_frame.f_code.co_filename == "<stdin>":
                 tb = tb.tb_next
                 if tb:  # only display with actual traceback.
-                    # Get rid of 'Pdb' object has no attribute 'do_foo', when
-                    # trying to look up commands.
-                    # https://bugs.python.org/issue36494
-                    removed_bdb_context = evalue
-                    while removed_bdb_context.__context__:
-                        ctx = removed_bdb_context.__context__
-                        if (isinstance(ctx, AttributeError)
-                                and ctx.__traceback__.tb_frame.f_code.co_name == "onecmd"):
-                            removed_bdb_context.__context__ = None
-                            break
-                        removed_bdb_context = removed_bdb_context.__context__
-
-                    fmt_exc = traceback.format_exception(etype, evalue, tb, limit=2)
+                    self._remove_bdb_context(evalue)
+                    tb_limit = self.config.show_traceback_on_error_limit
+                    fmt_exc = traceback.format_exception(
+                        etype, evalue, tb, limit=tb_limit
+                    )
 
                     # Remove last line (exception string again).
-                    if len(fmt_exc) > 1:
-                        if fmt_exc[-1][0] != " ":
-                            fmt_exc = fmt_exc[:-1]
+                    if len(fmt_exc) > 1 and fmt_exc[-1][0] != " ":
+                        fmt_exc.pop()
 
                     print("".join(fmt_exc).rstrip(), file=self.stdout)
+
+    @staticmethod
+    def _remove_bdb_context(evalue):
+        """Remove exception context from Pdb from the exception.
+
+        E.g. "AttributeError: 'Pdb' object has no attribute 'do_foo'",
+        when trying to look up commands (bpo-36494).
+        """
+        removed_bdb_context = evalue
+        while removed_bdb_context.__context__:
+            ctx = removed_bdb_context.__context__
+            if (
+                isinstance(ctx, AttributeError)
+                and ctx.__traceback__.tb_frame.f_code.co_name == "onecmd"
+            ):
+                removed_bdb_context.__context__ = None
+                break
+            removed_bdb_context = removed_bdb_context.__context__
+
 
 # simplified interface
 
