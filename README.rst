@@ -267,7 +267,7 @@ default value:
 ``filename_color = Color.yellow``
   The color to use for file names when printing the stack entries.
 
-``current_line_color = 44``
+``current_line_color = False``
   The background color to use to highlight the current line; the background
   color is set by using the ANSI escape sequence ``^[Xm`` where ``^`` is the
   ESC character and ``X`` is the background color. 44 corresponds to "blue".

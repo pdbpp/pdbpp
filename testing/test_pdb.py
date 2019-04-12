@@ -920,12 +920,14 @@ InnerTestException:
 
 def test_sticky_dunder_exception_with_highlight():
     """Test __exception__ being displayed in sticky mode."""
+    class ConfigWithCurrentLineColor(ConfigWithHighlight):
+        current_line_color = 44
 
     def fn():
         def raises():
             raise InnerTestException()
 
-        set_trace(Config=ConfigWithHighlight)
+        set_trace(Config=ConfigWithCurrentLineColor)
         raises()
 
     check(fn, """
@@ -1035,6 +1037,7 @@ NUM  ->             return 40 \\+ 2
 def test_sticky_dunder_return_with_highlight():
     class ConfigWithPygments(ConfigWithHighlight):
         use_pygments = True
+        current_line_color = 44
 
     def fn():
         def returns():

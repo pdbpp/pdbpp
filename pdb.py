@@ -89,7 +89,7 @@ class DefaultConfig(object):
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
-    current_line_color = 44  # blue
+    current_line_color = False
 
     show_traceback_on_error = True
     show_traceback_on_error_limit = None
@@ -426,7 +426,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             lineno = Color.set(self.config.line_number_color, lineno)
         line = '%s  %2s %s' % (lineno, marker, line)
         if self.config.highlight and marker == '->':
-            line = setbgcolor(line, self.config.current_line_color)
+            if self.config.current_line_color:
+                line = setbgcolor(line, self.config.current_line_color)
         return line
 
     def parseline(self, line):
