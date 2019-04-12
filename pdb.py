@@ -89,7 +89,7 @@ class DefaultConfig(object):
 
     line_number_color = Color.turquoise
     filename_color = Color.yellow
-    current_line_color = 44  # blue
+    current_line_color = "39;49;7"  # default fg, bg, inversed
 
     show_traceback_on_error = True
     show_traceback_on_error_limit = None
@@ -109,8 +109,8 @@ def setbgcolor(line, color):
     # hack hack hack
     # add a bgcolor attribute to all escape sequences found
     import re
-    setbg = '\x1b[%dm' % color
-    regexbg = '\\1;%dm' % color
+    setbg = '\x1b[%sm' % color
+    regexbg = '\\1;%sm' % color
     result = setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
     if os.environ.get('TERM') == 'eterm-color':
         # it seems that emacs' terminal has problems with some ANSI escape
@@ -426,7 +426,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             lineno = Color.set(self.config.line_number_color, lineno)
         line = '%s  %2s %s' % (lineno, marker, line)
         if self.config.highlight and marker == '->':
-            line = setbgcolor(line, self.config.current_line_color)
+            if self.config.current_line_color:
+                line = setbgcolor(line, self.config.current_line_color)
         return line
 
     def parseline(self, line):

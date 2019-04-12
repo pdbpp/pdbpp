@@ -267,10 +267,15 @@ default value:
 ``filename_color = Color.yellow``
   The color to use for file names when printing the stack entries.
 
-``current_line_color = 44``
-  The background color to use to highlight the current line; the background
-  color is set by using the ANSI escape sequence ``^[Xm`` where ``^`` is the
-  ESC character and ``X`` is the background color. 44 corresponds to "blue".
+``current_line_color = "39;49;7"``
+  The SGR parameters for the ANSI escape sequence to highlight the current
+  line.
+  This is set inside the SGR escape sequence ``\e[%sm`` where ``\e`` is the
+  ESC character and ``%s`` the given value.  See `SGR parameters`_.
+  The following means "reset all colors" (``0``), set foreground color to 18
+  (``48;5;18``), and background to ``21``.
+  The default uses the default foreground (``39``) and background (``49``)
+  colors, inversed (``7``).
 
 ``use_pygments = True``
   If pygments_ is installed and ``highlight == True``, apply syntax highlight
@@ -327,6 +332,7 @@ default value:
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _`pytest`: https://pytest.org/
+.. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 
 
 Coding guidelines
