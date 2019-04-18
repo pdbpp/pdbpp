@@ -69,10 +69,11 @@ class PdbTest(pdb.Pdb):
         print(repr(text))
 
 
-def set_trace(cleanup=True, **kwds):
+def set_trace(frame=None, cleanup=True, **kwds):
     if cleanup:
         pdb.cleanup()
-    frame = sys._getframe().f_back
+    if frame is None:
+        frame = sys._getframe().f_back
     Pdb = kwds.pop("Pdb", PdbTest)
     pdb.set_trace(frame, Pdb=Pdb, **kwds)
 
