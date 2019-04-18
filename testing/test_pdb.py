@@ -895,16 +895,10 @@ def test_sticky_dunder_exception():
    5 frames hidden (try 'help hidden_frames')
 # n
 .*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
-[NUM] > .*raises()
--> raise InnerTestException()
+[NUM] > .*fn()
+-> raises()
    5 frames hidden .*
 # sticky
-<CLEARSCREEN>
->.*
-
-NUM             def raises():
-NUM  ->             raise InnerTestException()
-# u
 <CLEARSCREEN>
 > .*test_pdb.py(NUM)
 
@@ -937,16 +931,10 @@ def test_sticky_dunder_exception_with_highlight():
    5 frames hidden (try 'help hidden_frames')
 # n
 .*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
-[NUM] > .*raises()
--> raise InnerTestException()
+[NUM] > .*fn()
+-> raises()
    5 frames hidden .*
 # sticky
-<CLEARSCREEN>
->.*
-
-<COLORNUM>             def raises():
-<COLORCURLINE>  ->             raise InnerTestException()
-# u
 <CLEARSCREEN>
 > .*test_pdb.py(NUM)
 
@@ -2691,4 +2679,42 @@ Traceback (most recent call last):
   File .*, in f
     f(i)
 # c
+""")
+
+
+def test_next_with_exception_in_call():
+    """Ensure that "next" works correctly with exception (in try/except).
+
+    Previously it would display the frame where the exception occurred, and
+    then "next" would continue, instead of stopping at the next statement.
+    """
+    def fn():
+        def keyerror():
+            raise KeyError
+
+        set_trace()
+        try:
+            keyerror()
+        except KeyError:
+            print("got_keyerror")
+
+    check(fn, """
+[NUM] > .*fn()
+-> try:
+   5 frames hidden .*
+# n
+[NUM] > .*fn()
+-> keyerror()
+   5 frames hidden .*
+# n
+KeyError
+[NUM] > .*fn()
+-> keyerror()
+   5 frames hidden .*
+# n
+[NUM] > .*fn()
+-> except KeyError:
+   5 frames hidden .*
+# c
+got_keyerror
 """)
