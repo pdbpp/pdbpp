@@ -1,6 +1,31 @@
 CHANGELOG
 =========
 
+Changes between 0.9.15 and 0.10.0
+=================================
+
+- Changes
+  - config: improve current_line_color: default fg/bg/inversed (#188)
+  - Show tracebacks for errors with interactively run code (#185)
+
+    This adds new config settings "show_traceback_on_error" (default: True),
+    and "show_traceback_on_error_limit" (default: None).
+
+- Fixes
+
+  - Fix get_stack for non-last index (#192)
+
+    This fixes a pretty nasty bug, which was triggered e.g. with the "next"
+    command running into a deeper exception, and the internal stack getting
+    confused (if hidden frames are involved).
+
+- Misc:
+
+  - doc: document enable_hidden_frames, show_hidden_frames_count (#191)
+  - Make break_on_setattr not rely on @hideframe (#190)
+  - tests: cover sticky mode, small improvements (#177)
+  - doc: correct default value for disable_pytest_capturing
+
 Changes between 0.9.14 and 0.9.15
 =================================
 
