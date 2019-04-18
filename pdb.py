@@ -284,13 +284,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
-        fullstack, _ = super(Pdb, self).get_stack(f, t)
+        fullstack, idx = super(Pdb, self).get_stack(f, t)
         self.fullstack = fullstack
-        return self.compute_stack(fullstack)
+        return self.compute_stack(fullstack, idx)
 
-    def compute_stack(self, fullstack):
+    def compute_stack(self, fullstack, idx=None):
+        if idx is None:
+            idx = len(fullstack) - 1
         if self.show_hidden_frames:
-            return fullstack, len(fullstack) - 1
+            return fullstack, idx
 
         self.hidden_frames = []
         newstack = []
@@ -299,9 +301,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
-        stack = newstack
-        i = max(0, len(stack) - 1)
-        return stack, i
+        newidx = idx - len(self.hidden_frames)
+        return newstack, newidx
 
     def refresh_stack(self):
         """
