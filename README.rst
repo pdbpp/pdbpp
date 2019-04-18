@@ -125,6 +125,8 @@ The following are new commands that you can use from the interative
   ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
   frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
   prints a list of hidden frames.
+  The config option ``enable_hidden_frames`` can be used to disable handling
+  of hidden frames in general.
 
 
 Smart command parsing
@@ -313,6 +315,15 @@ default value:
   which is the default behavior).  When this option is on, the stdout
   capturing is automatically disabled before showing the interactive prompt.
 
+``enable_hidden_frames = True``
+  Certain frames can be hidden by default.
+  If enabled, the commands ``hf_unhide``, ``hf_hide``, and ``hf_list`` can be
+  used to control display of them.
+
+``show_hidden_frames_count = True``
+  If ``enable_hidden_frames`` is ``True`` this controls if the number of
+  hidden frames gets displayed.
+
 ``def setup(self, pdb): pass``
   This method is called during the initialization of the ``Pdb`` class. Useful
   to do complex setup.
@@ -363,6 +374,5 @@ It is fine NOT to write a test in the following cases:
   - commits which fix an already failing test
 
   - commits to silence warnings
-  
-  - purely cosmetic changes, such as change the color of the output
 
+  - purely cosmetic changes, such as change the color of the output

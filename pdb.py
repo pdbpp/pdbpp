@@ -84,6 +84,7 @@ class DefaultConfig(object):
     exec_if_unfocused = None
     disable_pytest_capturing = False
     encodings = ('utf-8', 'latin-1')
+
     enable_hidden_frames = True
     show_hidden_frames_count = True
 
