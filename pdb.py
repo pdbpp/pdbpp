@@ -1276,14 +1276,18 @@ def always(obj, value):
     return True
 
 
-def break_on_setattr(attrname, condition=always, set_trace=set_trace):
+def break_on_setattr(attrname, condition=always, Pdb=Pdb):
     def decorator(cls):
         old___setattr__ = cls.__setattr__
 
         @hideframe
         def __setattr__(self, attr, value):
             if attr == attrname and condition(self, value):
-                set_trace()
+                frame = sys._getframe().f_back
+                pdb_ = Pdb()
+                pdb_.set_trace(frame)
+                pdb_.stopframe = frame
+                pdb_.interaction(frame, None)
             old___setattr__(self, attr, value)
         cls.__setattr__ = __setattr__
         return cls

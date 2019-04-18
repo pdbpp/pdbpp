@@ -1660,7 +1660,7 @@ def test_break_on_setattr():
     # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         pass
-    Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
+    Foo = pdb.break_on_setattr('x', Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -1670,13 +1670,45 @@ def test_break_on_setattr():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 0
-   6 frames hidden .*
+   5 frames hidden .*
 # hasattr(obj, 'x')
 False
 # n
 [NUM] > .*fn()
 -> return obj.x
    5 frames hidden .*
+# p obj.x
+0
+# c
+""")
+
+
+def test_break_on_setattr_without_hidden_frames():
+
+    class PdbWithConfig(PdbTest):
+        def __init__(self, *args, **kwargs):
+            class Config(ConfigTest):
+                enable_hidden_frames = False
+
+            super(PdbWithConfig, self).__init__(*args, Config=Config, **kwargs)
+
+    class Foo(object):
+        pass
+    Foo = pdb.break_on_setattr('x', Pdb=PdbWithConfig)(Foo)
+
+    def fn():
+        obj = Foo()
+        obj.x = 0
+        return obj.x
+
+    check(fn, """
+[NUM] > .*fn()
+-> obj.x = 0
+# hasattr(obj, 'x')
+False
+# n
+[NUM] > .*fn()
+-> return obj.x
 # p obj.x
 0
 # c
@@ -1690,7 +1722,7 @@ def test_break_on_setattr_condition():
     class Foo(object):
         pass
     # we don't use a class decorator to keep 2.5 compatibility
-    Foo = pdb.break_on_setattr('x', condition=mycond, set_trace=set_trace)(Foo)
+    Foo = pdb.break_on_setattr('x', condition=mycond, Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -1701,7 +1733,7 @@ def test_break_on_setattr_condition():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 42
-   6 frames hidden .*
+   5 frames hidden .*
 # obj.x
 0
 # n
@@ -1725,15 +1757,14 @@ def test_break_on_setattr_non_decorator():
         def break_if_a(obj, value):
             return obj is a
 
-        pdb.break_on_setattr('bar', condition=break_if_a,
-                             set_trace=set_trace)(Foo)
+        pdb.break_on_setattr("bar", condition=break_if_a, Pdb=PdbTest)(Foo)
         b.bar = 10
         a.bar = 42
 
     check(fn, """
 [NUM] > .*fn()
 -> a.bar = 42
-   6 frames hidden .*
+   5 frames hidden .*
 # c
 """)
 
@@ -1743,7 +1774,7 @@ def test_break_on_setattr_overridden():
     class Foo(object):
         def __setattr__(self, attr, value):
             object.__setattr__(self, attr, value+1)
-    Foo = pdb.break_on_setattr('x', set_trace=set_trace)(Foo)
+    Foo = pdb.break_on_setattr('x', Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -1754,7 +1785,7 @@ def test_break_on_setattr_overridden():
     check(fn, """
 [NUM] > .*fn()
 -> obj.x = 0
-   6 frames hidden .*
+   5 frames hidden .*
 # obj.y
 42
 # hasattr(obj, 'x')
