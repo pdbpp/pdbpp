@@ -449,6 +449,9 @@ def test_frame():
 # f {frame_num_a}
 [NUM] > .*a()
 -> b()
+# f
+[{frame_num_a}] > .*a()
+-> b()
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
 
