@@ -344,7 +344,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             if GLOBAL_PDB:
                 GLOBAL_PDB._pdbpp_completing = True
             mydict = self.curframe.f_globals.copy()
-            mydict.update(self.curframe.f_locals)
+            mydict.update(self.curframe_locals)
             completer = Completer(mydict)
             self._completions = self._get_all_completions(
                 completer.complete, text)
@@ -463,7 +463,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return super(Pdb, self).parseline('!' + line)
 
         if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
-                                                 cmd in self.curframe.f_locals or
+                                                 cmd in self.curframe_locals or
                                                  arg.startswith('=')):
             return super(Pdb, self).parseline('!' + line)
 
@@ -724,7 +724,7 @@ except for when using the function decorator.
         contains all the names found in the current scope.
         """
         ns = self.curframe.f_globals.copy()
-        ns.update(self.curframe.f_locals)
+        ns.update(self.curframe_locals)
         code.interact("*interactive*", local=ns)
 
     def do_track(self, arg):
@@ -754,7 +754,7 @@ except for when using the function decorator.
     def _getval_or_undefined(self, arg):
         try:
             return eval(arg, self.curframe.f_globals,
-                        self.curframe.f_locals)
+                        self.curframe_locals)
         except NameError:
             return undefined
 

@@ -2718,3 +2718,28 @@ KeyError
 # c
 got_keyerror
 """)
+
+
+def test_locals():
+    def fn():
+        def f():
+            set_trace()
+            print("foo=%s" % foo)
+            foo = 2
+
+        f()
+
+    check(fn, """
+[NUM] > .*f()
+-> print("foo=%s" % foo)
+   5 frames hidden .*
+# foo = 42
+# foo
+42
+# pp foo
+42
+# p foo
+42
+# c
+foo=42
+""")
