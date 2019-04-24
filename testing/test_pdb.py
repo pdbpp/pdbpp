@@ -556,6 +556,28 @@ def test_parseline():
 """)
 
 
+def test_parseline_with_existing_command():
+    def fn():
+        c = 42
+        set_trace()
+        return c
+
+    check(fn, """
+[NUM] > .*fn()
+-> return c
+   5 frames hidden .*
+# print(pdb.GLOBAL_PDB.parseline("foo = "))
+('foo', '=', 'foo =')
+# print(pdb.GLOBAL_PDB.parseline("c = "))
+(None, None, 'c = ')
+# print(pdb.GLOBAL_PDB.parseline("a = "))
+(None, None, 'a = ')
+# c
+42
+# cont
+""")
+
+
 def test_args_name():
     def fn():
         args = 42
