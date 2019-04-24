@@ -420,6 +420,10 @@ def test_double_question_mark():
 
 
 def test_single_question_mark_with_existing_command(monkeypatch):
+    def mocked_inspect(self, arg):
+        print("mocked_inspect: %r" % arg)
+    monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
+
     def fn():
         mp = monkeypatch  # noqa: F841
 
@@ -434,17 +438,9 @@ def test_single_question_mark_with_existing_command(monkeypatch):
 -> set_trace()
    5 frames hidden .*
 # a?
-.*Type:.*MyClass
-.*String Form:.*
-.*Docstring:.*
+mocked_inspect: 'a'
 # a.__class__?
-.*Type:.*type
-.*String Form:.*
-.*File:.*
-.*Docstring:.*
-.*Constructor information:.*
-.* Definition:.*
-.* Docstring:.*
+mocked_inspect: 'a.__class__'
 # !!a?
 # !a?
 do_shell_called: a?
@@ -508,7 +504,11 @@ def test_frame():
 
 @pytest.mark.skipif(sys.version_info < (3, 6),
                     reason="only with f-strings")
-def test_fstrings():
+def test_fstrings(monkeypatch):
+    def mocked_inspect(self, arg):
+        print("mocked_inspect: %r" % arg)
+    monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
+
     def f():
         set_trace()
 
@@ -519,6 +519,8 @@ def test_fstrings():
    5 frames hidden .*
 # f"fstring"
 'fstring'
+# f"foo"?
+mocked_inspect: 'f"foo"'
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
 

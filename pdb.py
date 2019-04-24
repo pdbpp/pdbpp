@@ -458,11 +458,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         # This prevents pdb to quit if you type e.g. 'r[0]' by mystake.
         cmd, arg, newline = super(Pdb, self).parseline(line)
 
-
         if cmd:
             # f-strings.
-            if cmd == "f" and len(newline) > 1 and (newline[1] == "'" or newline[1] == '"'):
-                cmd, arg, newline = None, None, "!" + line
+            if (
+                cmd == "f"
+                and len(newline) > 1
+                and (newline[1] == "'" or newline[1] == '"')
+            ):
+                cmd, arg, newline = None, None, line
 
             elif hasattr(self, "do_" + cmd):
                 if (
