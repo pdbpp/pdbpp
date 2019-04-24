@@ -445,7 +445,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         cmd, arg, newline = super(Pdb, self).parseline(line)
 
         if arg and arg.endswith('?'):
-            if hasattr(self, 'do_' + cmd):
+            if (arg == "?"
+                    and hasattr(self, 'do_' + cmd)
+                    and cmd not in self.curframe.f_globals
+                    and cmd not in self.curframe_locals):
                 cmd, arg = ('help', cmd)
             elif arg.endswith('??'):
                 arg = cmd + arg.split('?')[0]
@@ -454,8 +457,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
             else:
                 arg = cmd + arg.split('?')[0]
-                cmd = 'inspect'
-                return cmd, arg, newline
+                cmd = "inspect"
+            return cmd, arg, newline
 
         # f-strings.
         if (cmd == 'f' and len(newline) > 1

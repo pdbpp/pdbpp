@@ -409,6 +409,40 @@ def test_double_question_mark():
 """)
 
 
+def test_single_question_mark_with_existing_command():
+    def fn():
+        class MyClass:
+            pass
+        a = MyClass()  # noqa: F841
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# a?
+.*Type:.*MyClass
+.*String Form:.*
+.*Docstring:.*
+# a.__class__?
+.*Type:.*type
+.*String Form:.*
+.*File:.*
+.*Docstring:.*
+.*Constructor information:.*
+.* Definition:.*
+.* Docstring:.*
+# !!a?
+# !a?
+\\*\\*\\* SyntaxError: invalid syntax
+# help a
+a(rgs)
+.*
+# c
+""")
+
+
 def test_up_local_vars():
     def nested():
         set_trace()
