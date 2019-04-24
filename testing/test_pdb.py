@@ -2724,8 +2724,8 @@ def test_locals():
     def fn():
         def f():
             set_trace()
-            print("foo=%s" % foo)
-            foo = 2
+            print("foo=%s" % foo)  # noqa: F821
+            foo = 2  # noqa: F841
 
         f()
 
