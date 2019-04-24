@@ -85,8 +85,8 @@ class PdbTest(pdb.Pdb):
         # Do not install sigint_handler in do_continue by default.
         self.nosigint = nosigint
 
-    def _open_editor(self, editor, lineno, filename):
-        print("RUN %s +%d '%s'" % (editor, lineno, filename))
+    def _open_editor(self, editcmd):
+        print("RUN %s" % editcmd)
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
         print("RUN %s +%d" % (cmd, lineno))
@@ -1241,7 +1241,7 @@ def test_edit():
 -> return 42
    5 frames hidden .*
 # edit
-RUN emacs \+%d '%s'
+RUN emacs \+%d %s
 # c
 """ % (return42_lineno, RE_THIS_FILE_QUOTED))
 
@@ -1253,7 +1253,7 @@ RUN emacs \+%d '%s'
 [NUM] > .*bar()
 -> fn()
 # edit
-RUN emacs \+%d '%s'
+RUN emacs \+%d %s
 # c
 """ % (call_fn_lineno, RE_THIS_FILE_QUOTED))
 
@@ -1276,7 +1276,7 @@ def test_edit_obj():
 -> return 42
    5 frames hidden .*
 # edit bar
-RUN emacs \+%d '%s'
+RUN emacs \+%d %s
 # c
 """ % (bar_lineno, filename))
 
@@ -1292,17 +1292,17 @@ def test_edit_py_code_source():
     exec(src.compile(), dic)  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
-    #
+
     filename = os.path.abspath(__file__)
     if filename.endswith('.pyc'):
         filename = filename[:-1]
-    #
+
     check(bar, r"""
 [NUM] > .*bar()
 -> return 42
    5 frames hidden .*
 # edit bar
-RUN emacs \+%d '%s'
+RUN emacs \+%d %s
 # c
 """ % (src_compile_lineno, filename))
 
@@ -2739,4 +2739,64 @@ KeyError
    5 frames hidden .*
 # c
 got_keyerror
+""")
+
+
+def test_get_editor_cmd(monkeypatch):
+    _pdb = PdbTest()
+
+    _pdb.config.editor = None
+    monkeypatch.setenv("EDITOR", "nvim")
+    assert _pdb._get_editor_cmd("fname", 42) == "nvim +42 fname"
+
+    monkeypatch.setenv("EDITOR", "")
+    with pytest.raises(RuntimeError, match=(
+            r"Could not detect editor. Configure it or set \$EDITOR."
+    )):
+        _pdb._get_editor_cmd("fname", 42)
+
+    monkeypatch.delenv("EDITOR")
+
+    try:
+        which = "shutil.which"
+        monkeypatch.setattr(which, lambda x: None)
+    except AttributeError:
+        which = "distutils.spawn.find_executable"
+        monkeypatch.setattr(which, lambda x: None)
+    with pytest.raises(RuntimeError, match=(
+            r"Could not detect editor. Configure it or set \$EDITOR."
+    )):
+        _pdb._get_editor_cmd("fname", 42)
+
+    monkeypatch.setattr(which, lambda x: "vim")
+    assert _pdb._get_editor_cmd("fname", 42) == "vim +42 fname"
+    monkeypatch.setattr(which, lambda x: "vi")
+    assert _pdb._get_editor_cmd("fname", 42) == "vi +42 fname"
+
+    _format = _pdb._format_editcmd
+    assert _format("subl {filename}:{lineno}", "with space", 12) == (
+        "subl 'with space':12")
+    assert _format("edit", "with space", 12) == (
+        "edit +12 'with space'")
+    assert _format("edit +%%%d %%%s%% %d", "with space", 12) == (
+        "edit +%12 %'with space'% 12")
+
+
+def test_edit_error(monkeypatch):
+    class MyConfig(ConfigTest):
+        editor = None
+
+    monkeypatch.setenv("EDITOR", "")
+
+    def fn():
+        set_trace(Config=MyConfig)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()
+-> set_trace(Config=MyConfig)
+   5 frames hidden .*
+# edit
+\*\*\* Could not detect editor. Configure it or set \$EDITOR.
+# c
 """)
