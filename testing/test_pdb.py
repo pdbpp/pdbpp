@@ -444,10 +444,10 @@ mocked_inspect: 'a.__class__'
 # !!a?
 # !a?
 do_shell_called: a?
-\\*\\*\\* SyntaxError: invalid syntax
+\\*\\*\\* SyntaxError:
 # mp.delattr(pdb.GLOBAL_PDB.__class__, "do_shell")
 # !a?
-\\*\\*\\* SyntaxError: invalid syntax
+\\*\\*\\* SyntaxError:
 # help a
 a(rgs)
 .*
