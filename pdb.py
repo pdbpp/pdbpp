@@ -933,6 +933,15 @@ except for when using the function decorator.
         self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def do_frame(self, arg):
+        """f(rame) [index]
+        Go to frame.
+        Without argument, display current frame.
+        """
+        if not arg:
+            # Just display the frame, without handling sticky.
+            self.print_stack_entry(self.stack[self.curindex])
+            return
+
         try:
             arg = int(arg)
         except (ValueError, TypeError):
