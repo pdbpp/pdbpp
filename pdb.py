@@ -434,43 +434,60 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def parseline(self, line):
         if line.startswith('!!'):
-            # force the "standard" behaviour, i.e. first check for the
-            # command, then for the variable name to display
+            # Force the "standard" behaviour, i.e. first check for the
+            # command, then for the variable name to display.
             line = line[2:]
             return super(Pdb, self).parseline(line)
 
-        # pdb++ "smart command mode": don't execute commands if a variable
-        # with the name exits in the current contex; this prevents pdb to quit
-        # if you type e.g. 'r[0]' by mystake.
-        cmd, arg, newline = super(Pdb, self).parseline(line)
-
-        if arg and arg.endswith('?'):
-            if hasattr(self, 'do_' + cmd):
-                cmd, arg = ('help', cmd)
-            elif arg.endswith('??'):
-                arg = cmd + arg.split('?')[0]
+        if line.endswith('?') and not line.startswith("!"):
+            arg = line.split('?', 1)[0]
+            if line.endswith('??'):
                 cmd = 'source'
                 self.do_inspect(arg)
                 self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
+            elif (hasattr(self, 'do_' + arg)
+                    and arg not in self.curframe.f_globals
+                    and arg not in self.curframe_locals):
+                cmd = "help"
             else:
-                arg = cmd + arg.split('?')[0]
-                cmd = 'inspect'
-                return cmd, arg, newline
+                cmd = "inspect"
+            return cmd, arg, line
 
-        # f-strings.
-        if (cmd == 'f' and len(newline) > 1
-                and (newline[1] == "'" or newline[1] == '"')):
-            return super(Pdb, self).parseline('!' + line)
+        # pdb++ "smart command mode": don't execute commands if a variable
+        # with the name exists in the current context;
+        # This prevents pdb to quit if you type e.g. 'r[0]' by mystake.
+        cmd, arg, newline = super(Pdb, self).parseline(line)
 
-        if cmd and hasattr(self, 'do_'+cmd) and (cmd in self.curframe.f_globals or
-                                                 cmd in self.curframe_locals or
-                                                 arg.startswith('=')):
-            return super(Pdb, self).parseline('!' + line)
+        if cmd:
+            # f-strings.
+            if (
+                cmd == "f"
+                and len(newline) > 1
+                and (newline[1] == "'" or newline[1] == '"')
+            ):
+                cmd, arg, newline = None, None, line
 
-        if cmd == "list" and arg.startswith("("):
-            # heuristic: handle "list(..." as the builtin.
-            line = '!' + line
-            return super(Pdb, self).parseline(line)
+            elif hasattr(self, "do_" + cmd):
+                if (
+                    cmd in self.curframe.f_globals
+                    or cmd in self.curframe_locals
+                    or arg.startswith("=")
+                ):
+                    cmd, arg, newline = None, None, line
+                elif cmd == "list" and arg.startswith("("):
+                    # heuristic: handle "list(..." as the builtin.
+                    cmd, arg, newline = None, None, line
+
+        # Fix cmd to not be None when used in completions.
+        # This would trigger a TypeError (instead of AttributeError) in
+        # Cmd.complete (https://bugs.python.org/issue35270).
+        if cmd is None:
+            f = sys._getframe()
+            while f.f_back:
+                f = f.f_back
+                if f.f_code.co_name == "complete":
+                    cmd = ""
+                    break
 
         return cmd, arg, newline
 
