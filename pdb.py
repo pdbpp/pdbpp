@@ -41,6 +41,8 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
+RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)*")
+
 if sys.version_info < (3, ):
     from io import BytesIO as StringIO
 else:
@@ -225,6 +227,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.print_hidden_frames_count()
         completer = fancycompleter.setup()
         completer.config.readline.set_completer(self.complete)
+        self._lastcompstate = [None, 0]
         self.config.before_interaction_hook(self)
         # Use _cmdloop on py3 which catches KeyboardInterrupt.
         if hasattr(self, '_cmdloop'):
@@ -354,6 +357,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 if x not in self._completions:
                     self._completions.append(x)
 
+            self._filter_completions(text)
+
             if GLOBAL_PDB:
                 del GLOBAL_PDB._pdbpp_completing
 
@@ -365,6 +370,31 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return self._completions[state]
         except IndexError:
             return None
+
+    def _filter_completions(self, text):
+        # Remove anything prefixed with "_" / "__" by default, but only
+        # display it on additional request (3rd tab, after pyrepl's "[not
+        # unique]"), or if the prefix is used already.
+        if text == self._lastcompstate[0]:
+            if self._lastcompstate[1] > 0:
+                return
+            self._lastcompstate[1] += 1
+        else:
+            self._lastcompstate[0] = text
+            self._lastcompstate[1] = 0
+
+        if text[-1:] != "_":
+            self._completions = [
+                x
+                for x in self._completions
+                if RE_COLOR_ESCAPES.sub("", x)[:1] != "_"
+            ]
+        elif text[-2:] != "__":
+            self._completions = [
+                x
+                for x in self._completions
+                if RE_COLOR_ESCAPES.sub("", x)[:2] != "__"
+            ]
 
     def _init_pygments(self):
         if not self.config.use_pygments:
