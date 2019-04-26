@@ -68,6 +68,16 @@ class PdbTest(pdb.Pdb):
         print("RUN %s +%d" % (cmd, lineno))
         print(repr(text))
 
+    def do_shell(self, arg):
+        """Track when do_shell gets called (via "!").
+
+        This is not implemented by default, but we should not trigger it
+        via parseline unnecessarily, which would cause unexpected results
+        if somebody uses it.
+        """
+        print("do_shell_called: %r" % arg)
+        return self.default(arg)
+
 
 def set_trace(frame=None, cleanup=True, **kwds):
     if cleanup:
@@ -409,6 +419,42 @@ def test_double_question_mark():
 """)
 
 
+def test_single_question_mark_with_existing_command(monkeypatch):
+    def mocked_inspect(self, arg):
+        print("mocked_inspect: %r" % arg)
+    monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
+
+    def fn():
+        mp = monkeypatch  # noqa: F841
+
+        class MyClass:
+            pass
+        a = MyClass()  # noqa: F841
+        set_trace()
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# a?
+mocked_inspect: 'a'
+# a.__class__?
+mocked_inspect: 'a.__class__'
+# !!a?
+# !a?
+do_shell_called: a?
+\\*\\*\\* SyntaxError:
+# mp.delattr(pdb.GLOBAL_PDB.__class__, "do_shell")
+# !a?
+\\*\\*\\* SyntaxError:
+# help a
+a(rgs)
+.*
+# c
+""")
+
+
 def test_up_local_vars():
     def nested():
         set_trace()
@@ -458,7 +504,11 @@ def test_frame():
 
 @pytest.mark.skipif(sys.version_info < (3, 6),
                     reason="only with f-strings")
-def test_fstrings():
+def test_fstrings(monkeypatch):
+    def mocked_inspect(self, arg):
+        print("mocked_inspect: %r" % arg)
+    monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
+
     def f():
         set_trace()
 
@@ -469,6 +519,8 @@ def test_fstrings():
    5 frames hidden .*
 # f"fstring"
 'fstring'
+# f"foo"?
+mocked_inspect: 'f"foo"'
 # c
 """.format(frame_num_a=count_frames() + 2 - 5))
 
@@ -511,6 +563,7 @@ def test_parseline():
 # c
 42
 # !c
+do_shell_called: 'c'
 42
 # r = 5
 # r
@@ -519,6 +572,30 @@ def test_parseline():
 # r
 6
 # !!c
+""")
+
+
+def test_parseline_with_existing_command():
+    def fn():
+        c = 42
+        set_trace()
+        return c
+
+    check(fn, """
+[NUM] > .*fn()
+-> return c
+   5 frames hidden .*
+# print(pdb.GLOBAL_PDB.parseline("foo = "))
+('foo', '=', 'foo =')
+# print(pdb.GLOBAL_PDB.parseline("c = "))
+(None, None, 'c = ')
+# print(pdb.GLOBAL_PDB.parseline("a = "))
+(None, None, 'a = ')
+# print(pdb.GLOBAL_PDB.parseline("list()"))
+(None, None, 'list()')
+# c
+42
+# cont
 """)
 
 
@@ -2398,6 +2475,36 @@ Breakpoint NUM at .*
    5 frames hidden .*
 # c
 """ % lineno)
+
+
+def test_complete_with_bang(monkeypatch):
+    """Test that completion works after "!".
+
+    This requires parseline to return "" for the command (bpo-35270).
+    """
+    def fn():
+        a_var = 1  # noqa: F841
+
+        set_trace()
+
+        # Patch readline to return expected results for "!a_va".
+        monkeypatch.setattr("readline.get_line_buffer", lambda: "!a_va")
+        monkeypatch.setattr("readline.get_begidx", lambda: 4)
+        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        assert pdb.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+
+        # Patch readline to return expected results for "list(a_va".
+        monkeypatch.setattr("readline.get_line_buffer", lambda: "list(a_va")
+        monkeypatch.setattr("readline.get_begidx", lambda: 8)
+        monkeypatch.setattr("readline.get_endidx", lambda: 8)
+        assert pdb.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+
+    check(fn, """
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# c
+""")
 
 
 def test_completer_after_debug():
