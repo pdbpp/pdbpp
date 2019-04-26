@@ -20,12 +20,102 @@ import pprint
 import re
 import signal
 from collections import OrderedDict
-from fancycompleter import Completer, ConfigurableClass, Color
-import fancycompleter
+
+try:
+    import fancycompleter
+except ImportError:
+    fancycompleter = None
+
+    class ConfigurableClass:
+        DefaultConfig = None
+        config_filename = None
+
+        def get_config(self, Config):
+            if Config is not None:
+                return Config()
+            # try to load config from the ~/filename file
+            filename = '~/' + self.config_filename
+            rcfile = os.path.expanduser(filename)
+            if os.path.exists(rcfile):
+                def my_execfile(filename, mydict):
+                    with open(filename) as f:
+                        code = compile(f.read(), filename, 'exec')
+                        exec(code, mydict)
+                mydict = {}
+                try:
+                    my_execfile(rcfile, mydict)
+                    return mydict['Config']()
+                except Exception:
+                    # python 2.5 compatibility, can't use 'except Exception as e'
+                    e = sys.exc_info()[1]
+                    print('** error when importing %s: %s **' % (filename, e))
+            return self.DefaultConfig()
+
+    class Color:
+        black = '30'
+        darkred = '31'
+        darkgreen = '32'
+        brown = '33'
+        darkblue = '34'
+        purple = '35'
+        teal = '36'
+        lightgray = '37'
+        darkgray = '30;01'
+        red = '31;01'
+        green = '32;01'
+        yellow = '33;01'
+        blue = '34;01'
+        fuchsia = '35;01'
+        turquoise = '36;01'
+        white = '37;01'
+
+        @classmethod
+        def set(cls, color, string):
+            try:
+                color = getattr(cls, color)
+            except AttributeError:
+                pass
+            return '\x1b[%sm%s\x1b[00m' % (color, string)
+
+    class LazyVersion(object):
+
+        def __init__(self, pkg):
+            self.pkg = pkg
+            self.__version = None
+
+        @property
+        def version(self):
+            if self.__version is None:
+                self.__version = self._load_version()
+            return self.__version
+
+        def _load_version(self):
+            try:
+                from pkg_resources import get_distribution, DistributionNotFound
+            except ImportError:
+                return 'N/A'
+            #
+            try:
+                return get_distribution(self.pkg).version
+            except DistributionNotFound:
+                # package is not installed
+                return 'N/A'
+
+        def __repr__(self):
+            return self.version
+
+        def __eq__(self, other):
+            return self.version == other
+
+        def __ne__(self, other):
+            return not self == other
+else:
+    from fancycompleter import Completer, ConfigurableClass, Color, LazyVersion
+
 
 __author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
 __url__ = 'http://github.com/antocuni/pdb'
-__version__ = fancycompleter.LazyVersion('pdbpp')
+__version__ = LazyVersion('pdbpp')
 
 try:
     from inspect import signature  # Python >= 3.3
@@ -98,6 +188,8 @@ class DefaultConfig(object):
     # Default keyword arguments passed to ``Pdb`` constructor.
     default_pdb_kwargs = {
     }
+
+    use_fancycompleter = fancycompleter is not None
 
     def setup(self, pdb):
         pass
@@ -223,7 +315,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.exec_if_unfocused()
         self.print_stack_entry(self.stack[self.curindex])
         self.print_hidden_frames_count()
-        completer = fancycompleter.setup()
+        if self.config.use_fancycompleter:
+            completer = fancycompleter.setup()
         completer.config.readline.set_completer(self.complete)
         self.config.before_interaction_hook(self)
         # Use _cmdloop on py3 which catches KeyboardInterrupt.
