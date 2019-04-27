@@ -2378,7 +2378,6 @@ def test_completes_from_pdb(monkeypatch):
             assert "__name__" not in comps
             comps = get_completions("")
             assert "__name__" in comps
-            assert 0
 
         # Patch readline to return expected results for "help ".
         monkeypatch.setattr("readline.get_line_buffer", lambda: "help ")
