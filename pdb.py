@@ -54,6 +54,7 @@ local = threading.local()
 local.GLOBAL_PDB = None
 
 
+
 def __getattr__(name):
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
@@ -1283,6 +1284,8 @@ def post_mortem(t=None, Pdb=Pdb):
 
 
 def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
+    local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
+
     if hasattr(local, '_pdbpp_completing'):
         # Handle set_trace being called during completion, e.g. with
         # fancycompleter's attr_matches.

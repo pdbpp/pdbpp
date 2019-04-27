@@ -2918,3 +2918,35 @@ def test_edit_error(monkeypatch):
 \*\*\* Could not detect editor. Configure it or set \$EDITOR.
 # c
 """)
+
+
+def test_global_pdb_per_thread():
+    def fn():
+        import threading
+
+        def run():
+            print("thread_run")
+            set_trace()
+            print("thread_end")
+            pass
+
+        thread = threading.Thread(target=run)
+        set_trace()
+        thread.join()
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> thread.join()
+   5 frames hidden .*
+# import threading; print(threading.current_thread())
+.*MainThread
+# thread.start()
+thread_run
+# p thread is not None
+True
+# c
+[NUM] > .*run()
+-> print("thread_end")
+# c
+thread_end
+""")
