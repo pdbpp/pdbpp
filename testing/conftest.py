@@ -24,8 +24,8 @@ def restore_settrace():
 
     newtrace = sys.gettrace()
     if newtrace is not _orig_trace:
-        assert newtrace is None
         sys.settrace(_orig_trace)
+        assert newtrace is None
 
 
 @pytest.fixture
