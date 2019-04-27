@@ -145,6 +145,8 @@ def runpdb(func, input):
 
     stderr = stderr.get_unicode_value()
     if stderr:
+        # Make it available for pytests output capturing.
+        print(stdout.get_unicode_value())
         raise AssertionError("Unexpected output on stderr: %s" % stderr)
 
     return stdout.get_unicode_value().splitlines()
