@@ -317,7 +317,7 @@ a: 2 --> 3
 
 
 def test_forget_with_new_pdb():
-    """Regression test for having used GLOBAL_PDB in forget.
+    """Regression test for having used local.GLOBAL_PDB in forget.
 
     This caused "AttributeError: 'NewPdb' object has no attribute 'lineno'",
     e.g. when pdbpp was used before pytest's debugging plugin was setup, which
@@ -445,7 +445,7 @@ mocked_inspect: 'a.__class__'
 # !a?
 do_shell_called: a?
 \\*\\*\\* SyntaxError:
-# mp.delattr(pdb.GLOBAL_PDB.__class__, "do_shell")
+# mp.delattr(pdb.local.GLOBAL_PDB.__class__, "do_shell")
 # !a?
 \\*\\*\\* SyntaxError:
 # help a
@@ -585,13 +585,13 @@ def test_parseline_with_existing_command():
 [NUM] > .*fn()
 -> return c
    5 frames hidden .*
-# print(pdb.GLOBAL_PDB.parseline("foo = "))
+# print(pdb.local.GLOBAL_PDB.parseline("foo = "))
 ('foo', '=', 'foo =')
-# print(pdb.GLOBAL_PDB.parseline("c = "))
+# print(pdb.local.GLOBAL_PDB.parseline("c = "))
 (None, None, 'c = ')
-# print(pdb.GLOBAL_PDB.parseline("a = "))
+# print(pdb.local.GLOBAL_PDB.parseline("a = "))
 (None, None, 'a = ')
-# print(pdb.GLOBAL_PDB.parseline("list()"))
+# print(pdb.local.GLOBAL_PDB.parseline("list()"))
 (None, None, 'list()')
 # c
 42
@@ -2206,7 +2206,7 @@ ENTERING RECURSIVE DEBUGGER
     # Reset pdb, which did not clean up correctly.
     # Needed for PyPy (Python 2.7.13[pypy-7.1.0-final]) with coverage and
     # restoring trace function.
-    pdb.GLOBAL_PDB.reset()
+    pdb.local.GLOBAL_PDB.reset()
 
 
 def test_debug_rebind_globals(monkeypatch):
@@ -2381,7 +2381,7 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
 def get_completions(text):
     comps = []
     while True:
-        val = pdb.GLOBAL_PDB.complete(text, len(comps))
+        val = pdb.local.GLOBAL_PDB.complete(text, len(comps))
         if val is None:
             break
         comps += [val]
@@ -2441,7 +2441,7 @@ def test_completes_from_pdb(monkeypatch):
 
             # NOTE: number depends on bpb.Breakpoint class state, just ensure that
             #       is a number.
-            completion = pdb.GLOBAL_PDB.complete("", 0)
+            completion = pdb.local.GLOBAL_PDB.complete("", 0)
             assert int(completion) > 0
 
             # Patch readline to return expected results for "p ".
@@ -2496,13 +2496,13 @@ def test_complete_with_bang(monkeypatch):
         monkeypatch.setattr("readline.get_line_buffer", lambda: "!a_va")
         monkeypatch.setattr("readline.get_begidx", lambda: 4)
         monkeypatch.setattr("readline.get_endidx", lambda: 4)
-        assert pdb.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+        assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
         # Patch readline to return expected results for "list(a_va".
         monkeypatch.setattr("readline.get_line_buffer", lambda: "list(a_va")
         monkeypatch.setattr("readline.get_begidx", lambda: 8)
         monkeypatch.setattr("readline.get_endidx", lambda: 8)
-        assert pdb.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+        assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
     check(fn, """
 [NUM] > .*fn()
@@ -2666,7 +2666,7 @@ def test_rawinput_with_debug():
 # debug 1
 ENTERING RECURSIVE DEBUGGER
 [NUM] > <string>(1)<module>()->None
-(#) import pdb; print(pdb.GLOBAL_PDB.use_rawinput)
+(#) import pdb; print(pdb.local.GLOBAL_PDB.use_rawinput)
 1
 (#) p sys._getframe().f_back.f_locals['self'].use_rawinput
 1

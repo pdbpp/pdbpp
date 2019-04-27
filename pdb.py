@@ -16,6 +16,7 @@ import codecs
 import types
 import traceback
 import subprocess
+import threading
 import pprint
 import re
 import signal
@@ -47,6 +48,17 @@ if sys.version_info < (3, ):
     from io import BytesIO as StringIO
 else:
     from io import StringIO
+
+
+local = threading.local()
+local.GLOBAL_PDB = None
+
+
+def __getattr__(name):
+    """Backward compatibility (Python 3.7+)"""
+    if name == "GLOBAL_PDB":
+        return local.GLOBAL_PDB
+    raise AttributeError
 
 
 def import_from_stdlib(name):
@@ -344,8 +356,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
-            if GLOBAL_PDB:
-                GLOBAL_PDB._pdbpp_completing = True
+            if local.GLOBAL_PDB:
+                local.GLOBAL_PDB._pdbpp_completing = True
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe_locals)
             completer = Completer(mydict)
@@ -359,8 +371,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             self._filter_completions(text)
 
-            if GLOBAL_PDB:
-                del GLOBAL_PDB._pdbpp_completing
+            if local.GLOBAL_PDB:
+                del local.GLOBAL_PDB._pdbpp_completing
 
             # Remove "\t" from fancycompleter if there are pdb completions.
             if len(self._completions) > 1 and self._completions[0] == "\t":
@@ -1268,13 +1280,8 @@ def post_mortem(t=None, Pdb=Pdb):
     p.interaction(None, t)
 
 
-GLOBAL_PDB = None
-
-
 def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
-    global GLOBAL_PDB
-
-    if GLOBAL_PDB and hasattr(GLOBAL_PDB, '_pdbpp_completing'):
+    if local.GLOBAL_PDB and hasattr(local.GLOBAL_PDB, '_pdbpp_completing'):
         # Handle set_trace being called during completion, e.g. with
         # fancycompleter's attr_matches.
         return
@@ -1282,8 +1289,8 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
     if frame is None:
         frame = sys._getframe().f_back
 
-    if GLOBAL_PDB:
-        pdb = GLOBAL_PDB
+    if local.GLOBAL_PDB:
+        pdb = local.GLOBAL_PDB
         # Unset tracing (gets set py pdb.set_trace below again).
         # This is required for nested set_trace not stopping in
         # Bdb._set_stopinfo after deleting stopframe).
@@ -1294,7 +1301,7 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
         pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
-        GLOBAL_PDB = pdb
+        local.GLOBAL_PDB = pdb
 
     if header is not None:
         pdb.message(header)
@@ -1303,9 +1310,7 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
 
 
 def cleanup():
-    global GLOBAL_PDB
-
-    GLOBAL_PDB = None
+    local.GLOBAL_PDB = None
 
 # pdb++ specific interface
 
