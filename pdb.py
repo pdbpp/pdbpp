@@ -356,8 +356,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
-            if local.GLOBAL_PDB:
-                local.GLOBAL_PDB._pdbpp_completing = True
+            local._pdbpp_completing = True
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe_locals)
             completer = Completer(mydict)
@@ -371,8 +370,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             self._filter_completions(text)
 
-            if local.GLOBAL_PDB:
-                del local.GLOBAL_PDB._pdbpp_completing
+            del local._pdbpp_completing
 
             # Remove "\t" from fancycompleter if there are pdb completions.
             if len(self._completions) > 1 and self._completions[0] == "\t":
@@ -1192,6 +1190,10 @@ except for when using the function decorator.
 
         This is used with pytest, which does not use pdb.set_trace().
         """
+        if hasattr(local, '_pdbpp_completing'):
+            # Handle set_trace being called during completion, e.g. with
+            # fancycompleter's attr_matches.
+            return
         if frame is None:
             frame = sys._getframe().f_back
         self._via_set_trace_frame = frame
@@ -1281,7 +1283,7 @@ def post_mortem(t=None, Pdb=Pdb):
 
 
 def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
-    if local.GLOBAL_PDB and hasattr(local.GLOBAL_PDB, '_pdbpp_completing'):
+    if hasattr(local, '_pdbpp_completing'):
         # Handle set_trace being called during completion, e.g. with
         # fancycompleter's attr_matches.
         return
