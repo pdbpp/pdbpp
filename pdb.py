@@ -54,7 +54,6 @@ local = threading.local()
 local.GLOBAL_PDB = None
 
 
-
 def __getattr__(name):
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
