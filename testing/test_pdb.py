@@ -2920,33 +2920,45 @@ def test_edit_error(monkeypatch):
 """)
 
 
-def test_global_pdb_per_thread():
+def test_global_pdb_per_thread_with_input_lock():
     def fn():
         import threading
 
-        def run():
-            print("thread_run")
-            set_trace()
-            print("thread_end")
-            pass
+        evt1 = threading.Event()
+        evt2 = threading.Event()
 
-        thread = threading.Thread(target=run)
-        set_trace()
-        thread.join()
+        def __t1__(evt1, evt2):
+            set_trace(cleanup=False)
+
+        def __t2__(evt2):
+            evt2.set()
+            set_trace(cleanup=False)
+
+        t1 = threading.Thread(name="__t1__", target=__t1__, args=(evt1, evt2))
+        t1.start()
+
+        assert evt1.wait(1.0) is True
+        t2 = threading.Thread(name="__t2__", target=__t2__, args=(evt2,))
+        t2.start()
+
+        t1.join()
+        t2.join()
 
     check(fn, r"""
-[NUM] > .*fn()
--> thread.join()
-   5 frames hidden .*
-# import threading; print(threading.current_thread())
-.*MainThread
-# thread.start()
-thread_run
-# p thread is not None
-True
+--Return--
+[NUM] > .*__t1__()
+-> set_trace(cleanup=False)
+# evt1.set()
+# import threading; threading.current_thread().name
+'__t1__'
+# assert evt2.wait(1.0) is True; import time; time.sleep(0.1)
+--Return--
+[NUM] > .*__t2__()->None
+-> set_trace(cleanup=False)
+# import threading; threading.current_thread().name
+'__t2__'
 # c
-[NUM] > .*run()
--> print("thread_end")
+# import threading; threading.current_thread().name
+'__t1__'
 # c
-thread_end
 """)
