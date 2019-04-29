@@ -359,6 +359,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # a command like "continue")
             self.forget()
             return
+
+        if traceback and self.config.show_traceback_on_error:
+            # Passed in via user_exception.
+            # Do not display the executing frame (ours).
+            tb = traceback.tb_next
+            if tb:
+                print(self._format_extra_exception(
+                    *frame.f_locals["__exception__"][:2], tb
+                ))
+
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
         self.print_stack_entry(self.stack[self.curindex])
