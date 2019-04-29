@@ -711,9 +711,12 @@ except for when using the function decorator.
     do_ll = do_longlist
 
     def do_list(self, arg):
+        if not self.config.highlight:
+            return super(Pdb, self).do_list(arg)
+
         oldstdout = self.stdout
         self.stdout = StringIO()
-        super(Pdb, self).do_list(arg)
+        ret = super(Pdb, self).do_list(arg)
         orig_pdb_lines = self.stdout.getvalue().splitlines()
         self.stdout = oldstdout
 
@@ -729,6 +732,7 @@ except for when using the function decorator.
         ).splitlines()
         for prefix, src in zip(prefixes, formatted_src_lines):
             print("%s\t%s" % (prefix, src), file=self.stdout)
+        return ret
 
     do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
