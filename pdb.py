@@ -714,9 +714,21 @@ except for when using the function decorator.
         oldstdout = self.stdout
         self.stdout = StringIO()
         super(Pdb, self).do_list(arg)
-        src = self.format_source(self.stdout.getvalue())
+        orig_pdb_lines = self.stdout.getvalue().splitlines()
         self.stdout = oldstdout
-        print(src, file=self.stdout, end='')
+
+        # Format source without prefixes added by pdb, including line numbers.
+        prefixes = []
+        src_lines = []
+        for x in orig_pdb_lines:
+            prefix, src = x.split('\t', 1)
+            prefixes.append(prefix)
+            src_lines.append(src)
+        formatted_src_lines = self.format_source(
+            "\n".join(src_lines)
+        ).splitlines()
+        for prefix, src in zip(prefixes, formatted_src_lines):
+            print("%s\t%s" % (prefix, src), file=self.stdout)
 
     do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
