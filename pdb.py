@@ -1756,16 +1756,31 @@ except for when using the function decorator.
                 tb = tb.tb_next
                 if tb:  # only display with actual traceback.
                     self._remove_bdb_context(evalue)
-                    tb_limit = self.config.show_traceback_on_error_limit
-                    fmt_exc = traceback.format_exception(
-                        etype, evalue, tb, limit=tb_limit
+                    print(
+                        self._format_extra_exception(etype, evalue, tb),
+                        file=self.stdout,
                     )
 
-                    # Remove last line (exception string again).
-                    if len(fmt_exc) > 1 and fmt_exc[-1][0] != " ":
-                        fmt_exc.pop()
+    def _format_extra_exception(self, etype, evalue, tb):
+        tb_limit = self.config.show_traceback_on_error_limit
+        try:
+            from better_exceptions.formatter import ExceptionFormatter
 
-                    print("".join(fmt_exc).rstrip(), file=self.stdout)
+            formatter = ExceptionFormatter(
+                colored=self.config.highlight,
+            )
+            # TODO: limit?!
+            fmt_exc = list(formatter.format_exception(etype, evalue, tb))
+
+        except ImportError:
+            from traceback import format_exception
+            fmt_exc = format_exception(etype, evalue, tb, limit=tb_limit)
+
+        # Remove last line (exception string again).
+        if len(fmt_exc) > 1 and fmt_exc[-1][0] != " ":
+            fmt_exc.pop()
+
+        return "".join(fmt_exc).rstrip()
 
     @staticmethod
     def _remove_bdb_context(evalue):
