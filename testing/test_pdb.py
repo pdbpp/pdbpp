@@ -362,6 +362,37 @@ NUM .*
 """)
 
 
+def test_global_pdb_with_classmethod():
+    def fn():
+        global pdb
+
+        set_trace()
+        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is self
+                return ret
+
+        new_pdb = NewPdb()
+        new_pdb.set_trace()
+
+    check(fn, """
+[NUM] > .*fn()
+-> assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] .*set_trace()
+-> assert pdb.local.GLOBAL_PDB is self
+   5 frames hidden .*
+# c
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
