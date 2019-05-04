@@ -1220,6 +1220,8 @@ except for when using the function decorator.
             # Handle set_trace being called during completion, e.g. with
             # fancycompleter's attr_matches.
             return
+        local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
+        local.GLOBAL_PDB = self
         if frame is None:
             frame = sys._getframe().f_back
         self._via_set_trace_frame = frame
@@ -1309,8 +1311,6 @@ def post_mortem(t=None, Pdb=Pdb):
 
 
 def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
-    local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-
     if hasattr(local, '_pdbpp_completing'):
         # Handle set_trace being called during completion, e.g. with
         # fancycompleter's attr_matches.
@@ -1319,6 +1319,7 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
     if frame is None:
         frame = sys._getframe().f_back
 
+    local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
     if local.GLOBAL_PDB:
         pdb = local.GLOBAL_PDB
         # Unset tracing (gets set py pdb.set_trace below again).
