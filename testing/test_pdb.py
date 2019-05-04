@@ -583,9 +583,11 @@ def test_parseline_with_rc_commands(tmpdir, monkeypatch):
     monkeypatch.delenv("USERPROFILE", raising=False)
 
     with tmpdir.as_cwd():
-        open(".pdbrc", "w").writelines([
-            "alias myp print(%1)\n",
-        ])
+        with open(".pdbrc", "w") as f:
+            f.writelines([
+                "p 'readrc'\n",
+                "alias myalias print(%1)\n",
+            ])
 
         def fn():
             alias = "trigger"  # noqa: F841
@@ -593,15 +595,16 @@ def test_parseline_with_rc_commands(tmpdir, monkeypatch):
 
         check(fn, """
 --Return--
+'readrc'
 [NUM] > .*fn()->None
 -> set_trace(readrc=True)
    5 frames hidden .*
-# myp 42
-42
-# alias myp
+# alias myalias
 \\*\\*\\* SyntaxError
-# !!alias myp
-myp = print(%1)
+# !!alias myalias
+myalias = print(%1)
+# myalias 42
+42
 # c
 """)
 

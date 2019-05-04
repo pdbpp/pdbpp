@@ -473,14 +473,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return line
 
     def execRcLines(self):
-        self._executing_rc_lines = True
+        self._pdbpp_executing_rc_lines = True
         try:
             return super(Pdb, self).execRcLines()
         finally:
-            self._executing_rc_lines = False
+            del self._pdbpp_executing_rc_lines
 
     def parseline(self, line):
-        if self._executing_rc_lines:
+        if getattr(self, "_pdbpp_executing_rc_lines", False):
             return super(Pdb, self).parseline(line)
 
         if line.startswith('!!'):
