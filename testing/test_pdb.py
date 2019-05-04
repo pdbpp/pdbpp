@@ -577,6 +577,38 @@ do_shell_called: 'c'
 """)
 
 
+def test_parseline_with_rc_commands(tmpdir, monkeypatch):
+    """Test that parseline handles execution of rc lines during setup."""
+    monkeypatch.delenv("HOME", raising=False)
+    monkeypatch.delenv("USERPROFILE", raising=False)
+
+    with tmpdir.as_cwd():
+        with open(".pdbrc", "w") as f:
+            f.writelines([
+                "p 'readrc'\n",
+                "alias myalias print(%1)\n",
+            ])
+
+        def fn():
+            alias = "trigger"  # noqa: F841
+            set_trace(readrc=True)
+
+        check(fn, """
+--Return--
+'readrc'
+[NUM] > .*fn()->None
+-> set_trace(readrc=True)
+   5 frames hidden .*
+# alias myalias
+\\*\\*\\* SyntaxError
+# !!alias myalias
+myalias = print(%1)
+# myalias 42
+42
+# c
+""")
+
+
 def test_parseline_with_existing_command():
     def fn():
         c = 42
