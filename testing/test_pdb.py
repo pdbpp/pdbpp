@@ -365,7 +365,6 @@ NUM .*
 def test_global_pdb_with_classmethod():
     def fn():
         global pdb
-        assert pdb.local.GLOBAL_PDB is None
 
         set_trace()
         assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
