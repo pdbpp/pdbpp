@@ -472,7 +472,17 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 line = setbgcolor(line, self.config.current_line_color)
         return line
 
+    def execRcLines(self):
+        self._executing_rc_lines = True
+        try:
+            return super(Pdb, self).execRcLines()
+        finally:
+            self._executing_rc_lines = False
+
     def parseline(self, line):
+        if self._executing_rc_lines:
+            return super(Pdb, self).parseline(line)
+
         if line.startswith('!!'):
             # Force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display.
