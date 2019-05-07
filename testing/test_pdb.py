@@ -3027,3 +3027,20 @@ def test_global_pdb_per_thread_with_input_lock():
 '__t1__'
 # c
 """)
+
+
+def test_usage_error_with_commands():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# commands invalid
+.*Usage.*: commands [bnum]
+        ...
+        end
+# c
+""")
