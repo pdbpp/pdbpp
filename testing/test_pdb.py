@@ -1201,7 +1201,7 @@ NUM                 raise InnerTestException()
 NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
-testing.test_pdb.InnerTestException
+.*InnerTestException
 [NUM] > .*throws()
 -> raise InnerTestException()
    5 frames hidden .*
