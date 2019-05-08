@@ -1168,6 +1168,47 @@ NUM  ->             return 40 \\+ 2
 """)
 
 
+def test_sticky_with_user_exception_does_not_clear_screen():
+    def fn():
+        def throws():
+            raise InnerTestException()
+
+        set_trace()
+        throws()
+
+    check(fn, """
+[NUM] > .*fn()
+-> throws()
+   5 frames hidden (try 'help hidden_frames')
+# s
+--Call--
+[NUM] > .*throws()
+-> def throws():
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM  ->         def throws():
+NUM                 raise InnerTestException()
+# n
+[NUM] > .*throws()
+-> raise InnerTestException()
+   5 frames hidden .*
+<CLEARSCREEN>
+>.*
+
+NUM             def throws():
+NUM  ->             raise InnerTestException()
+# n
+.*InnerTestException
+[NUM] > .*throws()
+-> raise InnerTestException()
+   5 frames hidden .*
+# c
+""")
+
+
 def test_sticky_dunder_return_with_highlight():
     class ConfigWithPygments(ConfigWithHighlight):
         use_pygments = True

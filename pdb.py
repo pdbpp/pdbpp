@@ -981,8 +981,16 @@ except for when using the function decorator.
         else:
             self.print_stack_entry(self.stack[self.curindex])
 
+    def user_exception(self, frame, exc_info):
+        self._skip_sticky = True
+        return super(Pdb, self).user_exception(frame, exc_info)
+
     def preloop(self):
-        self._print_if_sticky()
+        if getattr(self, "_skip_sticky", False):
+            del self._skip_sticky
+        else:
+            self._print_if_sticky()
+
         display_list = self._get_display_list()
         for expr, oldvalue in display_list.items():
             newvalue = self._getval_or_undefined(expr)
