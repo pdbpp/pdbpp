@@ -2247,10 +2247,11 @@ def test_pdbrc_continue(tmpdir):
         pytest.skip("Only with readrc support with pdb.Pdb")
 
     with tmpdir.as_cwd():
-        open(".pdbrc", "w").writelines([
-            "p 'from_pdbrc'\n",
-            "continue\n",
-        ])
+        with open(".pdbrc", "w") as f:
+            f.writelines([
+                "p 'from_pdbrc'\n",
+                "continue\n",
+            ])
 
         def fn():
             set_trace(readrc=True)
