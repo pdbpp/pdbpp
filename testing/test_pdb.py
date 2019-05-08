@@ -228,6 +228,10 @@ def check(func, expected):
         # Use "$" to mark end of line with trailing space
         if re.search(r'\s+$', string):
             string += '$'
+        if re.search(r'\s+$', pattern):
+            pattern += '$'
+        pattern = pattern.replace("\t", "\\t")
+        string = string.replace("\t", "\\t")
         print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
