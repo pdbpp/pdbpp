@@ -47,6 +47,10 @@ class ConfigWithHighlight(ConfigTest):
     highlight = True
 
 
+class ConfigWithPygments(ConfigWithHighlight):
+    use_pygments = True
+
+
 class PdbTest(pdb.Pdb):
     use_rawinput = 1
 
@@ -795,6 +799,45 @@ NUM  ->	        return a
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
+def test_shortlist_with_highlight_and_EOF():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigWithPygments)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l {line_num}, 3
+[EOF]
+# c
+""".format(line_num=100000))
+
+
+def test_shortlist_with_highlight(monkeypatch):
+    monkeypatch.setenv("TERM", "xterm-256color")
+
+    def fn():
+        a = 1
+        set_trace(Config=ConfigWithPygments)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l {line_num}, 4
+NUM  \t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM  \t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM  \t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM  \t$
+NUM  ->\t        ^[[38;5;28;01mreturn^[[39;00m a
+# c
+""".format(line_num=fn.__code__.co_firstlineno))
+
+
 def test_shortlist_without_arg():
     """Ensure that forget was called for lineno."""
     def fn():
@@ -977,7 +1020,7 @@ def test_sticky_range():
 <CLEARSCREEN>
 >.*
 
- %d             set_trace()
+%d \\s+         set_trace()
 NUM  ->         a = 1
 NUM             b = 2
 # c

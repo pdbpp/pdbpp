@@ -720,32 +720,56 @@ except for when using the function decorator.
 
     do_ll = do_longlist
 
-    def do_list(self, arg):
-        if not self.config.highlight:
-            return super(Pdb, self).do_list(arg)
+    if sys.version_info >= (3, 2):
+        def _print_lines(self, lines, *args, **kwargs):
+            """Enhance original _print_lines with highlighting.
 
-        oldstdout = self.stdout
-        self.stdout = StringIO()
-        ret = super(Pdb, self).do_list(arg)
-        orig_pdb_lines = self.stdout.getvalue().splitlines()
-        self.stdout = oldstdout
+            Used via do_list currently only, do_source and do_longlist are
+            overridden.
+            """
+            if self.config.highlight and self.config.use_pygments:
+                if lines:
+                    lines = self.format_source(
+                        "".join(lines)
+                    ).splitlines(keepends=True)
 
-        # Format source without prefixes added by pdb, including line numbers.
-        prefixes = []
-        src_lines = []
-        for x in orig_pdb_lines:
-            prefix, src = x.split('\t', 1)
-            prefixes.append(prefix)
-            src_lines.append(src)
-        formatted_src_lines = self.format_source(
-            "\n".join(src_lines)
-        ).splitlines()
-        for prefix, src in zip(prefixes, formatted_src_lines):
-            print("%s\t%s" % (prefix, src), file=self.stdout)
-        return ret
+            return super(Pdb, self)._print_lines(lines, *args, **kwargs)
+    else:
+        # Only for Python 2.7, where _print_lines is not used/available.
+        def do_list(self, arg):
+            if not self.config.highlight or not self.config.use_pygments:
+                return super(Pdb, self).do_list(arg)
 
-    do_list.__doc__ = pdb.Pdb.do_list.__doc__
-    do_l = do_list
+            oldstdout = self.stdout
+            self.stdout = StringIO()
+            ret = super(Pdb, self).do_list(arg)
+            orig_pdb_lines = self.stdout.getvalue().splitlines()
+            self.stdout = oldstdout
+
+            # Format source without prefixes added by pdb, including line numbers.
+            prefixes = []
+            src_lines = []
+            if not orig_pdb_lines:
+                return
+
+            for x in orig_pdb_lines:
+                prefix, _, src = x.partition('\t')
+                prefixes.append(prefix)
+                src_lines.append(src)
+            formatted_src_lines = self.format_source(
+                "\n".join(src_lines) + "\n"
+            ).splitlines()
+
+            assert len(formatted_src_lines) == len(src_lines), (
+                repr([formatted_src_lines, src_lines])
+            )
+
+            for prefix, src in zip(prefixes, formatted_src_lines):
+                print("%s\t%s" % (prefix, src), file=self.stdout)
+            return ret
+
+        do_list.__doc__ = pdb.Pdb.do_list.__doc__
+        do_l = do_list
 
     def do_continue(self, arg):
         if arg != '':
