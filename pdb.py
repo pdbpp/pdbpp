@@ -434,6 +434,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return True
 
     stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
+    stack_line_regexp = re.compile(r"(\n-> )(.*)")
 
     def format_stack_entry(self, frame_lineno, lprefix=': '):
         entry = super(Pdb, self).format_stack_entry(frame_lineno, lprefix)
@@ -445,6 +446,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 filename = Color.set(self.config.filename_color, filename)
                 lineno = Color.set(self.config.line_number_color, lineno)
                 entry = '%s(%s)%s' % (filename, lineno, other)
+            entry = self.stack_line_regexp.sub(
+                lambda m: m.group(1) + self.format_source(m.group(2)).rstrip(), entry
+            )
         return entry
 
     def try_to_decode(self, s):
