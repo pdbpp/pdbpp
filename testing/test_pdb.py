@@ -563,7 +563,39 @@ def test_fstrings(monkeypatch):
 # f"foo"?
 mocked_inspect: 'f"foo"'
 # c
-""".format(frame_num_a=count_frames() + 2 - 5))
+""")
+
+
+def test_prefixed_strings(monkeypatch):
+    def mocked_inspect(self, arg):
+        print("mocked_inspect: %r" % arg)
+
+    monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
+
+    def f():
+        set_trace()
+
+    check(
+        f,
+        """
+--Return--
+[NUM] > .*
+-> set_trace()
+   5 frames hidden .*
+# b"string"
+{bytestring!r}
+# u"string"
+{unicodestring!r}
+# r"string"
+'string'
+# b"foo"?
+mocked_inspect: 'b"foo"'
+# r"foo"?
+mocked_inspect: 'r"foo"'
+# u"foo"?
+mocked_inspect: 'u"foo"'
+# c
+""".format(bytestring=b"string", unicodestring=u"string"))
 
 
 def test_up_down_arg():

@@ -509,9 +509,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         cmd, arg, newline = super(Pdb, self).parseline(line)
 
         if cmd:
-            # f-strings.
+            # prefixed strings.
             if (
-                cmd == "f"
+                cmd in ("b", "f", "r", "u")
                 and len(newline) > 1
                 and (newline[1] == "'" or newline[1] == '"')
             ):
