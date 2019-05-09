@@ -2563,7 +2563,7 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
     assert err == ""
     assert "(Pdb)" not in out
     assert "(Pdb++)" in out
-    assert out.endswith("-> import os\n(Pdb++) \n")
+    assert out.endswith("\n(Pdb++) \n")
 
 
 def get_completions(text):
