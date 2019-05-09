@@ -835,7 +835,9 @@ NUM  ->	        return a
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
-def test_shortlist_with_highlight_and_EOF():
+def test_shortlist_with_highlight_and_EOF(monkeypatch):
+    monkeypatch.setenv("TERM", "xterm-256color")
+
     def fn():
         a = 1
         set_trace(Config=ConfigWithPygments)
@@ -843,7 +845,7 @@ def test_shortlist_with_highlight_and_EOF():
 
     check(fn, """
 [NUM] > .*fn()
--> return a
+-> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
 # l {line_num}, 3
 [EOF]
@@ -862,7 +864,7 @@ def test_shortlist_with_highlight(monkeypatch):
 
     check(fn, """
 [NUM] > .*fn()
--> return a
+-> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
 # l {line_num}, 4
 NUM  \t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
@@ -2561,7 +2563,7 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
     assert err == ""
     assert "(Pdb)" not in out
     assert "(Pdb++)" in out
-    assert out.endswith("-> import os\n(Pdb++) \n")
+    assert out.endswith("\n(Pdb++) \n")
 
 
 def get_completions(text):
