@@ -279,31 +279,98 @@ def check(func, expected):
     assert all_ok
 
 
-def test_config_terminalformatter(monkeypatch):
+def test_config_pygments(monkeypatch):
     from pdb import DefaultConfig, Pdb
     import pygments.formatters
 
-    assert DefaultConfig.use_terminal256formatter is None
-
-    monkeypatch.setenv("TERM", "")
+    assert not hasattr(DefaultConfig, "use_terminal256formatter")
 
     p = Pdb(Config=DefaultConfig)
-    assert p._init_pygments() is True
-    assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
 
-    p = Pdb(Config=DefaultConfig)
+    monkeypatch.delenv("TERM", raising=False)
+    assert isinstance(
+        p._get_pygments_formatter(), pygments.formatters.TerminalFormatter
+    )
+
     monkeypatch.setenv("TERM", "xterm-256color")
-    assert p._init_pygments() is True
-    assert isinstance(p._fmt, pygments.formatters.Terminal256Formatter)
+    assert isinstance(
+        p._get_pygments_formatter(), pygments.formatters.Terminal256Formatter
+    )
+
+    monkeypatch.setenv("TERM", "xterm-kitty")
+    assert isinstance(
+        p._get_pygments_formatter(), pygments.formatters.TerminalTrueColorFormatter
+    )
+
+    class Config(DefaultConfig):
+        formatter = object()
+
+    assert Pdb(Config=Config)._get_pygments_formatter() is Config.formatter
+
+    class Config(DefaultConfig):
+        pygments_formatter_class = "pygments.formatters.TerminalTrueColorFormatter"
+
+    assert isinstance(
+        Pdb(Config=Config)._get_pygments_formatter(),
+        pygments.formatters.TerminalTrueColorFormatter
+    )
+
+    assert Pdb(Config=Config).format_source("print(42)") == (
+        "\x1b[38;2;0;128;0;01mprint\x1b[39;00m(\x1b[38;2;102;102;102m42\x1b[39m)\n"
+    )
+
+
+@pytest.mark.parametrize("use_pygments", (None, True, False))
+def test_config_missing_pygments(use_pygments, monkeypatch_importerror):
+    from pdb import DefaultConfig, Pdb
+
+    class Config(DefaultConfig):
+        pass
+
+    Config.use_pygments = use_pygments
+
+    class PdbForMessage(Pdb):
+        messages = []
+
+        def message(self, msg):
+            self.messages.append(msg)
+
+    pdb_ = PdbForMessage(Config=Config)
+
+    with monkeypatch_importerror(('pygments', 'pygments.formatters')):
+        with pytest.raises(ImportError):
+            pdb_._get_pygments_formatter()
+        assert pdb_._get_source_highlight_function() is False
+        assert pdb_.format_source("print(42)") == "print(42)"
+
+    if use_pygments is True:
+        assert pdb_.messages == ['Could not import pygments, disabling.']
+    else:
+        assert pdb_.messages == []
+
+    # Cover branch for cached _highlight property.
+    assert pdb_.format_source("print(42)") == "print(42)"
+
+
+def test_config_pygments_deprecated_use_terminal256formatter(monkeypatch):
+    from pdb import DefaultConfig, Pdb
+    import pygments.formatters
+
+    monkeypatch.setenv("TERM", "xterm-256color")
 
     class Config(DefaultConfig):
         use_terminal256formatter = False
+    assert isinstance(
+        Pdb(Config=Config)._get_pygments_formatter(),
+        pygments.formatters.TerminalFormatter
+    )
 
-    p = Pdb(Config=Config)
-    assert p._init_pygments() is True
-    assert isinstance(p._fmt, pygments.formatters.TerminalFormatter)
-    # Cover using cached _fmt.
-    assert p._init_pygments() is True
+    class Config(DefaultConfig):
+        use_terminal256formatter = True
+    assert isinstance(
+        Pdb(Config=Config)._get_pygments_formatter(),
+        pygments.formatters.Terminal256Formatter
+    )
 
 
 def test_runpdb():

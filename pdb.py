@@ -95,10 +95,15 @@ class DefaultConfig(object):
     prompt = '(Pdb++) '
     highlight = True
     sticky_by_default = False
+
+    # Pygments.
+    use_pygments = None  # Tries to use it if available.
+    pygments_formatter_class = None  # Defaults to autodetect, based on $TERM.
+    pygments_formatter_kwargs = {}
+    # Legacy options.  Should use pygments_formatter_kwargs instead.
     bg = 'dark'
-    use_pygments = True
     colorscheme = None
-    use_terminal256formatter = None  # Defaults to `"256color" in $TERM`.
+
     editor = None  # Autodetected if unset.
     stdin_paste = None       # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
@@ -518,33 +523,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 if RE_COLOR_ESCAPES.sub("", x)[:2] != "__"
             ]
 
-    def _init_pygments(self):
-        if not self.config.use_pygments:
-            return False
-
-        if hasattr(self, '_fmt'):
-            return True
-
-        try:
-            from pygments.lexers import PythonLexer
-            from pygments.formatters import TerminalFormatter, Terminal256Formatter
-        except ImportError:
-            return False
-
-        if hasattr(self.config, 'formatter'):
-            self._fmt = self.config.formatter
-        else:
-            if (self.config.use_terminal256formatter
-                    or (self.config.use_terminal256formatter is None
-                        and "256color" in os.environ.get("TERM", ""))):
-                Formatter = Terminal256Formatter
-            else:
-                Formatter = TerminalFormatter
-            self._fmt = Formatter(bg=self.config.bg,
-                                  colorscheme=self.config.colorscheme)
-        self._lexer = PythonLexer(stripnl=False)
-        return True
-
     stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
 
     def format_stack_entry(self, frame_lineno, lprefix=': '):
@@ -571,12 +549,87 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 pass
         return s
 
+    def _get_source_highlight_function(self):
+        try:
+            import pygments
+            import pygments.lexers
+        except ImportError:
+            return False
+
+        try:
+            pygments_formatter = self._get_pygments_formatter()
+        except Exception as exc:
+            self.message("pdb++: could not setup Pygments, disabling: {}".format(
+                exc
+            ))
+            return False
+
+        lexer = pygments.lexers.PythonLexer(stripnl=False)
+
+        def syntax_highlight(src):
+            return pygments.highlight(src, lexer, pygments_formatter)
+
+        return syntax_highlight
+
+    def _get_pygments_formatter(self):
+        if hasattr(self.config, 'formatter'):
+            # Deprecated, never documented.
+            # Not optimal, since it involves creating the formatter in
+            # the config already, although it might never be used.
+            return self.config.formatter
+
+        if self.config.pygments_formatter_class:
+            from importlib import import_module
+
+            def import_string(dotted_path):
+                module_path, class_name = dotted_path.rsplit('.', 1)
+                module = import_module(module_path)
+                return getattr(module, class_name)
+
+            Formatter = import_string(self.config.pygments_formatter_class)
+        else:
+            import pygments.formatters
+
+            if getattr(self.config, "use_terminal256formatter", None) is not None:
+                # Deprecated, never really documented (only changelog).
+                if self.config.use_terminal256formatter:
+                    Formatter = pygments.formatters.Terminal256Formatter
+                else:
+                    Formatter = pygments.formatters.TerminalFormatter
+            else:
+                term = os.environ.get("TERM", "")
+                if term in ("xterm-kitty",):
+                    Formatter = pygments.formatters.TerminalTrueColorFormatter
+                elif "256color" in term:
+                    Formatter = pygments.formatters.Terminal256Formatter
+                else:
+                    Formatter = pygments.formatters.TerminalFormatter
+
+        formatter_kwargs = {
+            # Only used by TerminalFormatter.
+            "bg": self.config.bg,
+            "colorscheme": self.config.colorscheme,
+            "style": "default",
+        }
+        formatter_kwargs.update(self.config.pygments_formatter_kwargs)
+
+        return Formatter(**formatter_kwargs)
+
     def format_source(self, src):
-        if not self._init_pygments():
+        if self.config.use_pygments is False:
             return src
-        from pygments import highlight
+
+        if not hasattr(self, "_highlight"):
+            self._highlight = self._get_source_highlight_function()
+
+            if self._highlight is False:
+                if self.config.use_pygments is True:
+                    self.message("Could not import pygments, disabling.")
+                self.config.use_pygments = False
+                return src
+
         src = self.try_to_decode(src)
-        return highlight(src, self._lexer, self._fmt)
+        return self._highlight(src)
 
     def _format_line(self, lineno, marker, line, lineno_width):
         lineno = ('%%%dd' % lineno_width) % lineno
