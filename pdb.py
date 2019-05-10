@@ -731,7 +731,7 @@ except for when using the function decorator.
             Used via do_list currently only, do_source and do_longlist are
             overridden.
             """
-            if self.config.highlight and self.config.use_pygments:
+            if self.config.use_pygments:
                 if lines:
                     lines = self.format_source(
                         "".join(lines)
@@ -741,7 +741,7 @@ except for when using the function decorator.
     else:
         # Only for Python 2.7, where _print_lines is not used/available.
         def do_list(self, arg):
-            if not self.config.highlight or not self.config.use_pygments:
+            if not self.config.use_pygments:
                 return super(Pdb, self).do_list(arg)
 
             oldstdout = self.stdout
