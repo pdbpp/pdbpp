@@ -1451,6 +1451,27 @@ NUM             return 42
 """)
 
 
+def test_source_with_pygments():
+    def bar():
+
+        return 42
+
+    def fn():
+        set_trace(Config=ConfigWithPygments)
+        return bar()
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m bar()
+   5 frames hidden .*
+# source bar
+<COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mbar^[[39m():
+<COLORNUM>
+<COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m ^[[38;5;241m42^[[39m
+# c
+""")
+
+
 def test_bad_source():
     def fn():
         set_trace()
