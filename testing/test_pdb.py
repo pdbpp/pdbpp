@@ -1451,7 +1451,8 @@ NUM             return 42
 """)
 
 
-def test_source_with_pygments():
+def test_source_with_pygments(monkeypatch):
+    monkeypatch.setenv("TERM", "xterm-256color")
     def bar():
 
         return 42
