@@ -430,7 +430,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 Formatter = TerminalFormatter
             self._fmt = Formatter(bg=self.config.bg,
                                   colorscheme=self.config.colorscheme)
-        self._lexer = PythonLexer()
+        self._lexer = PythonLexer(stripnl=False)
         return True
 
     stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
