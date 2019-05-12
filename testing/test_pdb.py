@@ -866,14 +866,15 @@ def test_shortlist_with_highlight(monkeypatch):
 [NUM] > .*fn()
 -> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
-# l {line_num}, 4
+# l {line_num}, 5
+NUM  \t$
 NUM  \t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 NUM  \t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM  \t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM  \t$
 NUM  ->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""".format(line_num=fn.__code__.co_firstlineno - 1))
 
 
 def test_shortlist_without_arg():
