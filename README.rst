@@ -1,5 +1,3 @@
-.. -*- restructuredtext -*-
-
 pdb++, a drop-in replacement for pdb
 ====================================
 
