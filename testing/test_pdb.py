@@ -1698,6 +1698,33 @@ def test_enable_disable():
 """)
 
 
+def test_enable_disable_from_prompt_via_class():
+    def fn():
+        pdb_ = PdbTest()
+
+        pdb_.set_trace()
+        x = 1
+        pdb_.set_trace()
+        x = 2
+        pdb.enable()
+        pdb_.set_trace()
+        return x
+
+    check(fn, """
+[NUM] > .*fn()
+-> x = 1
+   5 frames hidden .*
+# pdb.disable()
+# c
+[NUM] > .*fn()
+-> return x
+   5 frames hidden .*
+# x
+2
+# c
+""")
+
+
 def test_hideframe():
     @pdb.hideframe
     def g():
