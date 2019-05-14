@@ -83,13 +83,36 @@ class PdbTest(pdb.Pdb):
         return self.default(arg)
 
 
-def set_trace(frame=None, cleanup=True, **kwds):
-    if cleanup:
-        pdb.cleanup()
+def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
+    """set_trace helper that goes through pdb.set_trace.
+
+    It injects Pdb into the globals of pdb.set_trace, to use the given frame.
+    """
     if frame is None:
         frame = sys._getframe().f_back
-    Pdb = kwds.pop("Pdb", PdbTest)
-    pdb.set_trace(frame, Pdb=Pdb, **kwds)
+
+    if cleanup:
+        pdb.cleanup()
+
+    class PdbForFrame(Pdb):
+        def set_trace(self, _frame, *args, **kwargs):
+            super(PdbForFrame, self).set_trace(frame, *args, **kwargs)
+
+    newglobals = pdb.set_trace.__globals__.copy()
+    newglobals['Pdb'] = PdbForFrame
+    new_set_trace = pdb.rebind_globals(pdb.set_trace, newglobals)
+    new_set_trace(**kwds)
+
+
+def set_trace(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
+    """set_trace helper for tests, going through Pdb.set_trace directly."""
+    if frame is None:
+        frame = sys._getframe().f_back
+
+    if cleanup:
+        pdb.cleanup()
+
+    Pdb(**kwds).set_trace(frame)
 
 
 def xpm():
@@ -304,6 +327,36 @@ def test_set_trace_remembers_previous_state():
         set_trace(cleanup=False)
         a = 3
         set_trace(cleanup=False)
+        a = 4
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 2
+   5 frames hidden .*
+# display a
+# c
+[NUM] > .*fn()
+-> a = 3
+   5 frames hidden .*
+a: 1 --> 2
+# c
+[NUM] > .*fn()
+-> a = 4
+   5 frames hidden .*
+a: 2 --> 3
+# c
+""")
+
+
+def test_set_trace_remembers_previous_state_via_module():
+    def fn():
+        a = 1
+        set_trace_via_module()
+        a = 2
+        set_trace_via_module(cleanup=False)
+        a = 3
+        set_trace_via_module(cleanup=False)
         a = 4
         return a
 
@@ -1678,14 +1731,14 @@ RUN epaste \+%d
 """ % start_lineno)
 
 
-def test_enable_disable():
+def test_enable_disable_via_module():
     def fn():
         x = 1
         pdb.disable()
-        set_trace()
+        set_trace_via_module()
         x = 2
         pdb.enable()
-        set_trace()
+        set_trace_via_module()
         return x
 
     check(fn, """
@@ -2345,7 +2398,7 @@ Deleted breakpoint NUM
 def test_set_trace_header():
     """Handler header kwarg added with Python 3.7 in pdb.set_trace."""
     def fn():
-        set_trace(header="my_header")
+        set_trace_via_module(header="my_header")
 
     check(fn, """
 my_header
