@@ -3190,3 +3190,33 @@ def test_usage_error_with_commands():
         end
 # c
 """)
+
+
+@pytest.mark.skipif(sys.version_info < (3,),
+                    reason="py2 has no support for kwonly")
+def test_rebind_globals_kwonly():
+    exec("def func(*args, header=None): pass", globals())
+    func = globals()["func"]
+
+    sig = str(inspect.signature(func))
+    assert sig == "(*args, header=None)"
+    new = pdb.rebind_globals(func, globals())
+    assert str(inspect.signature(new)) == sig
+
+
+@pytest.mark.skipif(sys.version_info < (3,),
+                    reason="py2 has no support for annotations")
+def test_rebind_globals_annotations():
+    exec("def func(ann: str = None): pass", globals())
+    func = globals()["func"]
+
+    sig = str(inspect.signature(func))
+    if sys.version_info < (3, 5):
+        assert sig == "(ann:str=None)"
+    else:
+        assert sig in (
+             "(ann: str = None)",
+             "(ann:str=None)",
+        )
+    new = pdb.rebind_globals(func, globals())
+    assert str(inspect.signature(new)) == sig
