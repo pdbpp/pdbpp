@@ -1358,12 +1358,7 @@ def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
     local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
     if local.GLOBAL_PDB:
         pdb = local.GLOBAL_PDB
-        # Unset tracing (gets set py pdb.set_trace below again).
-        # This is required for nested set_trace not stopping in
-        # Bdb._set_stopinfo after deleting stopframe).
-        # There might be a better method (i.e. some flag/property), but this
-        # does it for now.
-        sys.settrace(None)
+        pdb.set_continue()
     else:
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
