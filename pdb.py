@@ -172,6 +172,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     DefaultConfig = DefaultConfig
     config_filename = '.pdbrc.py'
+    disabled = False
 
     def __init__(self, *args, **kwds):
         self.ConfigFactory = kwds.pop('Config', None)
@@ -1259,6 +1260,9 @@ except for when using the function decorator.
             # Handle set_trace being called during completion, e.g. with
             # fancycompleter's attr_matches.
             return
+        if self.disabled:
+            return
+
         local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
         local.GLOBAL_PDB = self
         if frame is None:
@@ -1393,6 +1397,7 @@ def xpm(Pdb=Pdb):
 def enable():
     global set_trace
     set_trace = enable.set_trace
+    local.GLOBAL_PDB.disabled = False
 
 
 enable.set_trace = set_trace
@@ -1401,6 +1406,7 @@ enable.set_trace = set_trace
 def disable():
     global set_trace
     set_trace = disable.set_trace
+    local.GLOBAL_PDB.disabled = True
 
 
 disable.set_trace = lambda frame=None, Pdb=Pdb: None
