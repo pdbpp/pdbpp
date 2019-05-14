@@ -81,6 +81,9 @@ pdb = import_from_stdlib('pdb')
 def rebind_globals(func, newglobals):
     newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
                                  func.__defaults__, func.__closure__)
+    if sys.version_info >= (3, ):
+        newfunc.__annotations__ = func.__annotations__
+        newfunc.__kwdefaults__ = func.__kwdefaults__
     return newfunc
 
 
