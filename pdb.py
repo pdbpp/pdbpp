@@ -1397,7 +1397,8 @@ def xpm(Pdb=Pdb):
 def enable():
     global set_trace
     set_trace = enable.set_trace
-    local.GLOBAL_PDB.disabled = False
+    if local.GLOBAL_PDB:
+        local.GLOBAL_PDB.disabled = False
 
 
 enable.set_trace = set_trace
@@ -1406,7 +1407,8 @@ enable.set_trace = set_trace
 def disable():
     global set_trace
     set_trace = disable.set_trace
-    local.GLOBAL_PDB.disabled = True
+    if local.GLOBAL_PDB:
+        local.GLOBAL_PDB.disabled = True
 
 
 disable.set_trace = lambda frame=None, Pdb=Pdb: None
