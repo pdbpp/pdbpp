@@ -49,7 +49,7 @@ jobs:
           repo: antocuni/pdb
 
 install:
-  - pip install tox-travis
+  - pip install tox
 
 script:
   - tox
@@ -57,7 +57,8 @@ script:
 after_script:
   - |
     if [[ "$TOXENV" != checkqa ]]; then
-      bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n ${TRAVIS_PYTHON_VERSION}
+      # Unset TRAVIS_CMD to work around https://github.com/codecov/codecov-bash/issues/174.
+      env -u TRAVIS_CMD bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n "${TRAVIS_PYTHON_VERSION}"
     fi
 
 branches:
