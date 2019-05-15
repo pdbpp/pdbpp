@@ -888,9 +888,7 @@ NUM  ->	        return a
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
-def test_shortlist_with_highlight_and_EOF(monkeypatch):
-    monkeypatch.setenv("TERM", "xterm-256color")
-
+def test_shortlist_with_highlight_and_EOF():
     def fn():
         a = 1
         set_trace(Config=ConfigWithPygments)
@@ -906,8 +904,7 @@ def test_shortlist_with_highlight_and_EOF(monkeypatch):
 """.format(line_num=100000))
 
 
-def test_shortlist_with_highlight(monkeypatch):
-    monkeypatch.setenv("TERM", "xterm-256color")
+def test_shortlist_with_highlight():
 
     def fn():
         a = 1
@@ -1505,8 +1502,7 @@ NUM             return 42
 """)
 
 
-def test_source_with_pygments(monkeypatch):
-    monkeypatch.setenv("TERM", "xterm-256color")
+def test_source_with_pygments():
     def bar():
 
         return 42

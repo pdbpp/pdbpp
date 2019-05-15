@@ -10,6 +10,17 @@ def pytest_configure():
     _orig_trace = sys.gettrace()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def term():
+    """Configure TERM for predictable output from Pygments."""
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m = MonkeyPatch()
+    m.setenv("TERM", "xterm-256color")
+    yield m
+    m.undo()
+
+
 # if _orig_trace and not hasattr(sys, "pypy_version_info"):
 # Fails with PyPy2 (https://travis-ci.org/antocuni/pdb/jobs/509624590)?!
 @pytest.fixture(autouse=True)
