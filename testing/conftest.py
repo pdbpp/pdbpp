@@ -41,3 +41,33 @@ def tmphome(tmpdir, monkeypatch):
 
     with tmpdir.as_cwd():
         yield tmpdir
+
+
+@pytest.fixture(params=("pyrepl", "readline"), scope="session")
+def readline_param(request):
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m = MonkeyPatch()
+
+    if request.param == "pyrepl":
+        m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", True)
+    else:
+        m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", False)
+    return request.param
+
+
+@pytest.fixture
+def monkeypatch_readline(request, monkeypatch, readline_param):
+    """Patch readline to return given results."""
+    def inner(line, begidx, endidx):
+        if readline_param == "pyrepl":
+            readline = "pyrepl.readline"
+        else:
+            assert readline_param == "readline"
+            readline = "readline"
+
+        monkeypatch.setattr("%s.get_line_buffer" % readline, lambda: line)
+        monkeypatch.setattr("%s.get_begidx" % readline, lambda: begidx)
+        monkeypatch.setattr("%s.get_endidx" % readline, lambda: endidx)
+
+    return inner
