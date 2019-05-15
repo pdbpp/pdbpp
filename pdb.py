@@ -176,6 +176,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     disabled = False
 
     def __init__(self, *args, **kwds):
+        # Skip initialization when being re-used (via __new__).
+        if hasattr(self, "_skip_init"):
+            del self._skip_init
+            return
+
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
@@ -196,6 +201,30 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.show_hidden_frames = False
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
+
+    def __new__(cls, *args, **kwargs):
+        """Reuse an existing instace with pdb.set_trace.
+
+        This gets done in the module's ``set_trace`` already, but e.g.
+        pytest will create a new instance (this one), and calls
+        ``set_trace`` on it.
+        """
+        local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
+        if local.GLOBAL_PDB:
+            called_for_set_trace = False
+            frame = sys._getframe()
+            while frame.f_back:
+                frame = frame.f_back
+                if (frame.f_code.co_name == "set_trace"
+                        and frame.f_back
+                        and "set_trace" in frame.f_back.f_code.co_names):
+                    called_for_set_trace = True
+                    break
+            if called_for_set_trace:
+                local.GLOBAL_PDB.set_continue()
+                local.GLOBAL_PDB._skip_init = True
+                return local.GLOBAL_PDB
+        return super(Pdb, cls).__new__(cls)
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -1293,6 +1322,10 @@ except for when using the function decorator.
         if frame is None:
             frame = sys._getframe().f_back
         self._via_set_trace_frame = frame
+
+        self.start_filename = frame.f_code.co_filename
+        self.start_lineno = frame.f_lineno
+
         return super(Pdb, self).set_trace(frame)
 
     def is_skipped_module(self, module_name):
@@ -1362,7 +1395,7 @@ if hasattr(pdb, '_usage'):
     _usage = pdb._usage
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall pm main'.split():
+for name in 'run runeval runctx runcall pm main set_trace'.split():
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
@@ -1376,31 +1409,6 @@ def post_mortem(t=None, Pdb=Pdb):
     p = Pdb()
     p.reset()
     p.interaction(None, t)
-
-
-def set_trace(frame=None, header=None, Pdb=Pdb, **kwds):
-    if hasattr(local, '_pdbpp_completing'):
-        # Handle set_trace being called during completion, e.g. with
-        # fancycompleter's attr_matches.
-        return
-
-    if frame is None:
-        frame = sys._getframe().f_back
-
-    local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-    if local.GLOBAL_PDB:
-        pdb = local.GLOBAL_PDB
-        pdb.set_continue()
-    else:
-        filename = frame.f_code.co_filename
-        lineno = frame.f_lineno
-        pdb = Pdb(start_lineno=lineno, start_filename=filename, **kwds)
-        local.GLOBAL_PDB = pdb
-
-    if header is not None:
-        pdb.message(header)
-
-    pdb.set_trace(frame)
 
 
 def cleanup():
