@@ -370,10 +370,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.print_current_stack_entry()
 
     def forget(self):
-        if not hasattr(self, 'lineno'):
-            # Only forget if not used with recursive set_trace.
+        if not hasattr(local, '_pdbpp_completing'):
             super(Pdb, self).forget()
-        self.raise_lineno = {}
 
     @classmethod
     def _get_all_completions(cls, complete, text):
@@ -581,10 +579,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             elif hasattr(self, "do_" + cmd):
                 if (
-                    cmd in self.curframe.f_globals
-                    or cmd in self.curframe_locals
-                    or arg.startswith("=")
-                ):
+                    self.curframe
+                    and (cmd in self.curframe.f_globals or cmd in self.curframe_locals)
+                ) or arg.startswith("="):
                     cmd, arg, newline = None, None, line
                 elif cmd == "list" and arg.startswith("("):
                     # heuristic: handle "list(..." as the builtin.
