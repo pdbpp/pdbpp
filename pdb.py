@@ -13,6 +13,7 @@ import os.path
 import inspect
 import code
 import codecs
+import contextlib
 import types
 import traceback
 import subprocess
@@ -241,8 +242,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.exec_if_unfocused()
         self.print_stack_entry(self.stack[self.curindex])
         self.print_hidden_frames_count()
-        completer = fancycompleter.setup()
-        completer.config.readline.set_completer(self.complete)
+        self.fancycompleter = fancycompleter.setup()
+        self.fancycompleter.config.readline.set_completer(self.complete)
         self._lastcompstate = [None, 0]
         self.config.before_interaction_hook(self)
         # Use _cmdloop on py3 which catches KeyboardInterrupt.
@@ -357,28 +358,52 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             r.append(comp)
         return r
 
+    @contextlib.contextmanager
+    def _patch_readline_for_pyrepl(self):
+        """Patch readline module used in original Pdb.complete."""
+        uses_pyrepl = self.fancycompleter.config.readline != sys.modules["readline"]
+
+        if not uses_pyrepl:
+            yield
+            return
+
+        # Make pdb.Pdb.complete use pyrepl's readline.
+        orig_readline = sys.modules["readline"]
+        sys.modules["readline"] = self.fancycompleter.config.readline
+        try:
+            yield
+        finally:
+            sys.modules["readline"] = orig_readline
+
     def complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
             local._pdbpp_completing = True
+
+            self._completions = []
+
+            # Get completions from original pdb.
+            with self._patch_readline_for_pyrepl():
+                real_pdb = super(Pdb, self)
+                for x in self._get_all_completions(real_pdb.complete, text):
+                    if x not in self._completions:
+                        self._completions.append(x)
+
+            # Get completions from fancycompleter.
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe_locals)
             completer = Completer(mydict)
-            self._completions = self._get_all_completions(
-                completer.complete, text)
+            completions = self._get_all_completions(completer.complete, text)
 
-            real_pdb = super(Pdb, self)
-            for x in self._get_all_completions(real_pdb.complete, text):
-                if x not in self._completions:
-                    self._completions.append(x)
+            # Remove "\t" from fancycompleter if there are pdb completions.
+            if len(completions) > 1 and completions[0] == "\t":
+                if len(self._completions):
+                    completions.pop(0)
+            self._completions.extend(completions)
 
             self._filter_completions(text)
 
             del local._pdbpp_completing
-
-            # Remove "\t" from fancycompleter if there are pdb completions.
-            if len(self._completions) > 1 and self._completions[0] == "\t":
-                self._completions.pop(0)
 
         try:
             return self._completions[state]
