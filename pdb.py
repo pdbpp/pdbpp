@@ -843,12 +843,12 @@ except for when using the function decorator.
 
         newglobals = do_debug_func.__globals__.copy()
         newglobals['Pdb'] = PdbppWithConfig
-        orig_do_debug = rebind_globals(do_debug_func, newglobals)
+        new_do_debug = rebind_globals(do_debug_func, newglobals)
 
         # Handle any exception, e.g. SyntaxErrors.
         # This is about to be improved in Python itself (3.8, 3.7.3?).
         try:
-            return orig_do_debug(self, arg)
+            return new_do_debug(self, arg)
         except Exception:
             exc_info = sys.exc_info()[:2]
             msg = traceback.format_exception_only(*exc_info)[-1].strip()
