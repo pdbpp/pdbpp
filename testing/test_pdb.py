@@ -2689,21 +2689,26 @@ def test_set_trace_in_completion(monkeypatch_readline):
 
         obj = CompleteMe()
 
+        def check_completions():
+            monkeypatch_readline("obj.", 4, 4)
+            comps = get_completions("obj.")
+            assert obj.attr_called == 1, "attr was called"
+
+            # Colorization only works with pyrepl, via pyrepl.readline._setup.
+            assert any("set_trace_in_attrib" in comp for comp in comps), comps
+            return True
+
         set_trace()
 
-        monkeypatch_readline("obj.", 4, 4)
-        comps = get_completions("obj.")
-        assert obj.attr_called == 1, "attr was called"
-
-        # Colorization only works with pyrepl, via pyrepl.readline._setup.
-        assert any("set_trace_in_attrib" in comp for comp in comps), comps
-
     check(fn, """
+--Return--
 [NUM] > .*fn()
 .*
    5 frames hidden .*
-# c
+# check_completions()
 inner_set_trace_was_ignored
+True
+# c
 """)
 
 
@@ -2713,33 +2718,36 @@ def test_completes_from_pdb(monkeypatch_readline):
         where = 1  # noqa: F841
         set_trace()
 
-        # Patch readline to return expected results for "wher".
-        monkeypatch_readline("wher", 4, 4)
-        assert get_completions("wher") == ["where"]
+        def check_completions():
+            # Patch readline to return expected results for "wher".
+            monkeypatch_readline("wher", 4, 4)
+            assert get_completions("wher") == ["where"]
 
-        if sys.version_info > (3, ):
-            # Patch readline to return expected results for "disable ".
-            monkeypatch_readline("disable", 8, 8)
+            if sys.version_info > (3, ):
+                # Patch readline to return expected results for "disable ".
+                monkeypatch_readline("disable", 8, 8)
 
-            # NOTE: number depends on bpb.Breakpoint class state, just ensure that
-            #       is a number.
-            completion = pdb.local.GLOBAL_PDB.complete("", 0)
-            assert int(completion) > 0
+                # NOTE: number depends on bpb.Breakpoint class state, just ensure that
+                #       is a number.
+                completion = pdb.local.GLOBAL_PDB.complete("", 0)
+                assert int(completion) > 0
 
-            # Patch readline to return expected results for "p ".
-            monkeypatch_readline("p ", 2, 2)
+                # Patch readline to return expected results for "p ".
+                monkeypatch_readline("p ", 2, 2)
+                comps = get_completions("")
+                assert "where" in comps
+
+                # Dunder members get completed only on second invocation.
+                assert "__name__" not in comps
+                comps = get_completions("")
+                assert "__name__" in comps
+
+            # Patch readline to return expected results for "help ".
+            monkeypatch_readline("help ", 5, 5)
             comps = get_completions("")
-            assert "where" in comps
+            assert "help" in comps
 
-            # Dunder members get completed only on second invocation.
-            assert "__name__" not in comps
-            comps = get_completions("")
-            assert "__name__" in comps
-
-        # Patch readline to return expected results for "help ".
-        monkeypatch_readline("help ", 5, 5)
-        comps = get_completions("")
-        assert "help" in comps
+            return True
 
         set_trace()
 
@@ -2756,6 +2764,8 @@ Breakpoint NUM at .*
 [NUM] > .*fn()
 .*
    5 frames hidden .*
+# check_completions()
+True
 # c
 """ % lineno)
 
@@ -2768,20 +2778,25 @@ def test_complete_with_bang(monkeypatch_readline):
     def fn():
         a_var = 1  # noqa: F841
 
+        def check_completions():
+            # Patch readline to return expected results for "!a_va".
+            monkeypatch_readline("!a_va", 4, 4)
+            assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+
+            # Patch readline to return expected results for "list(a_va".
+            monkeypatch_readline("list(a_va", 8, 8)
+            assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+            return True
+
         set_trace()
 
-        # Patch readline to return expected results for "!a_va".
-        monkeypatch_readline("!a_va", 4, 4)
-        assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
-
-        # Patch readline to return expected results for "list(a_va".
-        monkeypatch_readline("list(a_va", 8, 8)
-        assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
-
     check(fn, """
+--Return--
 [NUM] > .*fn()
 .*
    5 frames hidden .*
+# check_completions()
+True
 # c
 """)
 
