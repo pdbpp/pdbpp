@@ -2626,7 +2626,7 @@ def get_completions(text):
     return comps
 
 
-def test_set_trace_in_completion(monkeypatch):
+def test_set_trace_in_completion(monkeypatch_readline):
     def fn():
         class CompleteMe(object):
             attr_called = 0
@@ -2641,9 +2641,7 @@ def test_set_trace_in_completion(monkeypatch):
 
         set_trace()
 
-        monkeypatch.setattr("readline.get_line_buffer", lambda: "obj.")
-        monkeypatch.setattr("readline.get_begidx", lambda: 4)
-        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        monkeypatch_readline("obj.", 4, 4)
         comps = get_completions("obj.")
         assert obj.attr_called == 1, "attr was called"
 
@@ -2659,23 +2657,19 @@ inner_set_trace_was_ignored
 """)
 
 
-def test_completes_from_pdb(monkeypatch):
+def test_completes_from_pdb(monkeypatch_readline):
     """Test that pdb's original completion is used."""
     def fn():
         where = 1  # noqa: F841
         set_trace()
 
         # Patch readline to return expected results for "wher".
-        monkeypatch.setattr("readline.get_line_buffer", lambda: "wher")
-        monkeypatch.setattr("readline.get_begidx", lambda: 4)
-        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        monkeypatch_readline("wher", 4, 4)
         assert get_completions("wher") == ["where"]
 
         if sys.version_info > (3, ):
             # Patch readline to return expected results for "disable ".
-            monkeypatch.setattr("readline.get_line_buffer", lambda: "disable")
-            monkeypatch.setattr("readline.get_begidx", lambda: 8)
-            monkeypatch.setattr("readline.get_endidx", lambda: 8)
+            monkeypatch_readline("disable", 8, 8)
 
             # NOTE: number depends on bpb.Breakpoint class state, just ensure that
             #       is a number.
@@ -2683,9 +2677,7 @@ def test_completes_from_pdb(monkeypatch):
             assert int(completion) > 0
 
             # Patch readline to return expected results for "p ".
-            monkeypatch.setattr("readline.get_line_buffer", lambda: "p ")
-            monkeypatch.setattr("readline.get_begidx", lambda: 2)
-            monkeypatch.setattr("readline.get_endidx", lambda: 2)
+            monkeypatch_readline("p ", 2, 2)
             comps = get_completions("")
             assert "where" in comps
 
@@ -2695,9 +2687,7 @@ def test_completes_from_pdb(monkeypatch):
             assert "__name__" in comps
 
         # Patch readline to return expected results for "help ".
-        monkeypatch.setattr("readline.get_line_buffer", lambda: "help ")
-        monkeypatch.setattr("readline.get_begidx", lambda: 5)
-        monkeypatch.setattr("readline.get_endidx", lambda: 5)
+        monkeypatch_readline("help ", 5, 5)
         comps = get_completions("")
         assert "help" in comps
 
@@ -2720,7 +2710,7 @@ Breakpoint NUM at .*
 """ % lineno)
 
 
-def test_complete_with_bang(monkeypatch):
+def test_complete_with_bang(monkeypatch_readline):
     """Test that completion works after "!".
 
     This requires parseline to return "" for the command (bpo-35270).
@@ -2731,15 +2721,11 @@ def test_complete_with_bang(monkeypatch):
         set_trace()
 
         # Patch readline to return expected results for "!a_va".
-        monkeypatch.setattr("readline.get_line_buffer", lambda: "!a_va")
-        monkeypatch.setattr("readline.get_begidx", lambda: 4)
-        monkeypatch.setattr("readline.get_endidx", lambda: 4)
+        monkeypatch_readline("!a_va", 4, 4)
         assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
         # Patch readline to return expected results for "list(a_va".
-        monkeypatch.setattr("readline.get_line_buffer", lambda: "list(a_va")
-        monkeypatch.setattr("readline.get_begidx", lambda: 8)
-        monkeypatch.setattr("readline.get_endidx", lambda: 8)
+        monkeypatch_readline("list(a_va", 8, 8)
         assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
     check(fn, """
