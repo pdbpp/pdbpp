@@ -50,6 +50,10 @@ def readline_param(request):
     m = MonkeyPatch()
 
     if request.param == "pyrepl":
+        try:
+            import pyrepl.readline  # noqa: F401
+        except ImportError as exc:
+            pytest.skip(msg="pyrepl not available: {}".format(exc))
         m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", True)
     else:
         m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", False)
