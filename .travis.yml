@@ -49,7 +49,7 @@ jobs:
           repo: antocuni/pdb
 
 install:
-  - pip install tox-travis
+  - pip install tox
 
 script:
   - tox
