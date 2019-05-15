@@ -2395,6 +2395,7 @@ Deleted breakpoint NUM
 """ % (line_z, line_z))
 
 
+@pytest.mark.skipif(sys.version_info < (3, 7), "header kwarg only with 3.7+")
 def test_set_trace_header():
     """Handler header kwarg added with Python 3.7 in pdb.set_trace."""
     def fn():
