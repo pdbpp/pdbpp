@@ -975,6 +975,37 @@ NUM  ->	        return a
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
+def test_shortlist_with_second_set_trace_resets_lineno():
+    def fn():
+        def f1():
+            set_trace(cleanup=False)
+
+        set_trace()
+        f1()
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> f1()
+   5 frames hidden .*
+# l {line_num}, 2
+NUM  \t    def fn():
+NUM  \t        def f1():
+NUM  \t            set_trace(cleanup=False)
+# import pdb; pdb.local.GLOBAL_PDB.lineno
+{set_lineno}
+# c
+--Return--
+[NUM] > .*f1()->None
+-> set_trace(cleanup=False)
+   5 frames hidden .*
+# import pdb; pdb.local.GLOBAL_PDB.lineno
+# c
+    """.format(
+        line_num=fn.__code__.co_firstlineno,
+        set_lineno=fn.__code__.co_firstlineno + 2,
+    ))
+
+
 def test_longlist():
     def fn():
         a = 1
