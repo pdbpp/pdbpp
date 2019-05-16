@@ -175,12 +175,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     config_filename = '.pdbrc.py'
     disabled = False
 
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args, use_global_pdb=True, **kwds):
         # Skip initialization when being re-used (via __new__).
         if hasattr(self, "_skip_init"):
             del self._skip_init
             return
 
+        self.use_global_pdb = use_global_pdb
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
@@ -209,8 +210,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         pytest will create a new instance (this one), and calls
         ``set_trace`` on it.
         """
+        use_global_pdb = kwargs.get("use_global_pdb", True)
         local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-        if local.GLOBAL_PDB:
+        if local.GLOBAL_PDB and use_global_pdb:
             called_for_set_trace = False
             frame = sys._getframe()
             while frame.f_back:
@@ -1336,8 +1338,10 @@ except for when using the function decorator.
         if self.disabled:
             return
 
-        local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-        local.GLOBAL_PDB = self
+        if self.use_global_pdb:
+            local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
+            local.GLOBAL_PDB = self
+
         if frame is None:
             frame = sys._getframe().f_back
         self._via_set_trace_frame = frame

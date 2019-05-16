@@ -458,6 +458,47 @@ new_set_trace
 """)
 
 
+def test_global_pdb_can_be_skipped():
+    def fn():
+        global pdb
+
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is first
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is first
+
+        set_trace(cleanup=False)
+        third = pdb.local.GLOBAL_PDB
+        assert third is first
+
+    check(fn, """
+[NUM] > .*fn()
+-> first = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] .*set_trace()
+-> assert pdb.local.GLOBAL_PDB is first
+   5 frames hidden .*
+# c
+[NUM] > .*fn()
+-> third = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
