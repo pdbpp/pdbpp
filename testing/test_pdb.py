@@ -458,6 +458,77 @@ new_set_trace
 """)
 
 
+def test_global_pdb_can_be_skipped():
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is first
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is first
+
+        set_trace(cleanup=False)
+        third = pdb.local.GLOBAL_PDB
+        assert third is first
+
+    check(fn, """
+[NUM] > .*fn()
+-> first = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] .*set_trace()
+-> assert pdb.local.GLOBAL_PDB is first
+   5 frames hidden .*
+# c
+[NUM] > .*fn()
+-> third = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+""")
+
+
+def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
+    """Same as test_global_pdb_can_be_skipped, but with mocked Pdb methods."""
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is first
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is first
+
+        set_trace(cleanup=False)
+        third = pdb.local.GLOBAL_PDB
+        assert third is first
+
+    check(fn, """
+=== set_trace
+new_set_trace
+=== set_trace
+=== set_continue
+=== set_trace
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
@@ -937,12 +1008,12 @@ def test_shortlist_with_pygments():
 -> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
 # l {line_num}, 5
-NUM  \t$
-NUM  \t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM  \t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
-NUM  \t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
-NUM  \t$
-NUM  ->\t        ^[[38;5;28;01mreturn^[[39;00m a
+NUM +\t$
+NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM +\t$
+NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
 """.format(line_num=fn.__code__.co_firstlineno - 1))
 
@@ -960,11 +1031,11 @@ def test_shortlist_with_highlight():
 -> return a
    5 frames hidden .*
 # l {line_num}, 4
-<COLORNUM>  \t    def fn():
-<COLORNUM>  \t        a = 1
-<COLORNUM>  \t        set_trace(Config=ConfigWithHighlight)
-<COLORNUM>  \t$
-<COLORNUM>  ->\t        return a
+<COLORNUM> +\t    def fn():
+<COLORNUM> +\t        a = 1
+<COLORNUM> +\t        set_trace(Config=ConfigWithHighlight)
+<COLORNUM> +\t$
+<COLORNUM> +->\t        return a
 # c
 """.format(line_num=fn.__code__.co_firstlineno))
 
@@ -981,8 +1052,8 @@ def test_shortlist_without_arg():
 -> return a
    5 frames hidden .*
 # l
-NUM  \tdef test_shortlist_without_arg():
-NUM  \t    \"""Ensure that forget was called for lineno.\"""
+NUM \tdef test_shortlist_without_arg():
+NUM \t    \"""Ensure that forget was called for lineno.\"""
 .*
 .*
 .*
@@ -990,8 +1061,8 @@ NUM  \t    \"""Ensure that forget was called for lineno.\"""
 .*
 .*
 .*
-NUM  \t-> return a
-NUM  \t   5 frames hidden .*
+NUM \t-> return a
+NUM \t   5 frames hidden .*
 # c
 """.format(line_num=fn.__code__.co_firstlineno))
 
