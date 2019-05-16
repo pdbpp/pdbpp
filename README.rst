@@ -293,11 +293,14 @@ default value:
   It expects a dictionary that maps token types to (lightbg, darkbg) color names or
   ``None`` (default: ``None`` = use builtin colorscheme).
 
-``editor = '${EDITOR:-vi}'``
-  The command to invoke when using the ``edit`` command. By default, it uses
-  ``$EDITOR`` if set, else ``vi``.  The command must support the standard
-  notation ``COMMAND +n filename`` to open filename at line ``n``. ``emacs``
-  and ``vi`` are known to support this.
+``editor = None``
+  The command to invoke when using the ``edit`` command. By default, it uses ``$EDITOR``
+  if set, else ``vim`` or ``vi`` (if found).  If only the editor command is specified, the ``emacs`` and
+  ``vi`` notation will be used to specify the line number: ``COMMAND +n filename``. It's
+  otherwise possible to use another syntax by using the placeholders ``{filename}`` and
+  ``{lineno}``. For example with sublime text, specify ``editor = "subl
+  {filename}:{lineno}"``.
+
 
 ``truncate_long_lines = True``
   Truncate lines which exceed the terminal width.
