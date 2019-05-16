@@ -204,12 +204,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
     def __new__(cls, *args, **kwargs):
-        """Reuse an existing instace with pdb.set_trace.
-
-        This gets done in the module's ``set_trace`` already, but e.g.
-        pytest will create a new instance (this one), and calls
-        ``set_trace`` on it.
-        """
+        """Reuse an existing instance with ``pdb.set_trace()``."""
         use_global_pdb = kwargs.get("use_global_pdb", True)
         local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
         if local.GLOBAL_PDB and use_global_pdb:
