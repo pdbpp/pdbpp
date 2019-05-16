@@ -1,3 +1,4 @@
+import functools
 import sys
 
 import pytest
@@ -86,3 +87,14 @@ def monkeypatch_readline(request, monkeypatch, readline_param):
         monkeypatch.setattr("%s.get_endidx" % readline, lambda: endidx)
 
     return inner
+
+
+@pytest.fixture
+def monkeypatch_pdb_methods(monkeypatch):
+    def mock(method, *args, **kwargs):
+        print("=== %s(%s, %s)" % (method, args, kwargs))
+
+    for mock_method in ("set_trace", "set_continue"):
+        monkeypatch.setattr(
+            "pdb.pdb.Pdb.%s" % mock_method, functools.partial(mock, mock_method)
+        )

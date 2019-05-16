@@ -460,8 +460,6 @@ new_set_trace
 
 def test_global_pdb_can_be_skipped():
     def fn():
-        global pdb
-
         set_trace()
         first = pdb.local.GLOBAL_PDB
         assert isinstance(first, PdbTest)
@@ -496,6 +494,38 @@ new_set_trace
 -> third = pdb.local.GLOBAL_PDB
    5 frames hidden .*
 # c
+""")
+
+
+def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
+    """Same as test_global_pdb_can_be_skipped, but with mocked Pdb methods."""
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is first
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is first
+
+        set_trace(cleanup=False)
+        third = pdb.local.GLOBAL_PDB
+        assert third is first
+
+    check(fn, """
+=== set_trace
+new_set_trace
+=== set_trace
+=== set_continue
+=== set_trace
 """)
 
 
