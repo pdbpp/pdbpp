@@ -3484,3 +3484,38 @@ def test_rebind_globals_annotations():
         )
     new = pdb.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig
+
+
+def test_debug_with_set_trace():
+    def fn():
+        def inner():
+            def inner_inner():
+                pass
+
+            set_trace(cleanup=False)
+
+        set_trace()
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# debug inner()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > <string>(1)<module>()->None
+(#) r
+--Return--
+[NUM] > .*inner()->None
+-> set_trace(cleanup=False)
+   5 frames hidden .*
+(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+'inner'
+(#) debug inner_inner()
+ENTERING RECURSIVE DEBUGGER
+[NUM] > <string>(1)<module>()->None
+((#)) c
+LEAVING RECURSIVE DEBUGGER
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
