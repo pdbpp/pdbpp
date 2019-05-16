@@ -437,7 +437,7 @@ def test_global_pdb_with_classmethod():
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdb.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
                 assert pdb.local.GLOBAL_PDB is self
                 return ret
@@ -467,18 +467,18 @@ def test_global_pdb_can_be_skipped():
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdb.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is first
+                assert pdb.local.GLOBAL_PDB is self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is first
+        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert new_pdb.use_global_pdb is False
 
         set_trace(cleanup=False)
-        third = pdb.local.GLOBAL_PDB
-        assert third is first
+        assert pdb.local.GLOBAL_PDB is new_pdb
 
     check(fn, """
 [NUM] > .*fn()
@@ -487,11 +487,14 @@ def test_global_pdb_can_be_skipped():
 # c
 new_set_trace
 [NUM] .*set_trace()
--> assert pdb.local.GLOBAL_PDB is first
+-> assert pdb.local.GLOBAL_PDB is self
    5 frames hidden .*
+# readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
+# assert readline_.get_completer() == pdb.local.GLOBAL_PDB.complete
 # c
+new_set_trace
 [NUM] > .*fn()
--> third = pdb.local.GLOBAL_PDB
+-> assert pdb.local.GLOBAL_PDB is new_pdb
    5 frames hidden .*
 # c
 """)
@@ -507,24 +510,24 @@ def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdb.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is first
+                assert pdb.local.GLOBAL_PDB is self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is first
+        assert pdb.local.GLOBAL_PDB is new_pdb
 
         set_trace(cleanup=False)
-        third = pdb.local.GLOBAL_PDB
-        assert third is first
+        assert pdb.local.GLOBAL_PDB is new_pdb
 
     check(fn, """
 === set_trace
 new_set_trace
 === set_trace
 === set_continue
+new_set_trace
 === set_trace
 """)
 
@@ -2853,9 +2856,13 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
 
 
 def get_completions(text):
+    """Get completions from the installed completer."""
+    readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
+    complete = readline_.get_completer()
     comps = []
+    assert complete.__self__ is pdb.local.GLOBAL_PDB
     while True:
-        val = pdb.local.GLOBAL_PDB.complete(text, len(comps))
+        val = complete(text, len(comps))
         if val is None:
             break
         comps += [val]
@@ -2987,10 +2994,26 @@ True
 """)
 
 
-def test_completer_after_debug():
-    """Test that pdb's original completion is used."""
+def test_completer_after_debug(monkeypatch_readline):
     def fn():
         myvar = 1  # noqa: F841
+
+        def inner():
+            myinnervar = 1  # noqa: F841
+
+            def check_completions_inner():
+                # Patch readline to return expected results for "myin".
+                monkeypatch_readline("myin", 4, 4)
+                assert "myinnervar" in get_completions("myin")
+                return True
+
+            print("inner_end")
+
+        def check_completions():
+            # Patch readline to return expected results for "myva".
+            monkeypatch_readline("myva", 4, 4)
+            assert "myvar" in get_completions("myva")
+            return True
 
         set_trace()
 
@@ -2999,14 +3022,30 @@ def test_completer_after_debug():
 [NUM] > .*fn()
 .*
    5 frames hidden .*
-# debug 1
+# pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+'fn'
+# debug inner()
 ENTERING RECURSIVE DEBUGGER
 [1] > <string>(1)<module>()
-(#) c
+(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+'<module>'
+(#) s
+--Call--
+[NUM] > .*inner()
+-> def inner():
+(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+'inner'
+(#) r
+inner_end
+--Return--
+[NUM] > .*inner()->None
+-> print("inner_end")
+(#) check_completions_inner()
+True
+(#) q
 LEAVING RECURSIVE DEBUGGER
-# import pdb, readline
-# completer = readline.get_completer()
-# assert isinstance(completer.__self__, pdb.Pdb), completer
+# check_completions()
+True
 # c
 ok_end
 """)
