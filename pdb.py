@@ -886,6 +886,8 @@ except for when using the function decorator.
                 # Backport of fix for bpo-31078 (not yet merged).
                 self_withcfg.use_rawinput = self.use_rawinput
 
+                local.GLOBAL_PDB = self_withcfg
+
         if sys.version_info < (3, ):
             do_debug_func = pdb.Pdb.do_debug.im_func
         else:
@@ -897,12 +899,15 @@ except for when using the function decorator.
 
         # Handle any exception, e.g. SyntaxErrors.
         # This is about to be improved in Python itself (3.8, 3.7.3?).
+        prev_pdb = local.GLOBAL_PDB
         try:
             return new_do_debug(self, arg)
         except Exception:
             exc_info = sys.exc_info()[:2]
             msg = traceback.format_exception_only(*exc_info)[-1].strip()
             self.error(msg)
+        finally:
+            local.GLOBAL_PDB = prev_pdb
 
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
