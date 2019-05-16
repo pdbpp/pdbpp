@@ -803,7 +803,7 @@ except for when using the function decorator.
         if self.config.highlight:
             prefixes = [
                 RE_LNUM_PREFIX.sub(
-                    lambda m: Color.set(self.config.line_number_color, m[0]),
+                    lambda m: Color.set(self.config.line_number_color, m.group(0)),
                     prefix
                 )
                 for prefix in prefixes
@@ -821,9 +821,7 @@ except for when using the function decorator.
             Used via do_list currently only, do_source and do_longlist are
             overridden.
             """
-            if not lines or (
-                    not self.config.use_pygments
-                    and not self.config.highlight):
+            if not lines or not (self.config.use_pygments or self.config.highlight):
                 return super(Pdb, self)._print_lines(lines, *args, **kwargs)
 
             oldstdout = self.stdout
@@ -834,12 +832,11 @@ except for when using the function decorator.
 
             for line in self._format_source_lines(orig_pdb_lines):
                 print(line, file=self.stdout)
-
             return ret
     else:
         # Only for Python 2.7, where _print_lines is not used/available.
         def do_list(self, arg):
-            if not self.config.use_pygments:
+            if not (self.config.use_pygments or self.config.highlight):
                 return super(Pdb, self).do_list(arg)
 
             oldstdout = self.stdout
