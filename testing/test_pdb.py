@@ -47,8 +47,12 @@ class ConfigWithHighlight(ConfigTest):
     highlight = True
 
 
-class ConfigWithPygments(ConfigWithHighlight):
+class ConfigWithPygments(ConfigTest):
     use_pygments = True
+
+
+class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):
+    pass
 
 
 class PdbTest(pdb.Pdb):
@@ -888,7 +892,7 @@ NUM  ->	        return a
 """.format(line_num=fn.__code__.co_firstlineno))
 
 
-def test_shortlist_with_highlight_and_EOF():
+def test_shortlist_with_pygments_and_EOF():
     def fn():
         a = 1
         set_trace(Config=ConfigWithPygments)
@@ -904,7 +908,23 @@ def test_shortlist_with_highlight_and_EOF():
 """.format(line_num=100000))
 
 
-def test_shortlist_with_highlight():
+def test_shortlist_with_highlight_and_EOF():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigWithHighlight)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l {line_num}, 3
+[EOF]
+# c
+""".format(line_num=100000))
+
+
+def test_shortlist_with_pygments():
 
     def fn():
         a = 1
@@ -925,6 +945,28 @@ NUM  \t$
 NUM  ->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
 """.format(line_num=fn.__code__.co_firstlineno - 1))
+
+
+def test_shortlist_with_highlight():
+
+    def fn():
+        a = 1
+        set_trace(Config=ConfigWithHighlight)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l {line_num}, 4
+<COLORNUM>  \t    def fn():
+<COLORNUM>  \t        a = 1
+<COLORNUM>  \t        set_trace(Config=ConfigWithHighlight)
+<COLORNUM>  \t$
+<COLORNUM>  ->\t        return a
+# c
+""".format(line_num=fn.__code__.co_firstlineno))
 
 
 def test_shortlist_without_arg():
@@ -965,10 +1007,10 @@ def test_shortlist_heuristic():
 -> return a
    5 frames hidden .*
 # list {line_num}, 3
-NUM  \t    def fn():
-NUM  \t        a = 1
-NUM  \t        set_trace(Config=ConfigTest)
-NUM  ->	        return a
+NUM \t    def fn():
+NUM \t        a = 1
+NUM \t        set_trace(Config=ConfigTest)
+NUM ->	        return a
 # list(range(4))
 [0, 1, 2, 3]
 # c
@@ -988,9 +1030,9 @@ def test_shortlist_with_second_set_trace_resets_lineno():
 -> f1()
    5 frames hidden .*
 # l {line_num}, 2
-NUM  \t    def fn():
-NUM  \t        def f1():
-NUM  \t            set_trace(cleanup=False)
+NUM \t    def fn():
+NUM \t        def f1():
+NUM \t            set_trace(cleanup=False)
 # import pdb; pdb.local.GLOBAL_PDB.lineno
 {set_lineno}
 # c
@@ -1540,6 +1582,48 @@ def test_source_with_pygments():
 
     def fn():
         set_trace(Config=ConfigWithPygments)
+        return bar()
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m bar()
+   5 frames hidden .*
+# source bar
+NUM         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mbar^[[39m():
+NUM
+NUM             ^[[38;5;28;01mreturn^[[39;00m ^[[38;5;241m42^[[39m
+# c
+""")
+
+
+def test_source_with_highlight():
+    def bar():
+
+        return 42
+
+    def fn():
+        set_trace(Config=ConfigWithHighlight)
+        return bar()
+
+    check(fn, """
+[NUM] > .*fn()
+-> return bar()
+   5 frames hidden .*
+# source bar
+<COLORNUM>         def bar():
+<COLORNUM>
+<COLORNUM>             return 42
+# c
+""")
+
+
+def test_source_with_pygments_and_highlight():
+    def bar():
+
+        return 42
+
+    def fn():
+        set_trace(Config=ConfigWithPygmentsAndHighlight)
         return bar()
 
     check(fn, """
