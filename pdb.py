@@ -53,6 +53,7 @@ else:
 
 local = threading.local()
 local.GLOBAL_PDB = None
+local._pdbpp_completing = False
 
 
 def __getattr__(name):
@@ -367,7 +368,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.print_current_stack_entry()
 
     def forget(self):
-        if not hasattr(local, '_pdbpp_completing'):
+        if not getattr(local, "_pdbpp_completing", False):
             super(Pdb, self).forget()
 
     @classmethod
@@ -427,7 +428,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             self._filter_completions(text)
 
-            del local._pdbpp_completing
+            local._pdbpp_completing = False
 
         try:
             return self._completions[state]
@@ -1331,7 +1332,7 @@ except for when using the function decorator.
 
         This is used with pytest, which does not use pdb.set_trace().
         """
-        if hasattr(local, '_pdbpp_completing'):
+        if getattr(local, "_pdbpp_completing", False):
             # Handle set_trace being called during completion, e.g. with
             # fancycompleter's attr_matches.
             return
@@ -1436,6 +1437,7 @@ def post_mortem(t=None, Pdb=Pdb):
 
 def cleanup():
     local.GLOBAL_PDB = None
+    local._pdbpp_completing = False
 
 # pdb++ specific interface
 
