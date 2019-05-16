@@ -502,6 +502,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 filename = Color.set(self.config.filename_color, filename)
                 lineno = Color.set(self.config.line_number_color, lineno)
                 entry = '%s(%s)%s' % (filename, lineno, other)
+        if self.config.use_pygments:
             entry = self.stack_line_regexp.sub(
                 lambda m: m.group(1) + self.format_source(m.group(2)).rstrip(), entry
             )
@@ -752,7 +753,7 @@ except for when using the function decorator.
         else:
             maxlength = max(map(len, lines))
 
-        if self.config.highlight:
+        if self.config.use_pygments:
             # Fill with spaces.  This is important when a bg color is used,
             # e.g. for highlighting the current line (via setbgcolor).
             lines = [line.ljust(maxlength) for line in lines]
@@ -779,6 +780,40 @@ except for when using the function decorator.
 
     do_ll = do_longlist
 
+    def _format_source_lines(self, lines):
+        if not lines:
+            return lines
+
+        if not self.config.use_pygments and not self.config.highlight:
+            return lines
+
+        # Format source without prefixes added by pdb, including line numbers.
+        prefixes = []
+        src_lines = []
+
+        for x in lines:
+            prefix, _, src = x.partition('\t')
+            prefixes.append(prefix)
+            src_lines.append(src)
+        formatted_src_lines = self.format_source(
+            "\n".join(src_lines) + "\n"
+        ).splitlines()
+
+        RE_LNUM_PREFIX = re.compile(r"^\d+")
+        if self.config.highlight:
+            prefixes = [
+                RE_LNUM_PREFIX.sub(
+                    lambda m: Color.set(self.config.line_number_color, m[0]),
+                    prefix
+                )
+                for prefix in prefixes
+            ]
+
+        return [
+            "%s\t%s" % (prefix, src)
+            for (prefix, src) in zip(prefixes, formatted_src_lines)
+        ]
+
     if sys.version_info >= (3, 2):
         def _print_lines(self, lines, *args, **kwargs):
             """Enhance original _print_lines with highlighting.
@@ -786,13 +821,21 @@ except for when using the function decorator.
             Used via do_list currently only, do_source and do_longlist are
             overridden.
             """
-            if self.config.use_pygments:
-                if lines:
-                    lines = self.format_source(
-                        "".join(lines)
-                    ).splitlines(keepends=True)
+            if not lines or (
+                    not self.config.use_pygments
+                    and not self.config.highlight):
+                return super(Pdb, self)._print_lines(lines, *args, **kwargs)
 
-            return super(Pdb, self)._print_lines(lines, *args, **kwargs)
+            oldstdout = self.stdout
+            self.stdout = StringIO()
+            ret = super(Pdb, self)._print_lines(lines, *args, **kwargs)
+            orig_pdb_lines = self.stdout.getvalue().splitlines()
+            self.stdout = oldstdout
+
+            for line in self._format_source_lines(orig_pdb_lines):
+                print(line, file=self.stdout)
+
+            return ret
     else:
         # Only for Python 2.7, where _print_lines is not used/available.
         def do_list(self, arg):
@@ -805,26 +848,8 @@ except for when using the function decorator.
             orig_pdb_lines = self.stdout.getvalue().splitlines()
             self.stdout = oldstdout
 
-            # Format source without prefixes added by pdb, including line numbers.
-            prefixes = []
-            src_lines = []
-            if not orig_pdb_lines:
-                return
-
-            for x in orig_pdb_lines:
-                prefix, _, src = x.partition('\t')
-                prefixes.append(prefix)
-                src_lines.append(src)
-            formatted_src_lines = self.format_source(
-                "\n".join(src_lines) + "\n"
-            ).splitlines()
-
-            assert len(formatted_src_lines) == len(src_lines), (
-                repr([formatted_src_lines, src_lines])
-            )
-
-            for prefix, src in zip(prefixes, formatted_src_lines):
-                print("%s\t%s" % (prefix, src), file=self.stdout)
+            for line in self._format_source_lines(orig_pdb_lines):
+                print(line, file=self.stdout)
             return ret
 
         do_list.__doc__ = pdb.Pdb.do_list.__doc__
