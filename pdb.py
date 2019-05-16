@@ -202,6 +202,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
+        # Fix for bpo-31078 (not yet merged).
+        # stdout gets passed with do_debug for example, but should usually not
+        # disable using raw input then (pdb.Pdb sets use_rawinput to 0 if
+        # stdout is passed to the constructor, but cmd.Cmd defaults to
+        # sys.stdout then).
+        passed_stdout = kwargs.pop("stdout", None)
+        if passed_stdout is not None:
+            if passed_stdout is not sys.stdout:
+                self.use_rawinput = 1
+
     def __new__(cls, *args, **kwargs):
         """Reuse an existing instace with pdb.set_trace.
 
@@ -858,9 +868,6 @@ except for when using the function decorator.
             def __init__(self_withcfg, *args, **kwargs):
                 kwargs.setdefault("Config", Config)
                 super(PdbppWithConfig, self_withcfg).__init__(*args, **kwargs)
-
-                # Backport of fix for bpo-31078 (not yet merged).
-                self_withcfg.use_rawinput = self.use_rawinput
 
         if sys.version_info < (3, ):
             do_debug_func = pdb.Pdb.do_debug.im_func
