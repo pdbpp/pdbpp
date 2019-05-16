@@ -175,13 +175,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     config_filename = '.pdbrc.py'
     disabled = False
 
-    def __init__(self, *args, use_global_pdb=True, **kwds):
+    def __init__(self, *args, **kwds):
         # Skip initialization when being re-used (via __new__).
         if hasattr(self, "_skip_init"):
             del self._skip_init
             return
 
-        self.use_global_pdb = use_global_pdb
+        self.use_global_pdb = kwds.pop("use_global_pdb", True)
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
