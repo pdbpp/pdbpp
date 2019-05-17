@@ -3561,16 +3561,13 @@ LEAVING RECURSIVE DEBUGGER
 
 def test_set_trace_with_incomplete_pdb():
     def fn():
-        class OtherPdb(pdb.Pdb):
-            pass
-
-        other_pdb = OtherPdb()
-        assert not hasattr(other_pdb, "botframe")
+        existing_pdb = PdbTest()
+        assert not hasattr(existing_pdb, "botframe")
 
         set_trace(cleanup=False)
 
-        assert not hasattr(other_pdb, "botframe")
-        assert pdb.local.GLOBAL_PDB is not other_pdb
+        assert hasattr(existing_pdb, "botframe")
+        assert pdb.local.GLOBAL_PDB is existing_pdb
     check(fn, """
 [NUM] > .*fn()
 .*
