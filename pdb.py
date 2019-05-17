@@ -220,7 +220,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                     called_for_set_trace = True
                     break
             if called_for_set_trace:
-                global_pdb.set_continue()
+                if hasattr(global_pdb, "botframe"):
+                    # Do not stop while tracing is active (in _set_stopinfo).
+                    # But skip it with instances that have not called set_trace
+                    # before.
+                    global_pdb.set_continue()
                 global_pdb._skip_init = True
                 return global_pdb
         ret = super(Pdb, cls).__new__(cls)

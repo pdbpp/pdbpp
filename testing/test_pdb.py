@@ -526,7 +526,6 @@ def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
 === set_trace
 new_set_trace
 === set_trace
-=== set_continue
 new_set_trace
 === set_trace
 """)
@@ -3556,5 +3555,22 @@ ENTERING RECURSIVE DEBUGGER
 LEAVING RECURSIVE DEBUGGER
 (#) c
 LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
+def test_set_trace_with_incomplete_pdb():
+    def fn():
+        existing_pdb = PdbTest()
+        assert not hasattr(existing_pdb, "botframe")
+
+        set_trace(cleanup=False)
+
+        assert hasattr(existing_pdb, "botframe")
+        assert pdb.local.GLOBAL_PDB is existing_pdb
+    check(fn, """
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
 # c
 """)
