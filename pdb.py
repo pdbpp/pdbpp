@@ -175,6 +175,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     DefaultConfig = DefaultConfig
     config_filename = '.pdbrc.py'
     disabled = False
+    fancycompleter = None
 
     def __init__(self, *args, **kwds):
         # Skip initialization when being re-used (via __new__).
@@ -207,8 +208,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def __new__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
         use_global_pdb = kwargs.get("use_global_pdb", True)
-        local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-        if local.GLOBAL_PDB and use_global_pdb:
+        global_pdb = getattr(local, "GLOBAL_PDB", None)
+        if use_global_pdb and global_pdb:
             called_for_set_trace = False
             frame = sys._getframe()
             while frame.f_back:
@@ -219,10 +220,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                     called_for_set_trace = True
                     break
             if called_for_set_trace:
-                local.GLOBAL_PDB.set_continue()
-                local.GLOBAL_PDB._skip_init = True
-                return local.GLOBAL_PDB
-        return super(Pdb, cls).__new__(cls)
+                global_pdb.set_continue()
+                global_pdb._skip_init = True
+                return global_pdb
+        ret = super(Pdb, cls).__new__(cls)
+        local.GLOBAL_PDB = ret
+        return ret
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -269,16 +272,30 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.exec_if_unfocused()
         self.print_stack_entry(self.stack[self.curindex])
         self.print_hidden_frames_count()
-        self.fancycompleter = fancycompleter.setup()
-        self.fancycompleter.config.readline.set_completer(self.complete)
-        self._lastcompstate = [None, 0]
-        self.config.before_interaction_hook(self)
-        # Use _cmdloop on py3 which catches KeyboardInterrupt.
-        if hasattr(self, '_cmdloop'):
-            self._cmdloop()
-        else:
-            self.cmdloop()
+
+        with self._custom_completer():
+            self.config.before_interaction_hook(self)
+            # Use _cmdloop on py3 which catches KeyboardInterrupt.
+            if hasattr(self, '_cmdloop'):
+                self._cmdloop()
+            else:
+                self.cmdloop()
+
         self.forget()
+
+    @contextlib.contextmanager
+    def _custom_completer(self):
+        if not self.fancycompleter:
+            self.fancycompleter = fancycompleter.setup()
+
+        readline_ = self.fancycompleter.config.readline
+        old_completer = readline_.get_completer()
+        readline_.set_completer(self.complete)
+        self._lastcompstate = [None, 0]
+        try:
+            yield
+        finally:
+            readline_.set_completer(old_completer)
 
     def print_hidden_frames_count(self):
         n = len(self.hidden_frames)
@@ -897,7 +914,8 @@ except for when using the function decorator.
         # This is about to be improved in Python itself (3.8, 3.7.3?).
         prev_pdb = local.GLOBAL_PDB
         try:
-            return new_do_debug(self, arg)
+            with self._custom_completer():
+                return new_do_debug(self, arg)
         except Exception:
             exc_info = sys.exc_info()[:2]
             msg = traceback.format_exception_only(*exc_info)[-1].strip()
@@ -1338,10 +1356,6 @@ except for when using the function decorator.
             return
         if self.disabled:
             return
-
-        if self.use_global_pdb:
-            local.GLOBAL_PDB = getattr(local, "GLOBAL_PDB", None)
-            local.GLOBAL_PDB = self
 
         if frame is None:
             frame = sys._getframe().f_back
