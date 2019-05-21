@@ -472,12 +472,82 @@ def test_global_pdb_can_be_skipped():
         class NewPdb(PdbTest, pdb.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is not self
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is not new_pdb
+
+        set_trace(cleanup=False)
+        assert pdb.local.GLOBAL_PDB is not new_pdb
+
+    check(fn, """
+[NUM] > .*fn()
+-> first = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] .*set_trace()
+-> assert pdb.local.GLOBAL_PDB is not self
+   5 frames hidden .*
+# readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
+# assert readline_.get_completer() != pdb.local.GLOBAL_PDB.complete
+# c
+[NUM] > .*fn()
+-> assert pdb.local.GLOBAL_PDB is not new_pdb
+   5 frames hidden .*
+# c
+""")
+
+
+def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
+    """Same as test_global_pdb_can_be_skipped, but with mocked Pdb methods."""
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is not self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is not self
+                return ret
+
+        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is not new_pdb
+
+        set_trace(cleanup=False)
+        assert pdb.local.GLOBAL_PDB is not new_pdb
+
+    check(fn, """
+=== set_trace
+new_set_trace
+=== set_trace
+=== set_trace
+""")
+
+
+def test_global_pdb_can_be_skipped_but_set():
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(first, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
                 assert pdb.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
                 assert pdb.local.GLOBAL_PDB is self
                 return ret
 
-        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb = NewPdb(use_global_pdb=False, set_global_pdb=True)
         new_pdb.set_trace()
         assert pdb.local.GLOBAL_PDB is new_pdb
 
@@ -504,8 +574,7 @@ new_set_trace
 """)
 
 
-def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
-    """Same as test_global_pdb_can_be_skipped, but with mocked Pdb methods."""
+def test_global_pdb_can_be_skipped_but_set_unit(monkeypatch_pdb_methods):
     def fn():
         set_trace()
         first = pdb.local.GLOBAL_PDB
@@ -519,7 +588,7 @@ def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
                 assert pdb.local.GLOBAL_PDB is self
                 return ret
 
-        new_pdb = NewPdb(use_global_pdb=False)
+        new_pdb = NewPdb(use_global_pdb=False, set_global_pdb=True)
         new_pdb.set_trace()
         assert pdb.local.GLOBAL_PDB is new_pdb
 
@@ -965,10 +1034,10 @@ def test_shortlist():
 -> return a
    5 frames hidden .*
 # l {line_num}, 3
-NUM  	    def fn():
-NUM  	        a = 1
-NUM  	        set_trace(Config=ConfigTest)
-NUM  ->	        return a
+NUM +\t    def fn():
+NUM +\t        a = 1
+NUM +\t        set_trace(Config=ConfigTest)
+NUM +->	        return a
 # c
 """.format(line_num=fn.__code__.co_firstlineno))
 
@@ -3727,3 +3796,30 @@ ENTERING RECURSIVE DEBUGGER
 LEAVING RECURSIVE DEBUGGER
 # c
 """)
+
+
+def test_set_trace_in_default_code():
+    """set_trace while not tracing and should not (re)set the global pdb."""
+    def fn():
+        def f():
+            before = pdb.local.GLOBAL_PDB
+            set_trace(cleanup=False)
+            assert before is pdb.local.GLOBAL_PDB
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# f()
+# import pdb; pdb.local.GLOBAL_PDB.curframe is not None
+True
+# l {line_num}, 2
+NUM \t    def fn():
+NUM \t        def f():
+NUM \t            before = pdb.local.GLOBAL_PDB
+# c
+    """.format(
+        line_num=fn.__code__.co_firstlineno,
+    ))
