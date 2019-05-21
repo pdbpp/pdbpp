@@ -175,8 +175,9 @@ undefined = Undefined()
 class PdbMeta(type):
     def __call__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
-        use_global_pdb = kwargs.pop("use_global_pdb", True)
         global_pdb = getattr(local, "GLOBAL_PDB", None)
+        in_interaction = global_pdb and global_pdb._in_interaction
+        use_global_pdb = kwargs.pop("use_global_pdb", not in_interaction)
 
         calling_frame = sys._getframe().f_back
         called_for_set_trace = (
@@ -196,8 +197,11 @@ class PdbMeta(type):
         if called_for_set_trace:
             kwargs.setdefault("start_filename", calling_frame.f_code.co_filename)
             kwargs.setdefault("start_lineno", calling_frame.f_lineno)
+
+        set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
         obj.__init__(*args, **kwargs)
-        local.GLOBAL_PDB = obj
+        if set_global_pdb:
+            local.GLOBAL_PDB = obj
         return obj
 
 
@@ -208,6 +212,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     config_filename = '.pdbrc.py'
     disabled = False
     fancycompleter = None
+
+    _in_interaction = False
 
     def __init__(self, *args, **kwds):
         self.ConfigFactory = kwds.pop('Config', None)
@@ -258,6 +264,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             pass
 
     def interaction(self, frame, traceback):
+        self._in_interaction = True
+        try:
+            return self._interaction(frame, traceback)
+        finally:
+            self._in_interaction = False
+
+    def _interaction(self, frame, traceback):
         # Restore the previous signal handler at the Pdb prompt.
         if getattr(pdb.Pdb, '_previous_sigint_handler', None):
             try:
