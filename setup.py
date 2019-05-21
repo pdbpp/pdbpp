@@ -84,6 +84,7 @@ setup(
         "fancycompleter>=0.8",
         "wmctrl",
         "pygments",
+        "six",
     ],
     extras_require={
         'funcsigs': ["funcsigs"],

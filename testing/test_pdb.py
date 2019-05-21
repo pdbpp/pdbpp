@@ -3595,3 +3595,27 @@ def test_set_trace_with_incomplete_pdb():
    5 frames hidden .*
 # c
 """)
+
+
+def test_config_gets_start_filename():
+    def fn():
+        setup_lineno = set_trace.__code__.co_firstlineno + 8
+        set_trace_lineno = sys._getframe().f_lineno + 8
+
+        class MyConfig(ConfigTest):
+            def setup(self, pdb):
+                print("config_setup")
+                assert pdb.start_filename == __file__
+                assert pdb.start_lineno == setup_lineno
+
+        set_trace(Config=MyConfig)
+
+        assert pdb.local.GLOBAL_PDB.start_lineno == set_trace_lineno
+
+    check(fn, r"""
+config_setup
+[NUM] > .*fn()
+-> assert pdb.local.GLOBAL_PDB.start_lineno == set_trace_lineno
+   5 frames hidden .*
+# c
+""")
