@@ -3691,3 +3691,39 @@ def test_do_bt_pygments():
        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 # c
 """.format(expected="\n".join(expected_bt)))
+
+
+def test_debug_with_pygments():
+    def fn():
+        set_trace(Config=ConfigWithPygments)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()->None
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")
+
+
+def test_debug_with_pygments_and_highlight():
+    def fn():
+        set_trace(Config=ConfigWithPygmentsAndHighlight)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
+   5 frames hidden .*
+# debug 1
+ENTERING RECURSIVE DEBUGGER
+[1] > ^[[33;01m<string>^[[00m(^[[36;01m1^[[00m)<module>()->None
+(#) c
+LEAVING RECURSIVE DEBUGGER
+# c
+""")

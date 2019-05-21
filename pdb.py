@@ -522,7 +522,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 entry = '%s(%s)%s' % (filename, lineno, other)
         if self.config.use_pygments:
             loc, _, source = entry.rpartition(lprefix)
-            entry = loc + _ + self.format_source(source).rstrip()
+            if _:
+                entry = loc + _ + self.format_source(source).rstrip()
         return entry
 
     def try_to_decode(self, s):
