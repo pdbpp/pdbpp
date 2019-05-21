@@ -22,8 +22,10 @@ import pprint
 import re
 import signal
 from collections import OrderedDict
-from fancycompleter import Completer, ConfigurableClass, Color
+
 import fancycompleter
+import six
+from fancycompleter import Color, Completer, ConfigurableClass
 
 __author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
 __url__ = 'http://github.com/antocuni/pdb'
@@ -170,6 +172,37 @@ class Undefined:
 undefined = Undefined()
 
 
+class PdbMeta(type):
+    def __call__(cls, *args, **kwargs):
+        """Reuse an existing instance with ``pdb.set_trace()``."""
+        use_global_pdb = kwargs.get("use_global_pdb", True)
+        global_pdb = getattr(local, "GLOBAL_PDB", None)
+
+        calling_frame = sys._getframe().f_back
+        called_for_set_trace = (
+            calling_frame.f_code.co_name == "set_trace"
+            and calling_frame.f_back
+            and "set_trace" in calling_frame.f_back.f_code.co_names)
+
+        if use_global_pdb and global_pdb and called_for_set_trace:
+            if hasattr(global_pdb, "botframe"):
+                # Do not stop while tracing is active (in _set_stopinfo).
+                # But skip it with instances that have not called set_trace
+                # before.
+                global_pdb.set_continue()
+            global_pdb._skip_init = True
+            return global_pdb
+
+        obj = cls.__new__(cls)
+        if called_for_set_trace:
+            kwargs.setdefault("start_filename", calling_frame.f_code.co_filename)
+            kwargs.setdefault("start_lineno", calling_frame.f_lineno)
+        obj.__init__(*args, **kwargs)
+        local.GLOBAL_PDB = obj
+        return obj
+
+
+@six.add_metaclass(PdbMeta)
 class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     DefaultConfig = DefaultConfig
@@ -204,32 +237,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.show_hidden_frames = False
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
-
-    def __new__(cls, *args, **kwargs):
-        """Reuse an existing instance with ``pdb.set_trace()``."""
-        use_global_pdb = kwargs.get("use_global_pdb", True)
-        global_pdb = getattr(local, "GLOBAL_PDB", None)
-        if use_global_pdb and global_pdb:
-            called_for_set_trace = False
-            frame = sys._getframe()
-            while frame.f_back:
-                frame = frame.f_back
-                if (frame.f_code.co_name == "set_trace"
-                        and frame.f_back
-                        and "set_trace" in frame.f_back.f_code.co_names):
-                    called_for_set_trace = True
-                    break
-            if called_for_set_trace:
-                if hasattr(global_pdb, "botframe"):
-                    # Do not stop while tracing is active (in _set_stopinfo).
-                    # But skip it with instances that have not called set_trace
-                    # before.
-                    global_pdb.set_continue()
-                global_pdb._skip_init = True
-                return global_pdb
-        ret = super(Pdb, cls).__new__(cls)
-        local.GLOBAL_PDB = ret
-        return ret
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
