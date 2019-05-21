@@ -479,7 +479,6 @@ def test_global_pdb_can_be_skipped():
         new_pdb = NewPdb(use_global_pdb=False)
         new_pdb.set_trace()
         assert pdb.local.GLOBAL_PDB is new_pdb
-        assert new_pdb.use_global_pdb is False
 
         set_trace(cleanup=False)
         assert pdb.local.GLOBAL_PDB is new_pdb

@@ -175,7 +175,7 @@ undefined = Undefined()
 class PdbMeta(type):
     def __call__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
-        use_global_pdb = kwargs.get("use_global_pdb", True)
+        use_global_pdb = kwargs.pop("use_global_pdb", True)
         global_pdb = getattr(local, "GLOBAL_PDB", None)
 
         calling_frame = sys._getframe().f_back
@@ -190,7 +190,6 @@ class PdbMeta(type):
                 # But skip it with instances that have not called set_trace
                 # before.
                 global_pdb.set_continue()
-            global_pdb._skip_init = True
             return global_pdb
 
         obj = cls.__new__(cls)
@@ -211,12 +210,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     fancycompleter = None
 
     def __init__(self, *args, **kwds):
-        # Skip initialization when being re-used (via __new__).
-        if hasattr(self, "_skip_init"):
-            del self._skip_init
-            return
-
-        self.use_global_pdb = kwds.pop("use_global_pdb", True)
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
