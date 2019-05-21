@@ -40,7 +40,7 @@ def restore_settrace():
         assert newtrace is None
 
 
-@pytest.fixture
+@pytest.fixture(autouse=sys.version_info < (3, 6))
 def tmphome(tmpdir, monkeypatch):
     """Set up HOME in a temporary directory.
 
