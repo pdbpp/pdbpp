@@ -2817,11 +2817,11 @@ def test_steps_over_set_trace():
 """)
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
+)
 def test_pdbrc_continue(tmpdir):
     """Test that interaction is skipped with continue in pdbrc."""
-    if "readrc" not in inspect.getargs(pdb.pdb.Pdb.__init__.__code__).args:
-        pytest.skip("Only with readrc support with pdb.Pdb")
-
     with tmpdir.as_cwd():
         with open(".pdbrc", "w") as f:
             f.writelines([
