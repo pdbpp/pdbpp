@@ -556,11 +556,13 @@ def test_single_question_mark():
 # f2?
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-.*File:.*test_pdb.py
+^[[31;01mFile:^[[00m           {filename}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_double_question_mark():
@@ -583,7 +585,7 @@ def test_double_question_mark():
 # f2??
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-.*File:.*test_pdb.py
+^[[31;01mFile:^[[00m           {filename}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
 .*Source:.*
@@ -591,7 +593,9 @@ def test_double_question_mark():
 .*     \"\"\"Return product of x and y\"\"\"
 .*     return x \* y
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_single_question_mark_with_existing_command(monkeypatch):
@@ -1327,7 +1331,7 @@ def test_sticky_dunder_exception():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-> .*test_pdb.py(NUM)
+> {filename}(NUM)
 
 NUM         def fn():
 NUM             def raises():
@@ -1337,7 +1341,9 @@ NUM             set_trace(.*)
 NUM  ->         raises()
 InnerTestException:
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_sticky_dunder_exception_with_highlight():
@@ -1363,7 +1369,7 @@ def test_sticky_dunder_exception_with_highlight():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-> .*test_pdb.py(NUM)
+> {filename}(NUM)
 
 <COLORNUM>         def fn():
 <COLORNUM>             def raises():
@@ -1373,7 +1379,9 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORCURLINE>  ->         raises().*
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_format_exc_for_sticky():
@@ -1439,7 +1447,7 @@ NUM                 return 40 \\+ 2
 -> return 40 \\+ 2
    5 frames hidden .*
 <CLEARSCREEN>
-> .*test_pdb.py(NUM)
+> {filename}(NUM)
 
 NUM             def returns():
 NUM  ->             return 40 \\+ 2
@@ -1447,7 +1455,9 @@ NUM  ->             return 40 \\+ 2
 # retval
 42
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_sticky_with_user_exception_does_not_clear_screen():
@@ -1532,9 +1542,9 @@ def test_exception_lineno():
 
     check(fn, """
 Traceback (most recent call last):
-.*File.*test_pdb.py.*, line NUM, in fn
+  File "{filename}", line NUM, in fn
     bar()
-.*File.*test_pdb.py.*, line NUM, in bar
+  File "{filename}", line NUM, in bar
     assert False
 AssertionError.*
 
@@ -1552,7 +1562,9 @@ NUM                 b = 2
 NUM             except AssertionError:
 NUM  ->             xpm()
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_postmortem_noargs():
@@ -1595,10 +1607,10 @@ def test_exception_through_generator():
 
     check(fn, """
 Traceback (most recent call last):
-.*test_pdb.py.*, line NUM, in fn
-.*for i in gen():
-.*test_pdb.py.*, line NUM, in gen
-.*assert False
+  File "{filename}", line NUM, in fn
+    for i in gen():
+  File "{filename}", line NUM, in gen
+    assert False
 AssertionError.*
 
 [NUM] > .*gen()
@@ -1607,7 +1619,9 @@ AssertionError.*
 [NUM] > .*fn()
 -> for i in gen():
 # c
-""")
+    """.format(
+        filename=__file__,
+    ))
 
 
 def test_py_code_source():  # noqa: F821
@@ -2573,14 +2587,17 @@ def test_continue_arg():
 [NUM] > .*fn()
 -> x = 1
    5 frames hidden .*
-# c %d
-Breakpoint NUM at .*/test_pdb.py:%d
+# c {break_lnum}
+Breakpoint NUM at {filename}:{break_lnum}
 Deleted breakpoint NUM
 [NUM] > .*fn()
 -> z = 3
    5 frames hidden .*
 # c
-""" % (line_z, line_z))
+    """.format(
+        break_lnum=line_z,
+        filename=__file__,
+    ))
 
 
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="header kwarg is 3.7+")
