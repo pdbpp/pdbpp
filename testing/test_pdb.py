@@ -16,9 +16,13 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-# make sure that we are really importing our pdb
-sys.modules.pop('pdb', None)
+# Make sure that we are really using our pdb module.
+# (I.e. without pytest's monkeypatched set_trace).
+# Do this only once though, for when this is file is copied.
+if not hasattr(sys.modules.get("pdb", None), "_ensured_our_pdb"):
+    sys.modules.pop("pdb")
 import pdb  # noqa: E402 isort:skip
+pdb._ensured_our_pdb = True
 
 
 class FakeStdin:
