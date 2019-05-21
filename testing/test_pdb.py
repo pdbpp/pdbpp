@@ -66,9 +66,9 @@ class PdbTest(pdb.Pdb):
         readrc = kwds.pop("readrc", False)
         nosigint = kwds.pop("nosigint", True)
         kwds.setdefault('Config', ConfigTest)
-        try:
+        if sys.version_info >= (3, 6):
             super(PdbTest, self).__init__(*args, readrc=readrc, **kwds)
-        except TypeError:
+        else:
             super(PdbTest, self).__init__(*args, **kwds)
         # Do not install sigint_handler in do_continue by default.
         self.nosigint = nosigint
