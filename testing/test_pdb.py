@@ -2818,7 +2818,7 @@ def test_steps_over_set_trace():
 
 
 @pytest.mark.skipif(
-    sys.version_info < (3,), "no support for exit from interaction with pdbrc"
+    sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
 )
 def test_pdbrc_continue(tmpdir):
     """Test that interaction is skipped with continue in pdbrc."""
