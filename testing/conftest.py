@@ -25,12 +25,23 @@ def term():
 # if _orig_trace and not hasattr(sys, "pypy_version_info"):
 # Fails with PyPy2 (https://travis-ci.org/antocuni/pdb/jobs/509624590)?!
 @pytest.fixture(autouse=True)
-def restore_settrace():
+def restore_settrace(monkeypatch):
     """(Re)store sys.gettrace after test run.
 
     This is required to re-enable coverage tracking.
     """
     assert sys.gettrace() is _orig_trace
+
+    orig_settrace = sys.settrace
+
+    # Wrap sys.settrace to restore original tracing function (coverage)
+    # with `sys.settrace(None)`.
+    def settrace(func):
+        if func is None:
+            orig_settrace(_orig_trace)
+        else:
+            orig_settrace(func)
+    monkeypatch.setattr("sys.settrace", settrace)
 
     yield
 
