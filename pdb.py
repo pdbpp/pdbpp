@@ -890,12 +890,31 @@ except for when using the function decorator.
     do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
 
-    def do_pp(self, arg):
-        width, height = self.get_terminal_size()
+    def do_p(self, arg):
+        """p expression
+        Print the value of the expression.
+        """
         try:
-            pprint.pprint(self._getval(arg), self.stdout, width=width)
+            val = self._getval(arg)
+        except:
+            return
+        try:
+            self.message(repr(val))
+        except:
+            exc_info = sys.exc_info()[:2]
+            self.error(traceback.format_exception_only(*exc_info)[-1].strip())
+
+    def do_pp(self, arg):
+        try:
+            val = self._getval(arg)
         except:
             pass
+        try:
+            width, height = self.get_terminal_size()
+            pprint.pprint(val, self.stdout, width=width)
+        except:
+            exc_info = sys.exc_info()[:2]
+            self.error(traceback.format_exception_only(*exc_info)[-1].strip())
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
