@@ -905,12 +905,12 @@ except for when using the function decorator.
             self.error(traceback.format_exception_only(*exc_info)[-1].strip())
 
     def do_pp(self, arg):
-        width, height = self.get_terminal_size()
         try:
             val = self._getval(arg)
         except:
             pass
         try:
+            width, height = self.get_terminal_size()
             pprint.pprint(val, self.stdout, width=width)
         except:
             exc_info = sys.exc_info()[:2]
