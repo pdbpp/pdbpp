@@ -3823,3 +3823,26 @@ NUM \t            before = pdb.local.GLOBAL_PDB
     """.format(
         line_num=fn.__code__.co_firstlineno,
     ))
+
+
+def test_error_with_pp():
+    def fn():
+        class BadRepr:
+            def __repr__(self):
+                raise Exception('repr_exc')
+
+
+        obj = BadRepr()
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# p obj
+\*\*\* Exception: repr_exc
+# pp obj
+\*\*\* Exception: repr_exc
+# c
+""")
