@@ -3831,8 +3831,7 @@ def test_error_with_pp():
             def __repr__(self):
                 raise Exception('repr_exc')
 
-
-        obj = BadRepr()
+        obj = BadRepr()  # noqa: F841
         set_trace()
 
     check(fn, r"""
@@ -3844,5 +3843,88 @@ def test_error_with_pp():
 \*\*\* Exception: repr_exc
 # pp obj
 \*\*\* Exception: repr_exc
+# c
+""")
+
+
+def test_do_source():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# source ConfigWithPygmentsAndHighlight
+\d\d     class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHigh$
+\d\d         pass
+# c
+""")
+
+
+def test_do_source_with_pygments():
+    def fn():
+        set_trace(Config=ConfigWithPygments)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+   5 frames hidden .*
+# source ConfigWithPygmentsAndHighlight
+\d\d     ^[[38;5;28;01mclass^[[39;00m ^[[38;5;21;01mConfigWithPygmentsAndHighlight^[[39;00m(ConfigWithPygments, ConfigWithHigh$
+\d\d         ^[[38;5;28;01mpass^[[39;00m
+# c
+""")  # noqa: E501
+
+
+def test_do_source_with_highlight():
+    def fn():
+        set_trace(Config=ConfigWithHighlight)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config=ConfigWithHighlight)
+   5 frames hidden .*
+# source ConfigWithPygmentsAndHighlight
+^[[36;01m\d\d^[[00m     class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHigh$
+^[[36;01m\d\d^[[00m         pass
+# c
+""")  # noqa: E501
+
+
+def test_do_source_with_pygments_and_highlight():
+    def fn():
+        set_trace(Config=ConfigWithPygmentsAndHighlight)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
+   5 frames hidden .*
+# source ConfigWithPygmentsAndHighlight
+^[[36;01m\d\d^[[00m     ^[[38;5;28;01mclass^[[39;00m ^[[38;5;21;01mConfigWithPygmentsAndHighlight^[[39;00m(ConfigWithPygments, ConfigWithHigh$
+^[[36;01m\d\d^[[00m         ^[[38;5;28;01mpass^[[39;00m
+# c
+""")  # noqa: E501
+
+
+def test_do_source_without_truncating():
+    def fn():
+        class Config(ConfigTest):
+            truncate_long_lines = False
+
+        set_trace(Config=Config)
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config=Config)
+   5 frames hidden .*
+# source ConfigWithPygmentsAndHighlight
+\d\d     class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):$
+\d\d         pass
 # c
 """)

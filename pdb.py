@@ -554,8 +554,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         src = self.try_to_decode(src)
         return highlight(src, self._lexer, self._fmt)
 
-    def format_line(self, lineno, marker, line):
-        lineno = '%4d' % lineno
+    def _format_line(self, lineno, marker, line, lineno_width):
+        lineno = ('%%%dd' % lineno_width) % lineno
         if self.config.highlight:
             lineno = Color.set(self.config.line_number_color, lineno)
         line = '%s  %2s %s' % (lineno, marker, line)
@@ -744,6 +744,8 @@ except for when using the function decorator.
         self.lastcmd = 'longlist'
         self._printlonglist()
 
+    do_ll = do_longlist
+
     def _printlonglist(self, linerange=None):
         try:
             if self.curframe.f_code.co_name == '<module>':
@@ -772,7 +774,6 @@ except for when using the function decorator.
         self._print_lines_pdbpp(lines, lineno)
 
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True):
-        exc_lineno = self.tb_lineno.get(self.curframe, None)
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
                  for line in lines]  # force tabs to 4 spaces
@@ -784,32 +785,41 @@ except for when using the function decorator.
         else:
             maxlength = max(map(len, lines))
 
+        if print_markers:
+            exc_lineno = self.tb_lineno.get(self.curframe, None)
+            if height >= 6:
+                last_marker_line = max(
+                    self.curframe.f_lineno,
+                    exc_lineno if exc_lineno else 0) - lineno
+                if last_marker_line >= 0:
+                    maxlines = last_marker_line + height * 2 // 3
+                    if len(lines) > maxlines:
+                        lines = lines[:maxlines]
+                        lines.append('...')
+
         if self.config.use_pygments:
             # Fill with spaces.  This is important when a bg color is used,
             # e.g. for highlighting the current line (via setbgcolor).
             lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
-        if height >= 6:
-            last_marker_line = max(
-                self.curframe.f_lineno,
-                exc_lineno if exc_lineno else 0) - lineno
-            if last_marker_line >= 0:
-                maxlines = last_marker_line + height * 2 // 3
-                if len(lines) > maxlines:
-                    lines = lines[:maxlines]
-                    lines.append('...')
-        for i, line in enumerate(lines):
-            marker = ''
-            if lineno == self.curframe.f_lineno and print_markers:
-                marker = '->'
-            elif lineno == exc_lineno and print_markers:
-                marker = '>>'
-            lines[i] = self.format_line(lineno, marker, line)
-            lineno += 1
-        print('\n'.join(lines), file=self.stdout)
 
-    do_ll = do_longlist
+        lineno_width = len(str(lineno + len(lines)))
+        if print_markers:
+            for i, line in enumerate(lines):
+                if lineno == self.curframe.f_lineno:
+                    marker = '->'
+                elif lineno == exc_lineno:
+                    marker = '>>'
+                else:
+                    marker = ''
+                lines[i] = self._format_line(lineno, marker, line, lineno_width)
+                lineno += 1
+        else:
+            for i, line in enumerate(lines):
+                lines[i] = self._format_line(lineno, '', line, lineno_width)
+                lineno += 1
+        print('\n'.join(lines), file=self.stdout)
 
     def _format_source_lines(self, lines):
         if not lines:
