@@ -1,5 +1,3 @@
-.. -*- restructuredtext -*-
-
 pdb++, a drop-in replacement for pdb
 ====================================
 
@@ -10,7 +8,7 @@ This module is an extension of the pdb_ module of the standard library.  It is
 meant to be fully compatible with its predecessor, yet it introduces a number
 of new features to make your debugging experience as nice as possible.
 
-.. image:: http://bitbucket.org/antocuni/pdb/raw/0c86c93cee41/screenshot.png
+.. image:: https://github.com/antocuni/pdb/blob/master/screenshot.png?raw=true
 
 ``pdb++`` features include:
 
@@ -39,7 +37,7 @@ Installation
 -------------
 
 Since ``pdb++`` is not a valid identifier for ``pip`` and ``easy_install``,
-you have to install ``pdbpp`` instead::
+the package is named ``pdbpp``::
 
     $ pip install pdbpp
 
@@ -47,13 +45,24 @@ you have to install ``pdbpp`` instead::
 
     $ easy_install pdbpp
 
+``pdb++`` is also available via `conda`_::
+
+    $ conda install -c conda-forge pdbpp
+
 Alternatively, you can just put ``pdb.py`` somewhere inside your
 ``PYTHONPATH``.
 
+.. _conda: https://anaconda.org/conda-forge/pdbpp
+
+Usage
+-----
+
 Note that the module is called ``pdb.py`` so that ``pdb++`` will automatically
-be used in all places that do ``import pdb`` (e.g., ``py.test --pdb`` will
-give you a ``pdb++`` prompt).  The old ``pdb`` module is still available by
-doing e.g. ``import pdb; pdb.pdb.set_trace()``
+be used in all places that do ``import pdb`` (e.g. ``pytest --pdb`` will
+give you a ``pdb++`` prompt).
+
+The old ``pdb`` module is still available by doing e.g. ``import pdb;
+pdb.pdb.set_trace()``.
 
 New interactive commands
 ------------------------
@@ -114,6 +123,8 @@ The following are new commands that you can use from the interative
   ``hf_unhide`` to tell pdb to ignore the hidden status (i.e., to treat hidden
   frames as normal ones), and ``hf_hide`` to hide them again.  ``hf_list``
   prints a list of hidden frames.
+  The config option ``enable_hidden_frames`` can be used to disable handling
+  of hidden frames in general.
 
 
 Smart command parsing
@@ -155,6 +166,12 @@ Note that the "smart" behavior takes place only when there is ambiguity, i.e.
 if there exists a variable with the same name as a command: in all other
 cases, everything works as usual.
 
+Regarding the ``list`` command itself, using ``list(…`` is a special case
+that gets handled as the Python builtin::
+
+    (Pdb++) list([1, 2])
+    [1, 2]
+
 Additional functions in the ``pdb`` module
 ------------------------------------------
 
@@ -185,8 +202,7 @@ pdb++.
   as ``up``, ``down`` or ``where``, unless ``hf_unhide`` is invoked.
 
 ``@pdb.break_on_setattr(attrname, condition=always)``
-
-  class decorator: break the execution of program every time the
+  class decorator: break the execution of the program every time the
   attribute ``attrname`` is set on any instance of the class. ``condition`` is
   a callable that takes the target object of the ``setattr`` and the actual value;
   by default, it breaks every time the attribute is set. E.g.::
@@ -211,6 +227,12 @@ pdb++.
       break_on_setattr('bar', condition=break_if_a)(Foo)
       b.bar = 10   # no break
       a.bar = 42   # the program breaks here
+
+  This can be used after ``pdb.set_trace()`` also::
+
+      (Pdb++) import pdb
+      (Pdb++) pdb.break_on_setattr('tree_id')(obj.__class__)
+      (Pdb++) continue
 
 
 Configuration and customization
@@ -245,10 +267,15 @@ default value:
 ``filename_color = Color.yellow``
   The color to use for file names when printing the stack entries.
 
-``current_line_color = 44``
-  The background color to use to highlight the current line; the background
-  color is set by using the ANSI escape sequence ``^[Xm`` where ``^`` is the
-  ESC character and ``X`` is the background color. 44 corresponds to "blue".
+``current_line_color = "39;49;7"``
+  The SGR parameters for the ANSI escape sequence to highlight the current
+  line.
+  This is set inside the SGR escape sequence ``\e[%sm`` where ``\e`` is the
+  ESC character and ``%s`` the given value.  See `SGR parameters`_.
+  The following means "reset all colors" (``0``), set foreground color to 18
+  (``48;5;18``), and background to ``21``.
+  The default uses the default foreground (``39``) and background (``49``)
+  colors, inversed (``7``).
 
 ``use_pygments = True``
   If pygments_ is installed and ``highlight == True``, apply syntax highlight
@@ -266,11 +293,14 @@ default value:
   It expects a dictionary that maps token types to (lightbg, darkbg) color names or
   ``None`` (default: ``None`` = use builtin colorscheme).
 
-``editor = '${EDITOR:-vi}'``
-  The command to invoke when using the ``edit`` command. By default, it uses
-  ``$EDITOR`` if set, else ``vi``.  The command must support the standard
-  notation ``COMMAND +n filename`` to open filename at line ``n``. ``emacs``
-  and ``vi`` are known to support this.
+``editor = None``
+  The command to invoke when using the ``edit`` command. By default, it uses ``$EDITOR``
+  if set, else ``vim`` or ``vi`` (if found).  If only the editor command is specified, the ``emacs`` and
+  ``vi`` notation will be used to specify the line number: ``COMMAND +n filename``. It's
+  otherwise possible to use another syntax by using the placeholders ``{filename}`` and
+  ``{lineno}``. For example with sublime text, specify ``editor = "subl
+  {filename}:{lineno}"``.
+
 
 ``truncate_long_lines = True``
   Truncate lines which exceed the terminal width.
@@ -280,16 +310,70 @@ default value:
   window is not focused.  Useful to e.g. play a sound to alert the user that
   the execution of the program stopped. It requires the wmctrl_ module.
 
-``disable_pytest_capturing = True``
-  Old versions of `py.test`_ crash when you execute ``pdb.set_trace()`` in a
+``disable_pytest_capturing = False``
+  Old versions of `pytest`_ crash when you execute ``pdb.set_trace()`` in a
   test, but the standard output is captured (i.e., without the ``-s`` option,
   which is the default behavior).  When this option is on, the stdout
   capturing is automatically disabled before showing the interactive prompt.
+
+``enable_hidden_frames = True``
+  Certain frames can be hidden by default.
+  If enabled, the commands ``hf_unhide``, ``hf_hide``, and ``hf_list`` can be
+  used to control display of them.
+
+``show_hidden_frames_count = True``
+  If ``enable_hidden_frames`` is ``True`` this controls if the number of
+  hidden frames gets displayed.
 
 ``def setup(self, pdb): pass``
   This method is called during the initialization of the ``Pdb`` class. Useful
   to do complex setup.
 
+``show_traceback_on_error = True``
+  Display tracebacks for errors via ``Pdb.error``, that come from
+  ``Pdb.default`` (i.e. the execution of an unrecognized pdb command),
+  and are not a direct cause of the expression itself (e.g. ``NameError``
+  with a command like ``doesnotexist``).
+
+  With this option disabled only ``*** exception string`` gets printed, which
+  often misses useful context.
+
+``show_traceback_on_error_limit = None``
+  This option sets the limit to be used with ``traceback.format_exception``,
+  when ``show_traceback_on_error`` is enabled.
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
-.. _`py.test`: http://pytest.org
+.. _`pytest`: https://pytest.org/
+.. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
+
+
+Coding guidelines
+-----------------
+
+``pdb++`` is developed using Test Driven Development, and we try to keep test
+coverage high.
+
+As a general rule, every commit should come with its own test. If it's a new
+feature, it should come with one or many tests which excercise it. If it's a
+bug fix, the test should **fail before the fix**, and pass after.
+
+The goal is to make refactoring easier in the future: if you wonder why a
+certain line of code does something, in principle it should be possible to
+comment it out and see which tests fail.
+
+In exceptional cases, the test might be too hard or impossible to write: in
+that cases it is fine to do a commmit without a test, but you should explain
+very precisely in the commit message why it is hard to write a test and how to
+reproduce the buggy behaviour by hand.
+
+It is fine NOT to write a test in the following cases:
+
+  - typos, documentation, and in general any non-coding commit
+
+  - code refactorings which do not add any feature
+
+  - commits which fix an already failing test
+
+  - commits to silence warnings
+
+  - purely cosmetic changes, such as change the color of the output

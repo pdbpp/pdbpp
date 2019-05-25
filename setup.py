@@ -1,8 +1,7 @@
 from __future__ import print_function
 
-import sys
 import os.path
-from setuptools import setup, find_packages
+from setuptools import setup
 from setuptools.command.install import install
 from distutils.core import Command
 import io
@@ -49,23 +48,13 @@ class install_pth_hack(Command):
                 outfp.write(infp.read())
 
 
-install_requires = [
-    "fancycompleter>=0.2",
-    "wmctrl",
-    "pygments",
-]
-
-if sys.version_info < (2, 7):
-    install_requires.append("ordereddict")
-
-
 setup(
     name='pdbpp',
     use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb', '_pdbpp_path_hack.pdb'],
-    url='http://bitbucket.org/antocuni/pdb',
+    url='http://github.com/antocuni/pdb',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
     description='pdb++, a drop-in replacement for pdb',
@@ -78,19 +67,32 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python',
         'Topic :: Utilities',
+        'Topic :: Software Development :: Debuggers',
     ],
-    install_requires=install_requires,
-    extras_require={'funcsigs': ["funcsigs"]},
+    install_requires=[
+        "fancycompleter>=0.8",
+        "wmctrl",
+        "pygments",
+        "six",
+    ],
+    extras_require={
+        'funcsigs': ["funcsigs"],
+        'testing': [
+            'funcsigs',
+            'pytest',
+        ],
+    },
     setup_requires=['setuptools_scm'],
     cmdclass={
         'install': install_with_pth,

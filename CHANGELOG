@@ -1,7 +1,220 @@
 CHANGELOG
 =========
 
+Changes between 0.9.15 and 0.10.0
+=================================
+
+- Changes
+  - config: improve current_line_color: default fg/bg/inversed (#188)
+  - Show tracebacks for errors with interactively run code (#185)
+
+    This adds new config settings "show_traceback_on_error" (default: True),
+    and "show_traceback_on_error_limit" (default: None).
+
+- Fixes
+
+  - Fix get_stack for non-last index (#192)
+
+    This fixes a pretty nasty bug, which was triggered e.g. with the "next"
+    command running into a deeper exception, and the internal stack getting
+    confused (if hidden frames are involved).
+
+- Misc:
+
+  - doc: document enable_hidden_frames, show_hidden_frames_count (#191)
+  - Make break_on_setattr not rely on @hideframe (#190)
+  - tests: cover sticky mode, small improvements (#177)
+  - doc: correct default value for disable_pytest_capturing
+
+Changes between 0.9.14 and 0.9.15
+=================================
+
+- Fixes
+
+  - Fix completion after debug command (#183)
+
+- Misc
+
+  - tests: fix test_syntaxerror_in_command for Python 3.7.3 (#182)
+  - setup.py: cleanup, testing extra (#181)
+  - test_help: fix restoring of sys.stdout (#180)
+  - tests: move pytest config to setup.cfg, use --pdbcls=pdb:pdb.Pdb (#179)
+  - tests: fix put tests on py27 with user pdbrc (#178)
+  - Improve tests (#176)
+  - Provide message/error methods for py27 (#175)
+
+Changes between 0.9.13 and 0.9.14
+=================================
+
+- Fixes
+
+  - Fix using the debug command multiple times (#174)
+  - Fix backport for bpo-31078 (keeping use_rawinput) (#169)
+
+- Features
+
+  - new config attribute: default_pdb_kwargs, which can be used to pass
+    default keyword arguments for the Pdb class (#167, #173)
+    This can be used to e.g. pass ``skip=["importlib._bootstrap_external"]``.
+
+- Misc
+
+  - test_python_m_pdb_uses_pdbpp: set HOME to tmpdir (#172)
+  - interaction: expand expression to call _cmdloop/cmdloop (#171)
+  - tests: restore sys.gettrace after test, for more coverage (#170)
+
+Changes between 0.9.12 and 0.9.13
+=================================
+
+- Fixes
+
+  - Fix crash in is_skipped_module with no module name (#163)
+
+- Features
+
+  - Optimize get_stack for show_hidden_frames (#162)
+  - Do not consider the frame with set_trace() as hidden (#161)
+
+- Misc
+
+  - DefaultConfig: make it a new-style class (#166)
+  - Setup coverage reporting (#164)
+
+Changes between 0.9.11 and 0.9.12
+=================================
+
+- Fixes
+
+  - Fix forget(): check self.lineno, not GLOBAL_PDB.lineno (#160)
+  - do_debug: use func.__globals__ with rebind_globals (#159)
+  - Use super() (#145)
+
+- Misc
+
+  - tests: set_trace: allow to pass in Pdb class (#158)
+
+Changes between 0.9.8 and 0.9.11
+================================
+
+- Fixes
+
+  - Make wrapper compatible with python2's sys.stdout (#155)
+    This was broken since 0.9.4/0.9.5.
+
+NOTE: 0.9.9 and 0.9.10 were not released to PyPI due to Travis CI
+      misconfiguration.
+
+Changes between 0.9.7 and 0.9.8
+===============================
+
+- Fixes
+
+  - interaction: fix ValueError ("signal only works in main thread") (#143)
+  - rebind_globals: update globals() (#151)
+  - Fix do_debug for py38 (#150)
+
+- Misc
+
+  - do_debug: use PdbppWithConfig class (#147)
+  - tests: harden test_debug_with_overridden_continue (#146)
+  - tests: add test_signal_in_nonmain_thread_with_continue
+  - tests: fail if there is anything on stderr
+  - ci: Travis: add Python 3.8-dev
+
+Changes between 0.9.6 and 0.9.7
+===============================
+
+- Fixes
+
+  - do_debug: fix setting of use_rawinput (#141)
+
+Changes between 0.9.5 and 0.9.6
+===============================
+
+- Fixes
+
+  - do_debug: handle SyntaxError (#139)
+  - parseline: handle f-strings with py36 (#138)
+
+Changes between 0.9.3 and 0.9.5
+===============================
+
+- Fixes
+
+  - Fix ``python -m pdb …`` (#135)
+  - Fix "TypeError: write() argument must be str, not bytes" with non-utf8
+    terminal encodings (#63)
+  - Handle pdb.Pdb._previous_sigint_handler with Python 3.5.3+ (#87)
+
+- Misc
+
+  - Use ``shutil.get_terminal_size`` if available (#125)
+  - Slightly improve loading of pdb from stdlib (#133)
+
+NOTE: 0.9.4 was not released to PyPI due to Travis CI misconfiguration.
+
+Changes between 0.9.2 and 0.9.3
+===============================
+
+- Features
+
+  - Improve sticky_by_default: don't clear screen the first time (#83)
+  - Handle header kwarg added with Python 3.7 in pdb.set_trace (#115)
+  - config: allow to force use_terminal256formatter (#112)
+  - Add heuristic for which 'list' is meant (#82)
+
+- Fixes
+
+  - Skip/step over ``pdb.set_trace()`` (#119)
+  - Handle completions from original pdb (#116)
+  - Handle set_trace being invoked during completion (#89)
+  - _pdbpp_path_hack/pdb.py: fix ResourceWarning (#97)
+  - Fix "python -m pdb" (#108)
+  - setup/interaction: use/handle return value from pdb.Pdb.setup (#107)
+  - interaction: use _cmdloop if available (#106)
+  - Fixed virtualenv sys.path shuffling issue (#85)
+  - set_trace: do not delete pdb.curframe (#103)
+  - forget: only call pdb.Pdb.forget with GLOBAL_PDB once
+
+- Tests
+
+  - Travis: test pypy3
+  - Travis/tox: add py37, remove nightly
+  - tests: PdbTest: use nosigint=True (#117)
+  - Add test_debug_with_overridden_continue (#113)
+  - tests: re-enable/fix test_utf8 (#110)
+  - tests: fix conditional skipping with test_pdbrc_continue
+  - tests: runpdb: print output on Exceptions
+  - pytest.ini: addopts: -ra
+  - tests: handle pytest's ``--assert=plain`` mode
+  - tests: harden check: match all lines
+  - tests: fix flake8 errors and invalid-escape DeprecationWarnings
+
+- Misc
+
+  - setup.py: add trove classifier for "… :: Debuggers"
+  - doc: separate usage section (#105)
+  - Format code: flake8 clean, using autopep8 mainly (#118)
+  - Add wheels support
+  - README: grammar and example for break_on_setattr (#99)
+  - README: fix formatting
+  - Simplify the code, since we no longer support python 2.6
+
+Changes between 0.9.1 and 0.9.2
+===============================
+
+- Add ``LICENSE.txt``.
+- Improved import time for `__version__`.
+
+Changes between 0.8.2 and 0.9.1
+===============================
+
 - Install ``ordereddict`` package only on Python versions older than 2.7.
+
+- Python 3 support
+
+- Improved Windows support
+
 
 Changes between 0.8.1 and 0.8.2
 ===============================

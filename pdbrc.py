@@ -4,9 +4,8 @@ This is an example configuration file for pdb++.
 Actually, it is what the author uses daily :-). Put it into ~/.pdbrc.py to use
 it.
 """
-
-import readline
 import pdb
+
 
 class Config(pdb.DefaultConfig):
 
@@ -14,9 +13,10 @@ class Config(pdb.DefaultConfig):
     stdin_paste = 'epaste'
     filename_color = pdb.Color.lightgray
     use_terminal256formatter = False
-    #exec_if_unfocused = "play ~/sounds/dialtone.wav 2> /dev/null &"
+    # exec_if_unfocused = "play ~/sounds/dialtone.wav 2> /dev/null &"
 
     def __init__(self):
+        # import readline
         # readline.parse_and_bind('set convert-meta on')
         # readline.parse_and_bind('Meta-/: complete')
 

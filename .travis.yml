@@ -1,0 +1,67 @@
+dist: xenial
+language: python
+cache: false
+
+env:
+  global:
+    - PYTEST_ADDOPTS=-vv
+
+stages:
+  - name: test
+    if: tag IS NOT present
+  - name: release
+    if: tag IS present
+
+jobs:
+  include:
+    - python: 'pypy'
+      env: TOXENV=pypy-coverage
+    - python: 'pypy3'
+      env: TOXENV=pypy3-coverage
+    - python: '3.7'
+      env: TOXENV=py37-coverage
+    - python: '3.6'
+      env: TOXENV=py36-coverage
+    - python: '3.5'
+      env: TOXENV=py35-coverage
+    - python: '3.4'
+      env: TOXENV=py34-coverage
+    - python: '2.7'
+      env: TOXENV=py27-coverage
+    - python: '3.8-dev'
+      env: TOXENV=py38-coverage
+
+    - python: '3.7'
+      env: TOXENV=checkqa
+
+    - stage: release
+      python: '3.7'
+      script: skip
+      install: skip
+      deploy:
+        provider: pypi
+        user: antocuni
+        password:
+          secure: EE0ETWh9RqPr8yF0GeoXYg8zTVaZj23zpIFyHaWshMnnqg6s42QARB4CGrBiXwqjqwL262JV+PruSynOkIpsi8p9r4lju51EwjHWOEmD5qd+2SzAD+XinQD074lA08nayKohk3qVS/ebWKPrVH0lJT7bIZvyN8W6UDhkw6/3P91ixxn7tPgDX0FJpRQpbyc8TXP25GXYMpOyANIV/qtRXHylGtS7aeAJMcVD5HlE+EEXxMQhF5MK+mvmTXuC+WGAtM36Vm48kyLVfalvQEGWY/v1UDq7dKua/EZleoLxSIJ4c6XKnx6zIoYNyKJeJiaYuutb6TYTYKQ18ZVU6jaAKE5wu/9szMIw+XMtud1J9W7Co/UgILR6AZKq/OKd7Kl1eQlF/OU1lXnU5q9wseunxkjVaA/W0tnmzHi95KKV0FebXBYPqA/ybk69tc9nsIBwxH4sNrUv5DtA7WX43WhGxN91nNhfbW3CsTklwbqrrHRkbCB2vCP+JVkQ1ctOwX7XPv+ghLqhetFsvNGNEEk/h9Vo3hiR0iq1g7MMXgqASZ/QSrSvxVbBSdB+hLt5QaS4FIRuHDaMNCD8bH3VumneLgsdaKlg0iELUvC7JyqcdRYQowZbOSlNKwSH6ys3TGyQ5DWnrGWp3Hb1YfU27cweuApZZsg1O3xEC5AMTP1FJbY=
+        on:
+          tags: true
+          distributions: 'sdist bdist_wheel'
+          repo: antocuni/pdb
+
+install:
+  - pip install tox
+
+script:
+  - tox
+
+after_script:
+  - |
+    if [[ "$TOXENV" != checkqa ]]; then
+      # Unset TRAVIS_CMD to work around https://github.com/codecov/codecov-bash/issues/174.
+      env -u TRAVIS_CMD bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n "${TRAVIS_PYTHON_VERSION}"
+    fi
+
+branches:
+  only:
+    - master
+    - /^\d+\.\d+(\.\d+)?(-\S*)?$/
