@@ -3168,6 +3168,32 @@ True
 """ % lineno)
 
 
+@pytest.mark.skipif(sys.version_info < (3, ), reason="py2: no completion for break")
+def test_completion_removes_tab_from_fancycompleter(monkeypatch_readline):
+    def fn():
+        def check_completions():
+            # Patch readline to return expected results for "b ".
+            monkeypatch_readline("b ", 2, 2)
+            comps = get_completions("")
+            assert "\t" not in comps
+            assert "inspect" in comps
+            return True
+
+        set_trace()
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()
+.*
+   5 frames hidden .*
+# check_completions()
+True
+# c
+""")
+
+
 def test_complete_with_bang(monkeypatch_readline):
     """Test that completion works after "!".
 

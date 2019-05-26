@@ -467,11 +467,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             completer = Completer(mydict)
             completions = self._get_all_completions(completer.complete, text)
 
-            # Remove "\t" from fancycompleter if there are pdb completions.
-            if len(completions) > 1 and completions[0] == "\t":
-                if len(self._completions):
-                    completions.pop(0)
-            self._completions.extend(completions)
+            # Ignore "\t" as only completion from fancycompleter, if there are
+            # pdb completions.
+            if completions and (completions != ["\t"] or not len(self._completions)):
+                self._completions.extend(completions)
 
             self._filter_completions(text)
 
