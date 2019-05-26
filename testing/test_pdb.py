@@ -463,6 +463,103 @@ new_set_trace
 """)
 
 
+def test_global_pdb_via_new_class_in_init_method():
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+
+        class PdbLikePytest(object):
+            @classmethod
+            def init_pdb(cls):
+
+                class NewPdb(PdbTest, pdb.Pdb):
+                    def set_trace(self, frame):
+                        print("new_set_trace")
+                        super(NewPdb, self).set_trace(frame)
+
+                return NewPdb()
+
+            @classmethod
+            def set_trace(cls, *args, **kwargs):
+                frame = sys._getframe().f_back
+                pdb_ = cls.init_pdb(*args, **kwargs)
+                return pdb_.set_trace(frame)
+
+        PdbLikePytest.set_trace()
+        second = pdb.local.GLOBAL_PDB
+        assert first != second
+
+        PdbLikePytest.set_trace()
+        third = pdb.local.GLOBAL_PDB
+        assert third == second
+
+    check(fn, """
+[NUM] > .*fn()
+-> first = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] > .*fn()
+-> second = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] > .*fn()
+-> third = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+""")
+
+
+def test_global_pdb_via_existing_class_in_init_method():
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, frame):
+                print("new_set_trace")
+                super(NewPdb, self).set_trace(frame)
+
+        class PdbViaClassmethod(object):
+            @classmethod
+            def init_pdb(cls):
+                return NewPdb()
+
+            @classmethod
+            def set_trace(cls, *args, **kwargs):
+                frame = sys._getframe().f_back
+                pdb_ = cls.init_pdb(*args, **kwargs)
+                return pdb_.set_trace(frame)
+
+        PdbViaClassmethod.set_trace()
+        second = pdb.local.GLOBAL_PDB
+        assert first != second
+
+        PdbViaClassmethod.set_trace()
+        third = pdb.local.GLOBAL_PDB
+        assert third == second
+
+    check(fn, """
+[NUM] > .*fn()
+-> first = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] > .*fn()
+-> second = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+new_set_trace
+[NUM] > .*fn()
+-> third = pdb.local.GLOBAL_PDB
+   5 frames hidden .*
+# c
+""")
+
+
 def test_global_pdb_can_be_skipped():
     def fn():
         set_trace()

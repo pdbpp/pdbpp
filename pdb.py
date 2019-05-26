@@ -179,13 +179,18 @@ class PdbMeta(type):
         in_interaction = global_pdb and global_pdb._in_interaction
         use_global_pdb = kwargs.pop("use_global_pdb", not in_interaction)
 
-        calling_frame = sys._getframe().f_back
-        called_for_set_trace = (
-            calling_frame.f_code.co_name == "set_trace"
-            and calling_frame.f_back
-            and "set_trace" in calling_frame.f_back.f_code.co_names)
+        frame = sys._getframe().f_back
+        called_for_set_trace = False
+        while frame:
+            if (frame.f_code.co_name == "set_trace"
+                    and frame.f_back
+                    and "set_trace" in frame.f_back.f_code.co_names):
+                called_for_set_trace = frame
+                break
+            frame = frame.f_back
 
-        if use_global_pdb and global_pdb and called_for_set_trace:
+        same_class = global_pdb and cls.consider_as_same_class(global_pdb, cls)
+        if use_global_pdb and same_class and called_for_set_trace:
             if hasattr(global_pdb, "botframe"):
                 # Do not stop while tracing is active (in _set_stopinfo).
                 # But skip it with instances that have not called set_trace
@@ -195,14 +200,22 @@ class PdbMeta(type):
 
         obj = cls.__new__(cls)
         if called_for_set_trace:
-            kwargs.setdefault("start_filename", calling_frame.f_code.co_filename)
-            kwargs.setdefault("start_lineno", calling_frame.f_lineno)
+            kwargs.setdefault("start_filename", called_for_set_trace.f_code.co_filename)
+            kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 
         set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
         obj.__init__(*args, **kwargs)
         if set_global_pdb:
             local.GLOBAL_PDB = obj
         return obj
+
+    @classmethod
+    def consider_as_same_class(cls, obj, C):
+        if isinstance(obj, C):
+            return True
+        if sys.version_info < (3, 3):
+            return inspect.getsourcelines(obj.__class__) == inspect.getsourcelines(C)
+        return C.__qualname__ == obj.__class__.__qualname__
 
 
 @six.add_metaclass(PdbMeta)
