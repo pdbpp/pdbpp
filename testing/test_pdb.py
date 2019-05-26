@@ -1314,6 +1314,25 @@ NUM  ->         return a
 """)
 
 
+def test_longlist_with_highlight():
+    def fn():
+        a = 1
+        set_trace(Config=ConfigWithHighlight)
+        return a
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# ll
+<COLORNUM>         def fn():
+<COLORNUM>             a = 1
+<COLORNUM>             set_trace(Config=ConfigWithHighlight)
+^[[39;49;7m^[[36;01;39;49;7m1321^[[00;39;49;7m  ->         return a \s+^[[00m
+# c
+""")
+
+
 def test_display():
     def fn():
         a = 1

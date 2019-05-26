@@ -811,9 +811,6 @@ except for when using the function decorator.
                         lines.append('...')
 
         if self.config.use_pygments:
-            # Fill with spaces.  This is important when a bg color is used,
-            # e.g. for highlighting the current line (via setbgcolor).
-            lines = [line.ljust(maxlength) for line in lines]
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
 
@@ -822,6 +819,9 @@ except for when using the function decorator.
             for i, line in enumerate(lines):
                 if lineno == self.curframe.f_lineno:
                     marker = '->'
+                    if self.config.highlight:
+                        # Fill with spaces.  This is important for setbgcolor.
+                        line = line.ljust(maxlength)
                 elif lineno == exc_lineno:
                     marker = '>>'
                 else:
