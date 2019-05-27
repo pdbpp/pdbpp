@@ -3088,7 +3088,7 @@ def test_set_trace_in_completion(monkeypatch_readline):
         obj = CompleteMe()
 
         def check_completions():
-            monkeypatch_readline("obj.", 4, 4)
+            monkeypatch_readline("obj.", 0, 4)
             comps = get_completions("obj.")
             assert obj.attr_called == 1, "attr was called"
 
@@ -3118,7 +3118,7 @@ def test_completes_from_pdb(monkeypatch_readline):
 
         def check_completions():
             # Patch readline to return expected results for "wher".
-            monkeypatch_readline("wher", 4, 4)
+            monkeypatch_readline("wher", 0, 4)
             assert get_completions("wher") == ["where"]
 
             if sys.version_info > (3, ):
@@ -3204,11 +3204,11 @@ def test_complete_with_bang(monkeypatch_readline):
 
         def check_completions():
             # Patch readline to return expected results for "!a_va".
-            monkeypatch_readline("!a_va", 4, 4)
+            monkeypatch_readline("!a_va", 0, 5)
             assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
             # Patch readline to return expected results for "list(a_va".
-            monkeypatch_readline("list(a_va", 8, 8)
+            monkeypatch_readline("list(a_va", 5, 9)
             assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
             return True
 
@@ -3234,7 +3234,7 @@ def test_completer_after_debug(monkeypatch_readline):
 
             def check_completions_inner():
                 # Patch readline to return expected results for "myin".
-                monkeypatch_readline("myin", 4, 4)
+                monkeypatch_readline("myin", 0, 4)
                 assert "myinnervar" in get_completions("myin")
                 return True
 
@@ -3242,7 +3242,7 @@ def test_completer_after_debug(monkeypatch_readline):
 
         def check_completions():
             # Patch readline to return expected results for "myva".
-            monkeypatch_readline("myva", 4, 4)
+            monkeypatch_readline("myva", 0, 4)
             assert "myvar" in get_completions("myva")
             return True
 

@@ -468,8 +468,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             completions = self._get_all_completions(completer.complete, text)
 
             # Ignore "\t" as only completion from fancycompleter, if there are
-            # pdb completions.
+            # pdb completions, and remove duplicate completions.
             if completions and (completions != ["\t"] or not len(self._completions)):
+                RE_REMOVE_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
+                clean_fancy_completions = set([
+                    RE_REMOVE_ESCAPE_SEQS.sub("", x) for x in completions
+                ])
+                self._completions = [
+                    x for x in self._completions
+                    if x not in clean_fancy_completions
+                ]
                 self._completions.extend(completions)
 
             self._filter_completions(text)
