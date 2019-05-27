@@ -81,7 +81,7 @@ setup(
         'Topic :: Software Development :: Debuggers',
     ],
     install_requires=[
-        "fancycompleter>=0.8",
+        "fancycompleter @ git+https://github.com/pdbpp/fancycompleter@master#egg=fancycompleter",  # noqa: E501
         "wmctrl",
         "pygments",
         "six",

@@ -25,6 +25,8 @@ if not hasattr(sys.modules.get("pdb", None), "_ensured_our_pdb"):
 import pdb  # noqa: E402 isort:skip
 pdb._ensured_our_pdb = True
 
+pytest_plugins = ["pytester"]
+
 
 class FakeStdin:
     def __init__(self, lines):
@@ -3192,6 +3194,45 @@ def test_completion_removes_tab_from_fancycompleter(monkeypatch_readline):
 True
 # c
 """)
+
+
+def test_integration(testdir, tmphome):
+    """Integration test."""
+    import sys
+
+    f = tmphome.ensure("test_file.py")
+    f.write("print('before'); __import__('pdb').set_trace(); print('after')")
+
+    import os
+    assert os.getcwd() == tmphome
+
+    child = testdir.spawn(sys.executable + " " + str(f), expect_timeout=1)
+
+    # NOTE: b'\x1b[?12l\x1b[?25h' comes via pyrepl.
+    pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
+    child.expect_exact(pdbpp_prompt)
+
+    # Completes help as unique (coming from pdb and fancycompleter).
+    child.send(b"hel\t")
+    child.expect_exact(b"\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
+    child.sendline("")
+    child.expect_exact("\r\nDocumented commands")
+    child.expect_exact(pdbpp_prompt)
+
+    # Completes breakpoints via pdb, should not contain "\t" from
+    # fancycompleter.
+    if sys.version_info >= (3, 3):
+        child.send(b"b \t")
+        child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:\x1b[?12l\x1b[?25h')
+        child.sendline("")
+        child.expect_exact(
+            b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
+            b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
+        )
+
+    child.sendline("c")
+    rest = child.read()
+    assert rest == b'\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>'
 
 
 def test_complete_with_bang(monkeypatch_readline):
