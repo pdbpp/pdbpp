@@ -51,14 +51,25 @@ def restore_settrace(monkeypatch):
         assert newtrace is None
 
 
+@pytest.fixture(scope="session")
+def _tmphome_path(tmpdir_factory):
+    return tmpdir_factory.mktemp("tmphome")
+
+
 @pytest.fixture(autouse=sys.version_info < (3, 6))
-def tmphome(tmpdir, monkeypatch):
+def tmphome(request, monkeypatch):
     """Set up HOME in a temporary directory.
 
     This ignores any real ~/.pdbrc.py then, and seems to be
     required also with linecache on py27, where it would read contents from
     ~/.pdbrc?!.
     """
+    # Use tmpdir from testdir, if it is used.
+    if "testdir" in request.fixturenames:
+        tmpdir = request.getfixturevalue("testdir").tmpdir
+    else:
+        tmpdir = request.getfixturevalue("_tmphome_path")
+
     monkeypatch.setenv("HOME", str(tmpdir))
     monkeypatch.setenv("USERPROFILE", str(tmpdir))
 
