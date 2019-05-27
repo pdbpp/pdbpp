@@ -1330,7 +1330,7 @@ def test_longlist_with_highlight():
 <COLORNUM>             set_trace(Config=ConfigWithHighlight)
 ^[[39;49;7m^[[36;01;39;49;7m1321^[[00;39;49;7m  ->         return a                                                       ^[[00m
 # c
-""")
+""")  # noqa: E501
 
 
 def test_display():
