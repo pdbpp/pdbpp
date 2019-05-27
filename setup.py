@@ -61,7 +61,6 @@ setup(
     url='https://github.com/pdbpp/pdbpp',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
-    description='pdb++, a drop-in replacement for pdb (the Python debugger)',
     long_description=long_description,
     keywords='pdb debugger tab color completion',
     classifiers=[
