@@ -1328,7 +1328,7 @@ def test_longlist_with_highlight():
 <COLORNUM>         def fn():
 <COLORNUM>             a = 1
 <COLORNUM>             set_trace(Config=ConfigWithHighlight)
-^[[39;49;7m^[[36;01;39;49;7m1321^[[00;39;49;7m  ->         return a \s+^[[00m
+^[[39;49;7m^[[36;01;39;49;7m1321^[[00;39;49;7m  ->         return a                                                       ^[[00m
 # c
 """)
 
