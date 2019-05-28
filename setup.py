@@ -53,7 +53,7 @@ class install_pth_hack(Command):
 setup(
     name='pdbpp',
     setup_requires='setupmeta',
-    versioning='devcommit',
+    versioning='dev',
     maintainer='Daniel Hahler',
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',

@@ -27,9 +27,8 @@ import fancycompleter
 import six
 from fancycompleter import Color, Completer, ConfigurableClass
 
-__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
-__url__ = 'http://github.com/antocuni/pdb'
-__version__ = fancycompleter.LazyVersion('pdbpp')
+__url__ = 'https://github.com/pdbpp/pdbpp'
+__version__ = '0.10.0'  # managed by setupmeta ("python setup.py version …")
 
 try:
     from inspect import signature  # Python >= 3.3
