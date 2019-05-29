@@ -3508,9 +3508,18 @@ def test_python_m_pdb_usage():
 
 def test_python_m_pdb_uses_pdbpp(tmphome):
     import subprocess
+    import textwrap
 
     f = tmphome.ensure("test.py")
-    f.write("import os\n__import__('pdb').set_trace()")
+    f.write(textwrap.dedent("""
+        import inspect
+        import os
+        import pdb
+
+        fname = os.path.basename(inspect.getfile(pdb.Pdb))
+        assert fname == 'pdbpp.py', fname
+        pdb.set_trace()
+    """))
 
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb", str(f)],
