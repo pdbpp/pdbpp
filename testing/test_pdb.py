@@ -3563,11 +3563,20 @@ def test_python_m_pdb_usage():
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmphome):
     import subprocess
+    import textwrap
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
     f = tmphome.ensure("test.py")
-    f.write("import os\n__import__('pdb').set_trace()")
+    f.write(textwrap.dedent("""
+        import inspect
+        import os
+        import pdb
+
+        fname = os.path.basename(inspect.getfile(pdb.Pdb))
+        assert fname == 'pdbpp.py', fname
+        pdb.set_trace()
+    """))
 
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb", str(f)],
