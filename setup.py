@@ -55,7 +55,7 @@ setup(
     use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
-    py_modules=['pdb', '_pdbpp_path_hack.pdb'],
+    py_modules=['pdbpp', '_pdbpp_path_hack.pdb'],
     url='http://github.com/antocuni/pdb',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],

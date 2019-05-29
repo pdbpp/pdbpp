@@ -2,7 +2,7 @@
 import os
 
 if int(os.environ.get('PDBPP_HIJACK_PDB', 1)):
-    pdb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pdb.py')
+    pdb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pdbpp.py')
 else:
     # Use original pdb.
     import code  # arbitrary module which stays in the same dir as pdb
