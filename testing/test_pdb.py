@@ -3170,6 +3170,30 @@ True
 """ % lineno)
 
 
+def test_completion_uses_tab_from_fancycompleter(monkeypatch_readline):
+    """Test that pdb's original completion is used."""
+    def fn():
+        def check_completions():
+            # Patch readline to return expected results for "C.f()".
+            monkeypatch_readline("C.f()", 5, 5)
+            assert get_completions("") == ["\t"]
+            return True
+
+        set_trace()
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()->None
+.*
+   5 frames hidden .*
+# check_completions()
+True
+# c
+""")
+
+
 def test_complete_removes_duplicates_with_coloring(
     monkeypatch_readline, readline_param
 ):
