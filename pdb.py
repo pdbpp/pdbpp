@@ -195,7 +195,11 @@ class PdbMeta(type):
                 # Do not stop while tracing is active (in _set_stopinfo).
                 # But skip it with instances that have not called set_trace
                 # before.
+                # Excplicitly unset tracing function always (with breakpoints).
+                sys.settrace(None)
                 global_pdb.set_continue()
+                global_pdb._set_trace_use_next = True
+
             return global_pdb
 
         obj = cls.__new__(cls)
@@ -1427,6 +1431,15 @@ except for when using the function decorator.
         self.stdout = old_stdout
         sys.stdout.write(text)
         self._put(text)
+
+    def set_step(self):
+        """Use set_next() via set_trace() when re-using Pdb instance.
+
+        But call set_step() before still for handling of frame_returning."""
+        super(Pdb, self).set_step()
+        if hasattr(self, "_set_trace_use_next"):
+            del self._set_trace_use_next
+            self.set_next(self._via_set_trace_frame)
 
     def set_trace(self, frame=None):
         """Remember starting frame.
