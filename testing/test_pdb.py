@@ -3004,6 +3004,59 @@ def test_steps_over_set_trace():
 """)
 
 
+def test_break_after_set_trace():
+    def fn():
+        set_trace()
+        print(1)
+        print(2)
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+[NUM] > .*fn()
+-> print(1)
+   5 frames hidden .*
+# break {lineno}
+Breakpoint . at .*:{lineno}
+# c
+1
+[NUM] > .*fn()
+-> print(2)
+   5 frames hidden .*
+# import pdb; pdb.local.GLOBAL_PDB.clear_all_breaks()
+# c
+2
+""".format(lineno=lineno + 3))
+
+
+def test_break_with_inner_set_trace():
+    def fn():
+        def inner():
+            set_trace(cleanup=False)
+
+        set_trace()
+        inner()
+        print(1)
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+[NUM] > .*fn()
+-> inner()
+   5 frames hidden .*
+# break {lineno}
+Breakpoint . at .*:{lineno}
+# c
+--Return--
+[NUM] > .*inner()->None
+-> set_trace(cleanup=False)
+   5 frames hidden .*
+# import pdb; pdb.local.GLOBAL_PDB.clear_all_breaks()
+# c
+1
+""".format(lineno=lineno + 8))
+
+
 @pytest.mark.skipif(
     sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
 )
