@@ -3760,6 +3760,32 @@ foo=42
 """)
 
 
+def test_locals_with_list_comprehension():
+    def fn():
+        mylocal = 1  # noqa: F841
+        set_trace()
+        print(mylocal)
+
+    check(fn, """
+[NUM] > .*fn()
+-> print(mylocal)
+   5 frames hidden .*
+# mylocal
+1
+# [x for x in str(mylocal)]
+['1']
+# [mylocal for x in range(1)]
+[1]
+# mylocal = 42
+# [x for x in str(mylocal)]
+['4', '2']
+# [mylocal for x in range(1)]
+[42]
+# c
+42
+""")
+
+
 def test_get_editor_cmd(monkeypatch):
     _pdb = PdbTest()
 
