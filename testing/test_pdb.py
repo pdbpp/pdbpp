@@ -7,13 +7,19 @@ import re
 import sys
 import traceback
 from io import BytesIO
+
+import py
+import pytest
+
 try:
     from shlex import quote
 except ImportError:
     from pipes import quote
 
-import py
-import pytest
+try:
+    import colorama
+except ImportError:
+    colorama = None
 
 try:
     from itertools import zip_longest
@@ -392,14 +398,12 @@ def test_config_default_color_support():
     assert pdb.DefaultConfig.use_pygments is None
 
     if sys.platform == 'win32':
-        try:
-            import colorama  # noqa: F401
-        except ImportError:
-            assert p.config.highlight is False
-            assert p.config.use_pygments is False
-        else:
+        if colorama:
             assert p.config.highlight is True
             assert p.config.use_pygments is True
+        else:
+            assert p.config.highlight is False
+            assert p.config.use_pygments is False
     else:
         assert p.config.highlight is True
         assert p.config.use_pygments is True
