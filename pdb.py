@@ -258,7 +258,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.show_hidden_frames = False
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
-        self._setup_color(self.stdout)
+        self._setup_color_stream(self.stdout)
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -269,13 +269,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         return f
 
-    def _setup_color(self, stream):
-        if os.name != 'nt':
-            supports_color = True
-        try:
-            import colorama
-            supports_color = True
-        except ImportError:
+    def _setup_color_stream(self, stream):
+        if os.name == 'nt':
+            try:
+                import colorama
+                supports_color = True
+            except ImportError:
+                supports_color = False
+        else:
             supports_color = True
 
         # Setup highlight/use_pygments for detected color support.
@@ -285,7 +286,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             if self.config.use_pygments is None:
                 self.config.use_pygments = supports_color
 
-        if os.name == 'nt':
+        if os.name == 'nt' and supports_color:
             if self.config.highlight or self.config.use_pygments:
                 stream = colorama.AnsiToWin32(stream).stream
         return stream
