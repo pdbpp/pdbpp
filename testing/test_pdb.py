@@ -29,7 +29,9 @@ pytest_plugins = ["pytester"]
 
 RE_THIS_FILE = re.escape(__file__)
 if sys.platform == 'win32':
-    RE_THIS_FILE = RE_THIS_FILE.lower()
+    RE_THIS_FILE_CANONICAL = RE_THIS_FILE.lower()
+else:
+    RE_THIS_FILE_CANONICAL = RE_THIS_FILE
 
 
 class FakeStdin:
@@ -800,7 +802,7 @@ def test_single_question_mark():
 .*Docstring:.*Return product of x and y
 # c
     """.format(
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -833,7 +835,7 @@ def test_double_question_mark():
 .*     return x \* y
 # c
     """.format(
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -1600,7 +1602,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -1638,7 +1640,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -1714,7 +1716,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2014,9 +2016,6 @@ def test_edit():
     _, lineno = inspect.getsourcelines(fn)
     return42_lineno = lineno + 2
     call_fn_lineno = lineno + 5
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2037,7 +2036,7 @@ RUN emacs \+%d %s
 # edit
 RUN emacs \+%d %s
 # c
-""" % (call_fn_lineno, filename))
+""" % (call_fn_lineno, RE_THIS_FILE))
 
 
 def test_edit_obj():
@@ -2049,9 +2048,6 @@ def test_edit_obj():
     def bar():
         pass
     _, bar_lineno = inspect.getsourcelines(bar)
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2074,10 +2070,6 @@ def test_edit_py_code_source():
     exec(src.compile(), dic)  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
-
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(bar, r"""
 [NUM] > .*bar()
@@ -2854,7 +2846,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=RE_THIS_FILE,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
