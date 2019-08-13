@@ -16,12 +16,8 @@ stages:
 jobs:
   include:
     - os: windows
-      language: generic
+      language: python
       env: TOXENV=py37-coverage
-      before_install:
-        - ln -sfn "$(which python3)" /usr/local/bin/python
-        - python -V
-        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
 install:
   - pip install tox==3.12.1
