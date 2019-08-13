@@ -27,6 +27,10 @@ pdb._ensured_our_pdb = True
 
 pytest_plugins = ["pytester"]
 
+RE_THIS_FILE = re.escape(__file__)
+if sys.platform == 'win32':
+    RE_THIS_FILE = RE_THIS_FILE.lower()
+
 
 class FakeStdin:
     def __init__(self, lines):
@@ -796,7 +800,7 @@ def test_single_question_mark():
 .*Docstring:.*Return product of x and y
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -829,7 +833,7 @@ def test_double_question_mark():
 .*     return x \* y
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -1596,7 +1600,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -1634,7 +1638,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -1710,7 +1714,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -1817,7 +1821,7 @@ NUM             except AssertionError:
 NUM  ->             xpm()
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -1874,7 +1878,7 @@ AssertionError.*
 -> for i in gen():
 # c
     """.format(
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -2021,7 +2025,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, re.escape(filename)))
+""" % (return42_lineno, RE_THIS_FILE))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2056,7 +2060,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, re.escape(filename)))
+""" % (bar_lineno, RE_THIS_FILE))
 
 
 def test_edit_py_code_source():
@@ -2082,7 +2086,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, re.escape(filename)))
+""" % (src_compile_lineno, RE_THIS_FILE))
 
 
 def test_put(tmphome):
@@ -2850,7 +2854,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=re.escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
