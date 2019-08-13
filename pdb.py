@@ -254,6 +254,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
+        if os.name == 'nt':
+            try:
+                import colorama
+            except ImportError:
+                pass
+            else:
+                colorama.init()
+
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
         if (not hasattr(f, 'stream')
