@@ -5,6 +5,7 @@ cache: false
 env:
   global:
     - PYTEST_ADDOPTS=-vv
+    - PIP_DISABLE_PIP_VERSION_CHECK=true
 
 stages:
   - name: test
@@ -63,9 +64,11 @@ install:
   # installation in tox.
   - pip install virtualenv==16.6.0
 
-script:
+before_script:
   - pip --version
   - pip freeze
+
+script:
   - tox
 
 after_script:
