@@ -25,6 +25,9 @@ jobs:
         - TOXENV=py37-coverage,py37-colorama-coverage
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
 
+    - python: '3.7'
+      env: TOXENV=py37-coverage
+
 install:
   - pip install tox==3.12.1
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
