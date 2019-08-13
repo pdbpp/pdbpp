@@ -16,7 +16,7 @@ stages:
 jobs:
   include:
     - os: windows
-      language: minimal
+      language: c
       env: TOXENV=py37-coverage
 
 install:
