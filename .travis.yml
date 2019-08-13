@@ -15,14 +15,15 @@ stages:
 
 jobs:
   include:
-    - os: windows
+    - name: Windows (colorama)
+      os: windows
       language: shell
       before_install:
         - choco install python
         # - python -m pip install --upgrade pip
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
-        - TOXENV=py37-coverage
+        - TOXENV=py37-coverage,py37-colorama-coverage
 
 install:
   - pip install tox==3.12.1
