@@ -1334,13 +1334,16 @@ except for when using the function decorator.
         filename = os.path.abspath(frame.f_code.co_filename)
         return filename, lineno
 
-    def _format_editcmd(self, editor, filename, lineno):
+    def _quote_filename(self, filename):
         try:
-            from shutil import quote
+            from shlex import quote
         except ImportError:
             from pipes import quote
 
-        filename = quote(filename)
+        return quote(filename)
+
+    def _format_editcmd(self, editor, filename, lineno):
+        filename = self._quote_filename(filename)
 
         if "{filename}" in editor:
             return editor.format(filename=filename, lineno=lineno)
