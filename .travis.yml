@@ -22,7 +22,7 @@ jobs:
         - choco install python
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
-        - TOXENV=py37-coverage,py37-colorama-coverage
+        - TOXENV=py37-coverage,py37-nocolorama-coverage
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
 
     - python: '3.7'
