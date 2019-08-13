@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import bdb
 import inspect
-import os.path
 import re
 import sys
 import traceback
