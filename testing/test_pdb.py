@@ -32,9 +32,11 @@ pytest_plugins = ["pytester"]
 
 RE_THIS_FILE = re.escape(__file__)
 if sys.platform == 'win32':
-    RE_THIS_FILE_CANONICAL = RE_THIS_FILE.lower()
+    THIS_FILE_CANONICAL = __file__.lower()
 else:
-    RE_THIS_FILE_CANONICAL = RE_THIS_FILE
+    THIS_FILE_CANONICAL = __file__
+RE_THIS_FILE_CANONICAL = re.escape(THIS_FILE_CANONICAL)
+RE_THIS_FILE_CANONICAL_QUOTED = re.escape(quote(THIS_FILE_CANONICAL))
 RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
 
 
@@ -2060,7 +2062,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, RE_THIS_FILE_QUOTED))
+""" % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_edit_py_code_source():
@@ -2082,7 +2084,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, RE_THIS_FILE_QUOTED))
+""" % (src_compile_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_put(tmphome):
