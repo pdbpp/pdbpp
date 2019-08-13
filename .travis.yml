@@ -20,10 +20,10 @@ jobs:
       language: shell
       before_install:
         - choco install python
-        # - python -m pip install --upgrade pip
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
         - TOXENV=py37-coverage,py37-colorama-coverage
+        - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
 
 install:
   - pip install tox==3.12.1
