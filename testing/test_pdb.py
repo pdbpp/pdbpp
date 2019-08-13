@@ -796,7 +796,7 @@ def test_single_question_mark():
 .*Docstring:.*Return product of x and y
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -829,7 +829,7 @@ def test_double_question_mark():
 .*     return x \* y
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -1596,7 +1596,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -1634,7 +1634,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -1710,7 +1710,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -1817,7 +1817,7 @@ NUM             except AssertionError:
 NUM  ->             xpm()
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -1874,7 +1874,7 @@ AssertionError.*
 -> for i in gen():
 # c
     """.format(
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
@@ -2021,7 +2021,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, filename))
+""" % (return42_lineno, re.escape(filename)))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2056,7 +2056,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, filename))
+""" % (bar_lineno, re.escape(filename)))
 
 
 def test_edit_py_code_source():
@@ -2082,7 +2082,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, filename))
+""" % (src_compile_lineno, re.escape(filename)))
 
 
 def test_put(tmphome):
@@ -2850,7 +2850,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=__file__,
+        filename=re.escape(__file__),
     ))
 
 
