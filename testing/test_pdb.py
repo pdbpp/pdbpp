@@ -385,6 +385,26 @@ def test_config_pygments_deprecated_use_terminal256formatter(monkeypatch):
     )
 
 
+def test_config_default_color_support():
+    p = pdb.Pdb(Config=pdb.DefaultConfig)
+
+    assert pdb.DefaultConfig.highlight is None
+    assert pdb.DefaultConfig.use_pygments is None
+
+    if sys.platform == 'win32':
+        try:
+            import colorama  # noqa: F401
+        except ImportError:
+            assert p.config.highlight is False
+            assert p.config.use_pygments is False
+        else:
+            assert p.config.highlight is True
+            assert p.config.use_pygments is True
+    else:
+        assert p.config.highlight is True
+        assert p.config.use_pygments is True
+
+
 def test_runpdb():
     def fn():
         set_trace()
