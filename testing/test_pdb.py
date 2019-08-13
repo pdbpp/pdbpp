@@ -8,6 +8,10 @@ import re
 import sys
 import traceback
 from io import BytesIO
+try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
 
 import py
 import pytest
@@ -32,6 +36,7 @@ if sys.platform == 'win32':
     RE_THIS_FILE_CANONICAL = RE_THIS_FILE.lower()
 else:
     RE_THIS_FILE_CANONICAL = RE_THIS_FILE
+RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
 
 
 class FakeStdin:
@@ -2024,7 +2029,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, RE_THIS_FILE))
+""" % (return42_lineno, RE_THIS_FILE_QUOTED))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2036,7 +2041,7 @@ RUN emacs \+%d %s
 # edit
 RUN emacs \+%d %s
 # c
-""" % (call_fn_lineno, RE_THIS_FILE))
+""" % (call_fn_lineno, RE_THIS_FILE_QUOTED))
 
 
 def test_edit_obj():
@@ -2056,7 +2061,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, RE_THIS_FILE))
+""" % (bar_lineno, RE_THIS_FILE_QUOTED))
 
 
 def test_edit_py_code_source():
@@ -2078,7 +2083,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, RE_THIS_FILE))
+""" % (src_compile_lineno, RE_THIS_FILE_QUOTED))
 
 
 def test_put(tmphome):
