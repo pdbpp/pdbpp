@@ -24,6 +24,14 @@ jobs:
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
+    - os: windows
+      language: generic
+      env: TOXENV=py37-coverage
+      before_install:
+        - ln -sfn "$(which python3)" /usr/local/bin/python
+        - python -V
+        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
+
     - python: 'pypy'
       env: TOXENV=pypy-coverage
     - python: 'pypy3'
