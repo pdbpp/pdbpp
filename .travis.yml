@@ -27,6 +27,8 @@ jobs:
 
     - python: '3.7'
       env: TOXENV=py37-coverage
+    - python: '2.7'
+      env: TOXENV=py27-coverage
 
 install:
   - pip install tox==3.12.1
