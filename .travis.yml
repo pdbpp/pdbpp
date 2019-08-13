@@ -15,15 +15,6 @@ stages:
 
 jobs:
   include:
-    - os: osx
-      osx_image: xcode10.2
-      language: generic
-      env: TOXENV=py37-coverage
-      before_install:
-        - ln -sfn "$(which python3)" /usr/local/bin/python
-        - python -V
-        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
-
     - os: windows
       language: generic
       env: TOXENV=py37-coverage
@@ -31,40 +22,6 @@ jobs:
         - ln -sfn "$(which python3)" /usr/local/bin/python
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
-
-    - python: 'pypy'
-      env: TOXENV=pypy-coverage
-    - python: 'pypy3'
-      env: TOXENV=pypy3-coverage
-    - python: '3.7'
-      env: TOXENV=py37-coverage
-    - python: '3.6'
-      env: TOXENV=py36-coverage
-    - python: '3.5'
-      env: TOXENV=py35-coverage
-    - python: '3.4'
-      env: TOXENV=py34-coverage
-    - python: '2.7'
-      env: TOXENV=py27-coverage
-    - python: '3.8-dev'
-      env: TOXENV=py38-coverage
-
-    - python: '3.7'
-      env: TOXENV=checkqa
-
-    - stage: release
-      python: '3.7'
-      script: skip
-      install: skip
-      deploy:
-        provider: pypi
-        user: antocuni
-        password:
-          secure: EE0ETWh9RqPr8yF0GeoXYg8zTVaZj23zpIFyHaWshMnnqg6s42QARB4CGrBiXwqjqwL262JV+PruSynOkIpsi8p9r4lju51EwjHWOEmD5qd+2SzAD+XinQD074lA08nayKohk3qVS/ebWKPrVH0lJT7bIZvyN8W6UDhkw6/3P91ixxn7tPgDX0FJpRQpbyc8TXP25GXYMpOyANIV/qtRXHylGtS7aeAJMcVD5HlE+EEXxMQhF5MK+mvmTXuC+WGAtM36Vm48kyLVfalvQEGWY/v1UDq7dKua/EZleoLxSIJ4c6XKnx6zIoYNyKJeJiaYuutb6TYTYKQ18ZVU6jaAKE5wu/9szMIw+XMtud1J9W7Co/UgILR6AZKq/OKd7Kl1eQlF/OU1lXnU5q9wseunxkjVaA/W0tnmzHi95KKV0FebXBYPqA/ybk69tc9nsIBwxH4sNrUv5DtA7WX43WhGxN91nNhfbW3CsTklwbqrrHRkbCB2vCP+JVkQ1ctOwX7XPv+ghLqhetFsvNGNEEk/h9Vo3hiR0iq1g7MMXgqASZ/QSrSvxVbBSdB+hLt5QaS4FIRuHDaMNCD8bH3VumneLgsdaKlg0iELUvC7JyqcdRYQowZbOSlNKwSH6ys3TGyQ5DWnrGWp3Hb1YfU27cweuApZZsg1O3xEC5AMTP1FJbY=
-        on:
-          tags: true
-          distributions: 'sdist bdist_wheel'
-          repo: antocuni/pdb
 
 install:
   - pip install tox==3.12.1
