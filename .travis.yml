@@ -63,9 +63,11 @@ install:
   # installation in tox.
   - pip install virtualenv==16.6.0
 
-script:
+before_script:
   - pip --version
   - pip freeze
+
+script:
   - tox
 
 after_script:
