@@ -258,14 +258,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.show_hidden_frames = False
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
-
-        # Setup highlight/use_pygments for detected color support.
-        if self.config.highlight is None or self.config.use_pygments is None:
-            has_color = self._supports_color_escapes()
-            if self.config.highlight is None:
-                self.config.highlight = has_color
-            if self.config.use_pygments is None:
-                self.config.use_pygments = has_color
+        self._setup_color(self.stdout)
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -276,16 +269,26 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         return f
 
-    @staticmethod
-    def _supports_color_escapes():
+    def _setup_color(self, stream):
         if os.name != 'nt':
-            return True
+            supports_color = True
         try:
             import colorama
+            supports_color = True
         except ImportError:
-            return False
-        colorama.init()
-        return True
+            supports_color = True
+
+        # Setup highlight/use_pygments for detected color support.
+        if self.config.highlight is None or self.config.use_pygments is None:
+            if self.config.highlight is None:
+                self.config.highlight = supports_color
+            if self.config.use_pygments is None:
+                self.config.use_pygments = supports_color
+
+        if os.name == 'nt':
+            if self.config.highlight or self.config.use_pygments:
+                stream = colorama.AnsiToWin32(stream).stream
+        return stream
 
     def _disable_pytest_capture_maybe(self):
         try:
