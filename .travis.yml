@@ -15,7 +15,7 @@ stages:
 
 jobs:
   include:
-    - name: Windows (colorama)
+    - name: Windows
       os: windows
       language: shell
       before_install:
