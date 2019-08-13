@@ -260,12 +260,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
         # Setup highlight/use_pygments for detected color support.
-        if self.highlight is None or self.use_pygments is None:
+        if self.config.highlight is None or self.config.use_pygments is None:
             has_color = self._supports_color_escapes()
-            if self.highlight is None:
-                self.highlight = has_color
-            if self.use_pygments is None:
-                self.use_pygments = has_color
+            if self.config.highlight is None:
+                self.config.highlight = has_color
+            if self.config.use_pygments is None:
+                self.config.use_pygments = has_color
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -276,6 +276,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         return f
 
+    @staticmethod
     def _supports_color_escapes():
         if os.name != 'nt':
             return True
