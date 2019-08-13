@@ -72,7 +72,7 @@ after_script:
   - |
     if [[ "$TOXENV" != checkqa ]]; then
       # Unset TRAVIS_CMD to work around https://github.com/codecov/codecov-bash/issues/174.
-      env -u TRAVIS_CMD bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n "${TRAVIS_PYTHON_VERSION}"
+      env -u TRAVIS_CMD bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n "${TRAVIS_PYTHON_VERSION}" -F "${TRAVIS_OS_NAME}"
     fi
 
 branches:
