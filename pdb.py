@@ -93,7 +93,7 @@ def rebind_globals(func, newglobals):
 
 class DefaultConfig(object):
     prompt = '(Pdb++) '
-    highlight = True
+    highlight = None
     sticky_by_default = False
 
     # Pygments.
@@ -259,13 +259,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
-        if os.name == 'nt':
-            try:
-                import colorama
-            except ImportError:
-                pass
-            else:
-                colorama.init()
+        # Setup highlight/use_pygments for detected color support.
+        if self.highlight is None or self.use_pygments is None:
+            has_color = self._supports_color_escapes()
+            if self.highlight is None:
+                self.highlight = has_color
+            if self.use_pygments is None:
+                self.use_pygments = has_color
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
@@ -275,6 +275,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             f = codecs.getwriter('utf-8')(getattr(f, 'buffer', f))
 
         return f
+
+    def _supports_color_escapes():
+        if os.name != 'nt':
+            return True
+        try:
+            import colorama
+        except ImportError:
+            return False
+        colorama.init()
+        return True
 
     def _disable_pytest_capture_maybe(self):
         try:
