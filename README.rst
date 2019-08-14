@@ -14,7 +14,7 @@ of new features to make your debugging experience as nice as possible.
 
   - colorful TAB completion of Python expressions (through fancycompleter_)
 
-  - optional syntax highlighting of code listings (through pygments_)
+  - optional syntax highlighting of code listings (through Pygments_)
 
   - `sticky mode`_
 
@@ -31,7 +31,7 @@ unexpected behavior, please report it as a bug.
 
 .. _pdb: http://docs.python.org/library/pdb.html
 .. _fancycompleter: http://bitbucket.org/antocuni/fancycompleter
-.. _pygments: http://pygments.org/
+.. _Pygments: http://pygments.org/
 
 Installation
 -------------
@@ -85,7 +85,7 @@ The following are new commands that you can use from the interative
   ``list`` command, ``longlist`` displays the whole function.  The current
   line is marked with ``->``.  In case of post-mortem debugging, the line
   which actually raised the exception is marked with ``>>``.  If the
-  ``highlight`` `config option`_ is set and pygments_ is installed, the source
+  ``highlight`` `config option`_ is set and Pygments_ is installed, the source
   code is highlighted.
 
 
@@ -277,22 +277,6 @@ default value:
   The default uses the default foreground (``39``) and background (``49``)
   colors, inversed (``7``).
 
-``use_pygments = True``
-  If pygments_ is installed and ``highlight == True``, apply syntax highlight
-  to the source code when showing the ``longlist`` of a function or when in
-  **sticky mode**.
-
-``bg = 'dark'``
-  Passed directly to the ``pygments.formatters.TerminalFormatter`` constructor.
-  Selects the color scheme to use, depending on the background color of your
-  terminal. If you have a light background color, try to set it to
-  ``'light'``.
-
-``colorscheme = None``
-  Passed directly to the ``pygments.formatters.TerminalFormatter`` constructor.
-  It expects a dictionary that maps token types to (lightbg, darkbg) color names or
-  ``None`` (default: ``None`` = use builtin colorscheme).
-
 ``editor = None``
   The command to invoke when using the ``edit`` command. By default, it uses ``$EDITOR``
   if set, else ``vim`` or ``vi`` (if found).  If only the editor command is specified, the ``emacs`` and
@@ -300,7 +284,6 @@ default value:
   otherwise possible to use another syntax by using the placeholders ``{filename}`` and
   ``{lineno}``. For example with sublime text, specify ``editor = "subl
   {filename}:{lineno}"``.
-
 
 ``truncate_long_lines = True``
   Truncate lines which exceed the terminal width.
@@ -341,6 +324,64 @@ default value:
 ``show_traceback_on_error_limit = None``
   This option sets the limit to be used with ``traceback.format_exception``,
   when ``show_traceback_on_error`` is enabled.
+
+Options relevant for source code highlighting (using Pygments)
+==============================================================
+
+``use_pygments = None``
+  By default Pygments_ is used for syntax highlighting of source code when it
+  can be imported, e.g. when showing the ``longlist`` of a function or when in
+  **sticky mode**.
+
+``pygments_formatter_class = None``
+
+  You can configure the Pygments formatter to use via the
+  ``pygments_formatter_class`` config setting as a string (dotted path).
+  This should should be one of the following typically:
+  ``"pygments.formatters.Terminal256Formatter"``,
+  ``"pygments.formatters.TerminalTrueColorFormatter"``, or
+  ``"pygments.formatters.TerminalFormatter"``.
+
+  The default is to auto-detect the best formatter based on the ``$TERM``
+  variable, e.g. it uses ``Terminal256Formatter`` if the ``$TERM`` variable
+  contains "256color" (e.g. ``xterm-256color``), but also knows about
+  e.g. "xterm-kitty" to support true colors (``TerminalTrueColorFormatter``).
+  ``TerminalFormatter`` gets used as a fallback.
+
+``pygments_formatter_kwargs = {}``
+
+  A dictionary of keyword arguments to pass to the formatter's contructor.
+
+  The default arguments (updated with this setting) are::
+
+      {
+          "style": "default",
+          "bg": self.config.bg,
+          "colorscheme": self.config.colorscheme,
+      }
+
+    ``style = 'default'``
+
+     The style to use, can be a string or a Pygments Style subclass.
+     E.g. ``"solarized-dark"``.
+     See http://pygments.org/docs/styles/.
+
+   ``bg = 'dark'``
+
+     Selects a different palette for dark/light backgrounds.
+     Only used by ``TerminalFormatter``.
+
+   ``colorscheme = None``
+
+     A dictionary mapping token types to (lightbg, darkbg) color names or
+     ``None`` (default: ``None`` = use builtin colorscheme).
+     Only used by ``TerminalFormatter``.
+
+Example::
+
+    class Config(pdb.DefaultConfig):
+        pygments_formatter_class = "pygments.formatters.TerminalTrueColorFormatter"
+        pygments_formatter_kwargs = {"style": "solarized-light"}
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _`pytest`: https://pytest.org/

@@ -1,5 +1,6 @@
 import functools
 import sys
+from contextlib import contextmanager
 
 import pytest
 
@@ -120,3 +121,23 @@ def monkeypatch_pdb_methods(monkeypatch):
         monkeypatch.setattr(
             "pdb.pdb.Pdb.%s" % mock_method, functools.partial(mock, mock_method)
         )
+
+
+@pytest.fixture
+def monkeypatch_importerror(monkeypatch):
+    @contextmanager
+    def cm(mocked_imports):
+        orig_import = __import__
+
+        def import_mock(name, *args):
+            if name in mocked_imports:
+                raise ImportError
+            return orig_import(name, *args)
+
+        with monkeypatch.context() as m:
+            if sys.version_info >= (3,):
+                m.setattr('builtins.__import__', import_mock)
+            else:
+                m.setattr('__builtin__.__import__', import_mock)
+            yield m
+    return cm
