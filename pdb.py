@@ -283,11 +283,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self.config.highlight is None or self.config.use_pygments is None:
             if self.config.highlight is None:
                 self.config.highlight = supports_color
-            if self.config.use_pygments is None:
-                self.config.use_pygments = supports_color
 
         if os.name == 'nt' and supports_color:
-            if self.config.highlight or self.config.use_pygments:
+            if self.config.highlight or self.config.use_pygments is not False:
                 stream = colorama.AnsiToWin32(stream).stream
         return stream
 

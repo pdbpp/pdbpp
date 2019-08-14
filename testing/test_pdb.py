@@ -400,13 +400,13 @@ def test_config_default_color_support():
     if sys.platform == 'win32':
         if colorama:
             assert p.config.highlight is True
-            assert p.config.use_pygments is True
+            assert p.config.use_pygments is None
         else:
             assert p.config.highlight is False
             assert p.config.use_pygments is False
     else:
         assert p.config.highlight is True
-        assert p.config.use_pygments is True
+        assert p.config.use_pygments is None
 
 
 def test_runpdb():
