@@ -30,9 +30,9 @@ jobs:
         - cmd.exe /C 'python.exe -m tox -e py37-coverage'
         - cmd.exe /C 'python.exe -m tox -e py37-nocolorama-coverage'
         - tox -e py37-coverage
-        - tox -e py37-nocolorama-coverage
-        - tox -e py37-coverage -- -s
-        - tox -e py37-nocolorama-coverage -- -s
+        # Test without colorama (re-use same toxenv for performance reasons).
+        - ./.tox/py37-coverage/bin/python -m pip uninstall colorama
+        - tox -e py37-coverage
 
     - python: '3.7'
       env: TOXENV=py37-coverage
