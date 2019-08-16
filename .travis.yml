@@ -27,6 +27,7 @@ jobs:
         - TOXENV=uses_custom_script
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
       script:
+        - python t_windows.py
         - tox -e py37-coverage
         # Test without colorama (re-use same toxenv for performance reasons).
         - ./.tox/py37-coverage/bin/python -m pip uninstall colorama
