@@ -6,6 +6,8 @@ env:
   global:
     - PYTEST_ADDOPTS=-vv
     - PIP_DISABLE_PIP_VERSION_CHECK=true
+    # Force colors (for Windows builds).
+    - PY_COLORS=1
 
 stages:
   - name: test
