@@ -366,6 +366,9 @@ def test_config_missing_pygments(use_pygments, monkeypatch_importerror):
     else:
         assert pdb_.messages == []
 
+        # Set to False for use_pygments=None.
+        assert pdb_.config.use_pygments is False
+
     # Cover branch for cached _highlight property.
     assert pdb_.format_source("print(42)") == "print(42)"
 
@@ -400,13 +403,12 @@ def test_config_default_color_support():
     if sys.platform == 'win32':
         if colorama:
             assert p.config.highlight is True
-            assert p.config.use_pygments is None
         else:
             assert p.config.highlight is False
-            assert p.config.use_pygments is False
     else:
         assert p.config.highlight is True
-        assert p.config.use_pygments is None
+
+    assert p.config.use_pygments is None
 
 
 def test_runpdb():
