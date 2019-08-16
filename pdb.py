@@ -56,6 +56,7 @@ else:
 local = threading.local()
 local.GLOBAL_PDB = None
 local._pdbpp_completing = False
+local._pdbpp_in_init = False
 
 
 def __getattr__(name):
@@ -212,8 +213,19 @@ class PdbMeta(type):
             kwargs.setdefault("start_filename", called_for_set_trace.f_code.co_filename)
             kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 
+            if getattr(local, "_pdbpp_in_init", False):
+                class OrigPdb(pdb.Pdb):
+                    def set_trace(self, frame=None):
+                        print("pdb++: using pdb.Pdb for recursive set_trace.")
+                        if frame is None:
+                            frame = sys._getframe().f_back
+                        super(OrigPdb, self).set_trace(frame)
+                return OrigPdb()
+
         set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
+        local._pdbpp_in_init = True
         obj.__init__(*args, **kwargs)
+        local._pdbpp_in_init = False
         if set_global_pdb:
             local.GLOBAL_PDB = obj
         return obj
