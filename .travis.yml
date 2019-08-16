@@ -24,8 +24,14 @@ jobs:
         - choco install --no-progress python
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
-        - TOXENV=py37-coverage,py37-nocolorama-coverage
+        - TOXENV=uses_custom_script
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
+      script:
+        - tox -e py37-coverage
+        - tox -e py37-nocolorama-coverage
+        - tox -e py37-coverage -- -s
+        - tox -e py37-nocolorama-coverage -- -s
+
     - os: osx
       osx_image: xcode10.2
       language: generic
