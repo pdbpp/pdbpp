@@ -210,7 +210,7 @@ def runpdb(func, input):
 
 def extract_commands(lines):
     cmds = []
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) '}
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) '}
     for line in lines:
         for prompt in prompts:
             if line.startswith(prompt):
@@ -4342,5 +4342,32 @@ def test_do_source_without_truncating():
 # source ConfigWithPygmentsAndHighlight
 \d\d     class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):$
 \d\d         pass
+# c
+""")
+
+
+def test_handles_set_trace_in_config():
+    """Should not cause a RecursionError."""
+    def fn():
+        class Config(ConfigTest):
+            def __init__(self, *args, **kwargs):
+                print("Config.__init__")
+                # Becomes a no-op.
+                set_trace(Config=Config)
+                print("after_set_trace")
+
+        set_trace(Config=Config)
+
+    check(fn, r"""
+Config.__init__
+pdb\+\+: using pdb.Pdb for recursive set_trace.
+> .*__init__()
+-> print("after_set_trace")
+(Pdb) c
+after_set_trace
+--Return--
+[NUM] > .*fn()->None
+-> set_trace(Config=Config)
+   5 frames hidden .*
 # c
 """)
