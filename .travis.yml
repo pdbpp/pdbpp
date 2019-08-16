@@ -4,7 +4,7 @@ cache: false
 
 env:
   global:
-    - PYTEST_ADDOPTS=-vv
+    - PYTEST_ADDOPTS="-vv --color=yes"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
     # Force colors (for Windows builds).
     - PY_COLORS=1
