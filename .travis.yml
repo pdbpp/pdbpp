@@ -27,6 +27,8 @@ jobs:
         - TOXENV=uses_custom_script
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
       script:
+        - cmd.exe /C 'python.exe -m tox -e py37-coverage'
+        - cmd.exe /C 'python.exe -m tox -e py37-nocolorama-coverage'
         - tox -e py37-coverage
         - tox -e py37-nocolorama-coverage
         - tox -e py37-coverage -- -s
