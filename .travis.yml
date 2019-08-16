@@ -52,7 +52,7 @@ before_script:
   - pip freeze
 
 script:
-  - tox
+  - tox -- -s testing/test_windows.py
 
 after_script:
   - |
