@@ -4,6 +4,8 @@ cache: false
 
 env:
   global:
+    # pytest: uses --color=yes to force colors on Travis/Windows (requires
+    # colorama also (uninstalled with nocolorama tox env)).
     - PYTEST_ADDOPTS="-vv --color=yes"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
 
