@@ -298,7 +298,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         if os.name == 'nt' and supports_color:
             if self.config.highlight or self.config.use_pygments is not False:
-                stream = colorama.AnsiToWin32(stream).stream
+                # Wrap stream with colorama, skipping "isatty" check.
+                stream = colorama.AnsiToWin32(stream, convert=True, strip=False).stream
         return stream
 
     def _disable_pytest_capture_maybe(self):
