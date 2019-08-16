@@ -19,7 +19,7 @@ jobs:
       os: windows
       language: shell
       before_install:
-        - choco install python
+        - choco install --no-progress python
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
         - TOXENV=py37-coverage,py37-nocolorama-coverage
