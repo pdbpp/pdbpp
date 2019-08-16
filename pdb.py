@@ -214,7 +214,7 @@ class PdbMeta(type):
             kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 
             if getattr(local, "_pdbpp_in_init", False):
-                class OrigPdb(pdb.Pdb):
+                class OrigPdb(pdb.Pdb, object):
                     def set_trace(self, frame=None):
                         print("pdb++: using pdb.Pdb for recursive set_trace.")
                         if frame is None:
