@@ -36,14 +36,10 @@ unexpected behavior, please report it as a bug.
 Installation
 -------------
 
-Since ``pdb++`` is not a valid identifier for ``pip`` and ``easy_install``,
+Since ``pdb++`` is not a valid identifier for ``pip``,
 the package is named ``pdbpp``::
 
     $ pip install pdbpp
-
-    -- OR --
-
-    $ easy_install pdbpp
 
 ``pdb++`` is also available via `conda`_::
 
