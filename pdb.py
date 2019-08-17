@@ -704,8 +704,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                     and (cmd in self.curframe.f_globals or cmd in self.curframe_locals)
                 ) or arg.startswith("="):
                     cmd, arg, newline = None, None, line
-                elif cmd == "list" and arg.startswith("("):
-                    # heuristic: handle "list(..." as the builtin.
+                elif arg.startswith("(") and cmd in ("list", "next"):
+                    # heuristic: handle "list(...", "next(…" etc as builtin.
                     cmd, arg, newline = None, None, line
 
         # Fix cmd to not be None when used in completions.

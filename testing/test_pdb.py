@@ -1071,6 +1071,8 @@ def test_parseline_with_existing_command():
 (None, None, 'a = ')
 # print(pdb.local.GLOBAL_PDB.parseline("list()"))
 (None, None, 'list()')
+# print(pdb.local.GLOBAL_PDB.parseline("next(my_iter)"))
+(None, None, 'next(my_iter)')
 # c
 42
 # cont
