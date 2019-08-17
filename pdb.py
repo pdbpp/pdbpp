@@ -705,7 +705,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 ) or arg.startswith("="):
                     cmd, arg, newline = None, None, line
                 elif arg.startswith("(") and cmd in ("list", "next"):
-                    # heuristic: handle "list(...", "next(…" etc as builtin.
+                    # heuristic: handle "list(...", "next(..." etc as builtin.
                     cmd, arg, newline = None, None, line
 
         # Fix cmd to not be None when used in completions.
