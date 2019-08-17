@@ -4373,3 +4373,28 @@ after_set_trace
    5 frames hidden .*
 # c
 """)
+
+
+def test_windows_colorama():
+    def fn():
+        set_trace()
+
+    check(
+        fn,
+        r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# import pdb; pdb.local.GLOBAL_PDB.stdout
+<testing.test_pdb.runpdb.<locals>.MyBytesIO object at .*>
+# import sys
+# import colorama
+# col = colorama.AnsiToWin32(sys.stdout)
+# (col.convert, col.strip, len(col.win32_calls))
+(False, True, {expected_win32_calls})
+# col = colorama.AnsiToWin32(sys.stdout, convert=True, strip=True)
+# (col.convert, col.strip, len(col.win32_calls))
+(True, True, {expected_win32_calls})
+# c
+""".format(expected_win32_calls=38 if sys.platform == "win32" else 0))
