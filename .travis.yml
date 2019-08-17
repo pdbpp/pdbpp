@@ -59,10 +59,10 @@ jobs:
           repo: antocuni/pdb
 
 install:
-  - pip install tox==3.12.1
+  - pip install tox==3.13.2
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - pip install virtualenv==16.6.0
+  - pip install virtualenv==16.7.3
 
 before_script:
   - pip --version
