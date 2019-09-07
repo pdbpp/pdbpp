@@ -4376,3 +4376,19 @@ after_set_trace
    5 frames hidden .*
 # c
 """)
+
+
+def test_only_question_mark():
+    def fn():
+        set_trace()
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden .*
+# ?
+.*
+# c
+""")

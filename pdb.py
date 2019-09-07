@@ -676,9 +676,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 cmd = 'source'
                 self.do_inspect(arg)
                 self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
-            elif (hasattr(self, 'do_' + arg)
-                    and arg not in self.curframe.f_globals
-                    and arg not in self.curframe_locals):
+            elif arg == '' or (
+                hasattr(self, 'do_' + arg)
+                and arg not in self.curframe.f_globals
+                and arg not in self.curframe_locals
+            ):
                 cmd = "help"
             else:
                 cmd = "inspect"
