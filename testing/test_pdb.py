@@ -1571,10 +1571,9 @@ NUM             return a
 """)
 
 
-def test_sticky_highlight():
+def test_sticky_by_default_with_use_pygments_auto():
     class MyConfig(ConfigTest):
         sticky_by_default = True
-        highlight = None
         use_pygments = None
 
     def fn():
