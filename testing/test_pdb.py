@@ -58,6 +58,10 @@ class ConfigWithPygments(ConfigTest):
     use_pygments = True
 
 
+class ConfigWithPygmentsNone(ConfigTest):
+    use_pygments = None
+
+
 class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):
     pass
 
@@ -1242,11 +1246,12 @@ def test_shortlist_with_highlight_and_EOF():
 """.format(line_num=100000))
 
 
-def test_shortlist_with_pygments():
+@pytest.mark.parametrize('config', [ConfigWithPygments, ConfigWithPygmentsNone])
+def test_shortlist_with_pygments(config):
 
     def fn():
         a = 1
-        set_trace(Config=ConfigWithPygments)
+        set_trace(Config=config)
 
         return a
 
@@ -1258,7 +1263,7 @@ def test_shortlist_with_pygments():
 NUM +\t$
 NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
-NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM +\t        set_trace(Config^[[38;5;241m=^[[39mconfig)
 NUM +\t$
 NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
@@ -1562,6 +1567,31 @@ NUM             a = 1
 NUM  ->         b = 2
 NUM             c = 3
 NUM             return a
+# c
+""")
+
+
+def test_sticky_highlight():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+        highlight = None
+        use_pygments = None
+
+    def fn():
+        set_trace(Config=MyConfig)
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+   5 frames hidden .*
+.*
+
+NUM         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
+NUM  ->         a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM             ^[[38;5;28;01mreturn^[[39;00m a
 # c
 """)
 

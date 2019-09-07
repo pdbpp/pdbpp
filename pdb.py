@@ -547,7 +547,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 filename = Color.set(self.config.filename_color, filename)
                 lineno = Color.set(self.config.line_number_color, lineno)
                 entry = '%s(%s)%s' % (filename, lineno, other)
-        if self.config.use_pygments:
+        if self.config.use_pygments is not False:
             loc, _, source = entry.rpartition(lprefix)
             if _:
                 entry = loc + _ + self.format_source(source).rstrip()
@@ -916,7 +916,7 @@ except for when using the function decorator.
             # only for the current/marked line really.
             lines = [line.ljust(maxlength) for line in lines]
 
-        if self.config.use_pygments:
+        if self.config.use_pygments is not False:
             src = self.format_source('\n'.join(lines))
             lines = src.splitlines()
 
@@ -941,7 +941,7 @@ except for when using the function decorator.
         if not lines:
             return lines
 
-        if not self.config.use_pygments and not self.config.highlight:
+        if self.config.use_pygments is False and not self.config.highlight:
             return lines
 
         # Format source without prefixes added by pdb, including line numbers.
@@ -978,7 +978,9 @@ except for when using the function decorator.
             Used via do_list currently only, do_source and do_longlist are
             overridden.
             """
-            if not lines or not (self.config.use_pygments or self.config.highlight):
+            if not lines or not (
+                    self.config.use_pygments is not False
+                    or self.config.highlight):
                 return super(Pdb, self)._print_lines(lines, *args, **kwargs)
 
             oldstdout = self.stdout
@@ -993,7 +995,8 @@ except for when using the function decorator.
     else:
         # Only for Python 2.7, where _print_lines is not used/available.
         def do_list(self, arg):
-            if not (self.config.use_pygments or self.config.highlight):
+            if not (self.config.use_pygments is not False
+                    or self.config.highlight):
                 return super(Pdb, self).do_list(arg)
 
             oldstdout = self.stdout
