@@ -916,9 +916,8 @@ except for when using the function decorator.
             # only for the current/marked line really.
             lines = [line.ljust(maxlength) for line in lines]
 
-        if self.config.use_pygments:
-            src = self.format_source('\n'.join(lines))
-            lines = src.splitlines()
+        src = self.format_source('\n'.join(lines))
+        lines = src.splitlines()
 
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:

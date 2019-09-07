@@ -1566,6 +1566,31 @@ NUM             return a
 """)
 
 
+def test_sticky_highlight():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+        highlight = None
+        use_pygments = None
+
+    def fn():
+        set_trace(Config=MyConfig)
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden .*
+.*
+
+NUM         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
+NUM  ->         a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM             ^[[38;5;28;01mreturn^[[39;00m a
+# c
+""")
+
+
 def test_sticky_dunder_exception():
     """Test __exception__ being displayed in sticky mode."""
 
