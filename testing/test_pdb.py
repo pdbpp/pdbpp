@@ -4378,17 +4378,19 @@ after_set_trace
 """)
 
 
-def test_only_question_mark():
+def test_only_question_mark(monkeypatch):
     def fn():
         set_trace()
         a = 1
         return a
+
+    monkeypatch.setattr(PdbTest, "do_help", lambda self, arg: print("do_help"))
 
     check(fn, """
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
 # ?
-.*
+do_help
 # c
 """)
