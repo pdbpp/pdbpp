@@ -8,7 +8,7 @@ This module is an extension of the pdb_ module of the standard library.  It is
 meant to be fully compatible with its predecessor, yet it introduces a number
 of new features to make your debugging experience as nice as possible.
 
-.. image:: https://github.com/antocuni/pdb/blob/master/screenshot.png?raw=true
+.. image:: https://user-images.githubusercontent.com/412005/64484794-2f373380-d20f-11e9-9f04-e1dabf113c6f.png
 
 ``pdb++`` features include:
 
