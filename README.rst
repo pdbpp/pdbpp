@@ -288,12 +288,6 @@ default value:
   window is not focused.  Useful to e.g. play a sound to alert the user that
   the execution of the program stopped. It requires the wmctrl_ module.
 
-``disable_pytest_capturing = False``
-  Old versions of `pytest`_ crash when you execute ``pdb.set_trace()`` in a
-  test, but the standard output is captured (i.e., without the ``-s`` option,
-  which is the default behavior).  When this option is on, the stdout
-  capturing is automatically disabled before showing the interactive prompt.
-
 ``enable_hidden_frames = True``
   Certain frames can be hidden by default.
   If enabled, the commands ``hf_unhide``, ``hf_hide``, and ``hf_list`` can be
