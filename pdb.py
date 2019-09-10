@@ -515,6 +515,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             self._filter_completions(text)
 
+            # Remove space used by fancycompleter to not complete common
+            # (color) prefix, if there are completions from pdb.
+            # print(self._completions)
+            if (" " in self._completions
+                    and any(not x.startswith("\x1b")
+                            for x in self._completions
+                            if x != " ")):
+                self._completions.remove(" ")
+
             local._pdbpp_completing = False
 
         try:
