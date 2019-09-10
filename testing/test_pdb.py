@@ -3365,6 +3365,28 @@ def test_complete_removes_duplicates_with_coloring(
             else:
                 assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
                 assert get_completions("help") == ["help", "helpvar"]
+
+            # Patch readline to return expected results for "p helpvar.".
+            monkeypatch_readline("p helpvar.", 2, 10)
+            if readline_param == "pyrepl":
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                comps = get_completions("helpvar.")
+                assert type(helpvar.denominator) == int
+                assert any(
+                    re.match(r"\x1b\[\d\d\d;00m\x1b\[33;01mdenominator\x1b\[00m", x)
+                    for x in comps
+                )
+                if all(x.startswith("\x1b") or x == " "
+                       for x in comps):
+                    assert " " in comps
+                else:
+                    assert " " not in comps
+            else:
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                comps = get_completions("helpvar.")
+                assert "denominator" in comps
+                assert " " not in comps
+
             return True
 
         set_trace()
@@ -3376,6 +3398,45 @@ def test_complete_removes_duplicates_with_coloring(
 [NUM] > .*fn()->None
 .*
    5 frames hidden .*
+# check_completions()
+True
+# c
+""")
+
+
+def test_complete_uses_attributes_only_from_orig_pdb(
+    monkeypatch_readline, readline_param
+):
+    def fn():
+        def check_completions():
+            # Patch readline to return expected results for "p sys.version".
+            monkeypatch_readline("p sys.version", 2, 13)
+
+            if readline_param == "pyrepl":
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                assert get_completions("sys.version") == [
+                    "\x1b[000;00m\x1b[32;01mversion\x1b[00m",
+                    "\x1b[001;00m\x1b[00mversion_info\x1b[00m",
+                    " ",
+                ]
+            else:
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                assert get_completions("sys.version") == [
+                    "version",
+                    "version_info",
+                ]
+            return True
+
+        set_trace()
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()->None
+.*
+   5 frames hidden .*
+# import sys
 # check_completions()
 True
 # c

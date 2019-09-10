@@ -468,6 +468,18 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         finally:
             sys.modules["readline"] = orig_readline
 
+    def _complete_expression(self, text, line, begidx, endidx):
+        """Remove prefixes added with pdb's _complete_expression."""
+        comps = super(Pdb, self)._complete_expression(text, line, begidx, endidx)
+        if '.' not in text:
+            return comps
+
+        dotted = text.split('.')
+        prefix = '.'.join(dotted[:-1]) + '.'
+        prefix_len = len(prefix)
+        return [x[prefix_len:] if x.startswith(prefix) else x
+                for x in comps]
+
     def complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
@@ -502,6 +514,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self._completions.extend(completions)
 
             self._filter_completions(text)
+
+            # Remove space used by fancycompleter to not complete common
+            # (color) prefix, if there are completions from pdb.
+            # print(self._completions)
+            if (" " in self._completions
+                    and any(not x.startswith("\x1b")
+                            for x in self._completions
+                            if x != " ")):
+                self._completions.remove(" ")
 
             local._pdbpp_completing = False
 
@@ -1635,6 +1656,12 @@ for name in 'run runeval runctx runcall pm main set_trace'.split():
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
+
+# Patch completion attributes to use our method.
+for k in pdb.Pdb.__dict__:
+    if (k.startswith("complete_")
+            and getattr(pdb.Pdb, k) == pdb.Pdb._complete_expression):
+        setattr(Pdb, k, Pdb._complete_expression)
 
 
 def post_mortem(t=None, Pdb=Pdb):
