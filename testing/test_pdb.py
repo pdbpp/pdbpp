@@ -3674,8 +3674,6 @@ LEAVING RECURSIVE DEBUGGER
 """)
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
-                    reason="no error method")
 def test_error_with_traceback():
     def fn():
         def error():
@@ -3697,8 +3695,6 @@ Traceback (most recent call last):
 """)
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
-                    reason="no error method")
 def test_chained_syntaxerror_with_traceback():
     def fn():
         def compile_error():
@@ -3712,7 +3708,8 @@ def test_chained_syntaxerror_with_traceback():
 
         set_trace()
 
-    check(fn, """
+    if sys.version_info > (3,):
+        check(fn, """
 --Return--
 [NUM] > .*fn()
 -> set_trace()
@@ -3736,10 +3733,21 @@ Traceback (most recent call last):
     raise AttributeError
 # c
 """)
+    else:
+        check(fn, """
+--Return--
+[NUM] > .*fn()
+-> set_trace()
+   5 frames hidden .*
+# error()
+\\*\\*\\* AttributeError.*
+Traceback (most recent call last):
+  File .*, in error
+    raise AttributeError
+# c
+""")
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
-                    reason="no error method")
 def test_error_with_traceback_disabled():
     class ConfigWithoutTraceback(ConfigTest):
         show_traceback_on_error = False
@@ -3761,8 +3769,6 @@ def test_error_with_traceback_disabled():
 """)
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
-                    reason="no error method")
 def test_error_with_traceback_limit():
     class ConfigWithLimit(ConfigTest):
         show_traceback_on_error_limit = 2

@@ -1605,7 +1605,11 @@ except for when using the function decorator.
 
         E.g. "AttributeError: 'Pdb' object has no attribute 'do_foo'",
         when trying to look up commands (bpo-36494).
+        Only done for Python 3+.
         """
+        if not hasattr(evalue, "__context__"):
+            return
+
         removed_bdb_context = evalue
         while removed_bdb_context.__context__:
             ctx = removed_bdb_context.__context__
