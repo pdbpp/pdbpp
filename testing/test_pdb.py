@@ -3382,6 +3382,45 @@ True
 """)
 
 
+def test_complete_uses_attributes_only_from_orig_pdb(
+    monkeypatch_readline, readline_param
+):
+    def fn():
+        def check_completions():
+            # Patch readline to return expected results for "p sys.version".
+            monkeypatch_readline("p sys.version", 2, 13)
+
+            if readline_param == "pyrepl":
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                assert get_completions("sys.version") == [
+                    "\x1b[000;00m\x1b[32;01mversion\x1b[00m",
+                    "\x1b[001;00m\x1b[00mversion_info\x1b[00m",
+                    " ",
+                ]
+            else:
+                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                assert get_completions("sys.version") == [
+                    "version",
+                    "version_info",
+                ]
+            return True
+
+        set_trace()
+
+    _, lineno = inspect.getsourcelines(fn)
+
+    check(fn, """
+--Return--
+[NUM] > .*fn()->None
+.*
+   5 frames hidden .*
+# import sys
+# check_completions()
+True
+# c
+""")
+
+
 @pytest.mark.skipif(sys.version_info < (3, ), reason="py2: no completion for break")
 def test_completion_removes_tab_from_fancycompleter(monkeypatch_readline):
     def fn():
