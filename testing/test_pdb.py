@@ -1048,7 +1048,7 @@ def test_parseline_with_rc_commands(tmpdir, monkeypatch):
 -> set_trace(readrc=True)
    5 frames hidden .*
 # alias myalias
-\\*\\*\\* SyntaxError
+myalias = print(%1)
 # !!alias myalias
 myalias = print(%1)
 # myalias 42
@@ -1060,6 +1060,11 @@ myalias = print(%1)
 def test_parseline_with_existing_command():
     def fn():
         c = 42
+        debug = True  # noqa: F841
+
+        class r:
+            text = "r.text"
+
         set_trace()
         return c
 
@@ -1079,6 +1084,16 @@ def test_parseline_with_existing_command():
 (None, None, 'next(my_iter)')
 # c
 42
+# debug print(1)
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) cont
+1
+LEAVING RECURSIVE DEBUGGER
+# debug
+True
+# r.text
+'r.text'
 # cont
 """)
 

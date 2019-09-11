@@ -725,6 +725,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 if (
                     self.curframe
                     and (cmd in self.curframe.f_globals or cmd in self.curframe_locals)
+                    and cmd + arg == line  # not for "debug ..." etc
                 ) or arg.startswith("="):
                     cmd, arg, newline = None, None, line
                 elif arg.startswith("(") and cmd in ("list", "next"):
