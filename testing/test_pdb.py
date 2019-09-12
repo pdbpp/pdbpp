@@ -2900,6 +2900,38 @@ Deleted breakpoint NUM
     ))
 
 
+@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+                    reason="no error method")
+def test_continue_arg_with_error():
+    def fn():
+        set_trace()
+        x = 1
+        y = 2
+        z = 3
+        return x+y+z
+
+    _, lineno = inspect.getsourcelines(fn)
+    line_z = lineno + 4
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> x = 1
+   5 frames hidden .*
+# c.foo
+\*\*\* The specified object '.foo' is not a function or was not found along sys.path.
+# c {break_lnum}
+Breakpoint NUM at {filename}:{break_lnum}
+Deleted breakpoint NUM
+[NUM] > .*fn()
+-> z = 3
+   5 frames hidden .*
+# c
+    """.format(
+        break_lnum=line_z,
+        filename=__file__,
+    ))
+
+
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="header kwarg is 3.7+")
 def test_set_trace_header():
     """Handler header kwarg added with Python 3.7 in pdb.set_trace."""
