@@ -1037,7 +1037,10 @@ except for when using the function decorator.
 
     def do_continue(self, arg):
         if arg != '':
+            self._seen_error = False
             self.do_tbreak(arg)
+            if self._seen_error:
+                return 0
         return super(Pdb, self).do_continue('')
     do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
@@ -1597,6 +1600,7 @@ except for when using the function decorator.
 
     def error(self, msg):
         """Override/enhance default error method to display tracebacks."""
+        self._seen_error = msg
         print("***", msg, file=self.stdout)
 
         if not self.config.show_traceback_on_error:
