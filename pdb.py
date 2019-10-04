@@ -45,7 +45,7 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)*")
+RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
 
 if sys.version_info < (3, ):
     from io import BytesIO as StringIO
@@ -911,15 +911,55 @@ except for when using the function decorator.
             lineno = start
         self._print_lines_pdbpp(lines, lineno)
 
+    @staticmethod
+    def _truncate_to_visible_length(s, maxlength):
+        """Truncate string to visible length (with escape sequences ignored)."""
+        matches = list(RE_COLOR_ESCAPES.finditer(s))
+        if not matches:
+            return s[:maxlength]
+
+        ret = ""
+        total_visible_len = 0
+        pos = 0
+        for m in matches:
+            m_start = m.regs[0][0]
+            m_end = m.regs[0][1]
+            add_visible = s[pos:m_start]
+            len_visible = m_start - pos
+            overflow = (len_visible + total_visible_len) - maxlength
+            if overflow >= 0:
+                if overflow == 0:
+                    ret += add_visible
+                else:
+                    ret += add_visible[:-overflow]
+                ret += s[m_start:m_end]
+                return ret
+            total_visible_len += len_visible
+            ret += add_visible
+            ret += s[m_start:m_end]
+            pos = m_end
+        else:
+            assert maxlength - total_visible_len > 0
+            rest = s[m_end:]
+            ret += rest[:maxlength - total_visible_len]
+
+        assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
+        return ret
+
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
                  for line in lines]  # force tabs to 4 spaces
         width, height = self.get_terminal_size()
 
+        if self.config.use_pygments is not False:
+            src = self.format_source('\n'.join(lines))
+            lines = src.splitlines()
+
         if self.config.truncate_long_lines:
             maxlength = max(width - 9, 16)
-            lines = [line[:maxlength] for line in lines]
+            lines = [self._truncate_to_visible_length(line, maxlength)
+                     for line in lines]
         else:
             maxlength = max(map(len, lines))
 
@@ -939,10 +979,6 @@ except for when using the function decorator.
             # Fill with spaces.  This is important for setbgcolor, although
             # only for the current/marked line really.
             lines = [line.ljust(maxlength) for line in lines]
-
-        if self.config.use_pygments is not False:
-            src = self.format_source('\n'.join(lines))
-            lines = src.splitlines()
 
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:
