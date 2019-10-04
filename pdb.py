@@ -46,6 +46,7 @@ except ImportError:
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
 RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
+RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
 
 if sys.version_info < (3, ):
     from io import BytesIO as StringIO
@@ -503,9 +504,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # Ignore "\t" as only completion from fancycompleter, if there are
             # pdb completions, and remove duplicate completions.
             if completions and (completions != ["\t"] or not len(self._completions)):
-                RE_REMOVE_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
                 clean_fancy_completions = set([
-                    RE_REMOVE_ESCAPE_SEQS.sub("", x) for x in completions
+                    RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS.sub("", x)
+                    for x in completions
                 ])
                 self._completions = [
                     x for x in self._completions
