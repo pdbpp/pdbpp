@@ -1285,6 +1285,40 @@ NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 """.format(line_num=fn.__code__.co_firstlineno - 1))
 
 
+def test_truncated_source_with_pygments():
+
+    def fn():
+        """some docstring longer than maxlength for truncate_long_lines, which is 80"""
+        a = 1
+        set_trace(Config=ConfigWithPygments)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m a
+   5 frames hidden .*
+# l {line_num}, 5
+NUM +\t$
+NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM +\t        ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39m
+NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM +\t$
+# sticky
+<CLEARSCREEN>
+>.*
+
+NUM +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+NUM +           ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39m
+NUM +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM +$
+NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
+# c
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+
+
 def test_shortlist_with_highlight():
 
     def fn():
@@ -4508,3 +4542,19 @@ def test_only_question_mark(monkeypatch):
 do_help
 # c
 """)
+
+
+@pytest.mark.parametrize('s,maxlength,expected', [
+    ('foo', 3, 'foo'),
+    ('foo', 1, 'f'),
+
+    # Keeps trailing escape sequences (for reset at least).
+    ("\x1b[39m1\x1b[39m23", 1, "\x1b[39m1\x1b[39m"),
+    ("\x1b[39m1\x1b[39m23", 2, "\x1b[39m1\x1b[39m2"),
+    ("\x1b[39m1\x1b[39m23", 3, "\x1b[39m1\x1b[39m23"),
+    ("\x1b[39m1\x1b[39m23", 100, "\x1b[39m1\x1b[39m23"),
+
+    ("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m"),
+])
+def test_truncate_to_visible_length(s, maxlength, expected):
+    assert pdb.Pdb._truncate_to_visible_length(s, maxlength) == expected
