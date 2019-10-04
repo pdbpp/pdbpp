@@ -45,7 +45,7 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)*")
+RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
 
 if sys.version_info < (3, ):
     from io import BytesIO as StringIO
