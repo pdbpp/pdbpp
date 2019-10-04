@@ -1,2 +1,0 @@
-_pdbpp_path_hack
-import sys;sys.path.insert(0, sys.path.pop()) if sys.path[-1] == makepath(sitedir, "_pdbpp_path_hack")[0] else None

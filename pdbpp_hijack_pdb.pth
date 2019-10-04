@@ -1,0 +1,9 @@
+# This script is used by Python's site module.
+# 1. Make it append our "_pdbpp_path_hack" module to sys.path:
+_pdbpp_path_hack
+# 2. Move it to the front if:
+#    1. it was actually added (via handling of the previous line) and not
+#       skipped because seen already), and
+#    2. there is not another one already at the beginning
+#       (e.g. via a virtualenv using "include-system-site-packages")
+import sys; _pdbpp_path = os.path.sep + "_pdbpp_path_hack"; sys.path.insert(0, sys.path.pop()) if sys.path[-1].endswith(_pdbpp_path) and not sys.path[0].endswith(_pdbpp_path) else None

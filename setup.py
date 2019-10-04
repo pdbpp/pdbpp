@@ -1,11 +1,13 @@
 from __future__ import print_function
 
+import io
 import os.path
+from distutils.core import Command
+
 from setuptools import setup
 from setuptools.command.install import install
-from distutils.core import Command
-import io
-HACK = 'pdbmm_hijack_pdb.pth'
+
+PTH_HACK_FNAME = 'pdbpp_hijack_pdb.pth'
 
 readme_path = os.path.join(os.path.dirname(__file__), 'README.rst')
 changelog_path = os.path.join(os.path.dirname(__file__), 'CHANGELOG')
@@ -30,7 +32,7 @@ class install_pth_hack(Command):
 
     @property
     def target(self):
-        return os.path.join(self.install_dir, HACK)
+        return os.path.join(self.install_dir, PTH_HACK_FNAME)
 
     def get_outputs(self):
         return [self.target]
@@ -43,7 +45,7 @@ class install_pth_hack(Command):
             'install', ('install_lib', 'install_dir'))
 
     def run(self):
-        with open(HACK) as infp:
+        with open(PTH_HACK_FNAME) as infp:
             with open(self.target, 'w') as outfp:
                 outfp.write(infp.read())
 
