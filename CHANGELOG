@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+Changes between 0.10.0 and 0.10.2
+=================================
+
+Minor bugfix release to make pdb++ work better with a system-wide installation
+from within a virtualenv.
+
+- Fixes
+
+  - Fix pth hack: skip if added already (#297)
+
+Version 0.10.2 fixes only the deployment configuration.
+
 Changes between 0.9.15 and 0.10.0
 =================================
 
