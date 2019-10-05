@@ -3605,6 +3605,9 @@ def test_integration(testdir, tmphome, readline_param):
 
     if readline_param == "pyrepl":
         child.expect_exact("\x1b[?12l\x1b[?25h")
+        pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
+    else:
+        pdbpp_prompt = "\n(Pdb++) "
 
     # Completes help as unique (coming from pdb and fancycompleter).
     child.send(b"hel\t")
@@ -3614,7 +3617,7 @@ def test_integration(testdir, tmphome, readline_param):
         child.expect_exact(b"help")
     child.sendline("")
     child.expect_exact("\r\nDocumented commands")
-    child.expect_exact("\n(Pdb++) ")
+    child.expect_exact(pdbpp_prompt)
 
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
