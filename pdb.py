@@ -975,6 +975,7 @@ except for when using the function decorator.
 
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:
+            set_bg = self.config.highlight and self.config.current_line_color
             for i, line in enumerate(lines):
                 if lineno == self.curframe.f_lineno:
                     marker = '->'
@@ -984,12 +985,10 @@ except for when using the function decorator.
                     marker = ''
                 line = self._format_line(lineno, marker, line, lineno_width)
 
-                # Highlight current line (filled with spaces for background).
-                if self.config.highlight and marker == '->':
-                    if self.config.current_line_color:
-                        len_visible = len(RE_COLOR_ESCAPES.sub("", line))
-                        line = line + " " * (width - len_visible)
-                        line = setbgcolor(line, self.config.current_line_color)
+                if marker == "->" and set_bg:
+                    len_visible = len(RE_COLOR_ESCAPES.sub("", line))
+                    line = line + " " * (width - len_visible)
+                    line = setbgcolor(line, self.config.current_line_color)
 
                 lines[i] = line
                 lineno += 1
