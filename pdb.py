@@ -670,9 +670,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self.config.highlight:
             lineno = Color.set(self.config.line_number_color, lineno)
         line = '%s  %2s %s' % (lineno, marker, line)
-        if self.config.highlight and marker == '->':
-            if self.config.current_line_color:
-                line = setbgcolor(line, self.config.current_line_color)
         return line
 
     def execRcLines(self):
@@ -976,11 +973,6 @@ except for when using the function decorator.
                         lines = lines[:maxlines]
                         lines.append('...')
 
-        if self.config.highlight and print_markers:
-            # Fill with spaces.  This is important for setbgcolor, although
-            # only for the current/marked line really.
-            lines = [line.ljust(maxlength) for line in lines]
-
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:
             for i, line in enumerate(lines):
@@ -990,7 +982,16 @@ except for when using the function decorator.
                     marker = '>>'
                 else:
                     marker = ''
-                lines[i] = self._format_line(lineno, marker, line, lineno_width)
+                line = self._format_line(lineno, marker, line, lineno_width)
+
+                # Highlight current line (filled with spaces for background).
+                if self.config.highlight and marker == '->':
+                    if self.config.current_line_color:
+                        len_visible = len(RE_COLOR_ESCAPES.sub("", line))
+                        line = line + " " * (width - len_visible)
+                        line = setbgcolor(line, self.config.current_line_color)
+
+                lines[i] = line
                 lineno += 1
         else:
             for i, line in enumerate(lines):
