@@ -3584,22 +3584,27 @@ True
 
 def test_integration(testdir, tmphome, readline_param):
     """Integration test."""
+    import os
     import sys
 
+    assert os.getcwd() == tmphome
     f = tmphome.ensure("test_file.py")
     f.write("print('before'); __import__('pdb').set_trace(); print('after')")
 
-    import os
-    assert os.getcwd() == tmphome
+    if readline_param != "pyrepl":
+        # Create empty pyrepl module to ignore any installed pyrepl.
+        mocked_pyrepl = tmphome.ensure("pyrepl.py")
+        mocked_pyrepl.write("")
 
     child = testdir.spawn(sys.executable + " " + str(f), expect_timeout=1)
+    child.expect_exact("\n(Pdb++) ")
 
-    # NOTE: b'\x1b[?12l\x1b[?25h' comes via pyrepl.
+    if readline_param != "pyrepl":
+        # Remove it after startup to not interfere with completions.
+        mocked_pyrepl.remove()
+
     if readline_param == "pyrepl":
-        pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
-    else:
-        pdbpp_prompt = "\n(Pdb++) "
-    child.expect_exact(pdbpp_prompt)
+        child.expect_exact("\x1b[?12l\x1b[?25h")
 
     # Completes help as unique (coming from pdb and fancycompleter).
     child.send(b"hel\t")
@@ -3609,14 +3614,15 @@ def test_integration(testdir, tmphome, readline_param):
         child.expect_exact(b"help")
     child.sendline("")
     child.expect_exact("\r\nDocumented commands")
-    child.expect_exact(pdbpp_prompt)
+    child.expect_exact("\n(Pdb++) ")
 
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
     if sys.version_info >= (3, 3):
         child.send(b"b \t")
         if readline_param == "pyrepl":
-            child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:\x1b[?12l\x1b[?25h')
+            child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:'
+                               b'\x1b[?12l\x1b[?25h')
         else:
             child.expect_exact(b'b test_file.py:')
 
