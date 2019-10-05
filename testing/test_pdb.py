@@ -1316,8 +1316,30 @@ NUM +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +$
 NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
-# import pdb; pdb.GLOBAL_PDB.config.highlight = True
-# sticky
+# c
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+
+
+def test_truncated_source_with_pygments_and_highlight():
+
+    def fn():
+        """some docstring longer than maxlength for truncate_long_lines, which is 80"""
+        a = 1
+        set_trace(Config=ConfigWithPygmentsAndHighlight)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m a
+   5 frames hidden .*
+# l {line_num}, 5
+<COLORNUM> +\t$
+<COLORNUM> +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+<COLORNUM> +\t        ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39m
+<COLORNUM> +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+<COLORNUM> +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
+<COLORNUM> +\t$
 # sticky
 <CLEARSCREEN>
 >.*
@@ -1325,7 +1347,7 @@ NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 <COLORNUM> +           ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39m
 <COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
-<COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+<COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +$
 <COLORCURLINE> +->         ^[[38;5;28;01;44mreturn^[[39;00;44m a                                                       ^[[00m
 # c
