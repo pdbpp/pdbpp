@@ -48,6 +48,7 @@ class ConfigTest(pdb.DefaultConfig):
     editor = 'emacs'
     stdin_paste = 'epaste'
     disable_pytest_capturing = False
+    current_line_color = 44
 
 
 class ConfigWithHighlight(ConfigTest):
@@ -1319,6 +1320,40 @@ NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
 """.format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
 
 
+def test_truncated_source_with_pygments_and_highlight():
+
+    def fn():
+        """some docstring longer than maxlength for truncate_long_lines, which is 80"""
+        a = 1
+        set_trace(Config=ConfigWithPygmentsAndHighlight)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m a
+   5 frames hidden .*
+# l {line_num}, 5
+<COLORNUM> +\t$
+<COLORNUM> +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+<COLORNUM> +\t        ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39m
+<COLORNUM> +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+<COLORNUM> +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
+<COLORNUM> +\t$
+# sticky
+<CLEARSCREEN>
+>.*
+
+<COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+<COLORNUM> +           ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39m
+<COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+<COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
+<COLORNUM> +$
+<COLORCURLINE> +->         ^[[38;5;28;01;44mreturn^[[39;00;44m a                                                       ^[[00m
+# c
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+
+
 def test_shortlist_with_highlight():
 
     def fn():
@@ -1453,7 +1488,7 @@ def test_longlist_with_highlight():
 <COLORNUM>         def fn():
 <COLORNUM>             a = 1
 <COLORNUM>             set_trace(Config=ConfigWithHighlight)
-^[[39;49;7m^[[36;01;39;49;7m\d+^[[00;39;49;7m  ->         return a                                                       ^[[00m
+<COLORCURLINE> +->         return a                                                       ^[[00m$
 # c
 """)  # noqa: E501
 
@@ -1682,14 +1717,12 @@ InnerTestException:
 
 def test_sticky_dunder_exception_with_highlight():
     """Test __exception__ being displayed in sticky mode."""
-    class ConfigWithCurrentLineColor(ConfigWithHighlight):
-        current_line_color = 44
 
     def fn():
         def raises():
             raise InnerTestException()
 
-        set_trace(Config=ConfigWithCurrentLineColor)
+        set_trace(Config=ConfigWithHighlight)
         raises()
 
     check(fn, """
@@ -1836,15 +1869,14 @@ NUM  ->             raise InnerTestException()
 
 
 def test_sticky_dunder_return_with_highlight():
-    class ConfigWithPygments(ConfigWithHighlight):
-        use_pygments = True
-        current_line_color = 44
+    class Config(ConfigWithHighlight, ConfigWithPygments):
+        pass
 
     def fn():
         def returns():
             return 40 + 2
 
-        set_trace(Config=ConfigWithPygments)
+        set_trace(Config=Config)
         returns()
 
     expected, lines = run_func(fn, '# s\n# sticky\n# r\n# retval\n# c')
