@@ -508,18 +508,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         finally:
             sys.modules["readline"] = orig_readline
 
-    def _complete_expression(self, text, line, begidx, endidx):
-        """Remove prefixes added with pdb's _complete_expression."""
-        comps = super(Pdb, self)._complete_expression(text, line, begidx, endidx)
-        if '.' not in text:
-            return comps
-
-        dotted = text.split('.')
-        prefix = '.'.join(dotted[:-1]) + '.'
-        prefix_len = len(prefix)
-        return [x[prefix_len:] if x.startswith(prefix) else x
-                for x in comps]
-
     def complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
@@ -527,42 +515,61 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
             self._completions = []
 
-            # Get completions from original pdb.
-            with self._patch_readline_for_pyrepl():
-                real_pdb = super(Pdb, self)
-                for x in self._get_all_completions(real_pdb.complete, text):
-                    if x not in self._completions:
-                        self._completions.append(x)
-
             # Get completions from fancycompleter.
             mydict = self.curframe.f_globals.copy()
             mydict.update(self.curframe_locals)
             completer = Completer(mydict)
             completions = self._get_all_completions(completer.complete, text)
 
-            # Ignore "\t" as only completion from fancycompleter, if there are
-            # pdb completions, and remove duplicate completions.
-            if completions and (completions != ["\t"] or not len(self._completions)):
+            if self.fancycompleter.config.use_colors:
                 clean_fancy_completions = set([
                     RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS.sub("", x)
                     for x in completions
                 ])
-                self._completions = [
-                    x for x in self._completions
-                    if x not in clean_fancy_completions
-                ]
-                self._completions.extend(completions)
+            else:
+                clean_fancy_completions = completions
+
+            # Get completions from original pdb.
+            pdb_completions = []
+            with self._patch_readline_for_pyrepl():
+                real_pdb = super(Pdb, self)
+                for x in self._get_all_completions(real_pdb.complete, text):
+                    if x not in clean_fancy_completions:
+                        pdb_completions.append(x)
+
+            # Ignore "\t" as only completion from fancycompleter, if there are
+            # pdb completions.
+            if completions == ["\t"] and pdb_completions:
+                completions = []
+
+            if pdb_completions:
+                pdb_prefix = fancycompleter.commonprefix(pdb_completions)
+                if len(completions) == 1 and "." in completions[0]:
+                    # fancycompleter returned single match, or completes common
+                    # prefix via attr_matches.
+                    if completions[0].startswith(pdb_prefix):
+                        self._completions = completions
+                    else:
+                        self._completions = completions
+                else:
+                    self._completions = completions
+                    if '.' in text and pdb_prefix and len(pdb_completions) > 1:
+                        # Remove prefix for attr_matches from pdb completions.
+                        dotted = text.split('.')
+                        prefix = '.'.join(dotted[:-1]) + '.'
+                        prefix_len = len(prefix)
+                        pdb_completions = [
+                            x[prefix_len:] if x.startswith(prefix) else x
+                            for x in pdb_completions
+                        ]
+
+                    for x in pdb_completions:
+                        if x not in clean_fancy_completions:
+                            self._completions.append(x)
+            else:
+                self._completions = completions
 
             self._filter_completions(text)
-
-            # Remove space used by fancycompleter to not complete common
-            # (color) prefix, if there are completions from pdb.
-            # print(self._completions)
-            if (" " in self._completions
-                    and any(not x.startswith("\x1b")
-                            for x in self._completions
-                            if x != " ")):
-                self._completions.remove(" ")
 
             local._pdbpp_completing = False
 
@@ -1803,12 +1810,6 @@ for name in 'run runeval runctx runcall pm main set_trace'.split():
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
-
-# Patch completion attributes to use our method.
-for k in pdb.Pdb.__dict__:
-    if (k.startswith("complete_")
-            and getattr(pdb.Pdb, k) == pdb.Pdb._complete_expression):
-        setattr(Pdb, k, Pdb._complete_expression)
 
 
 def post_mortem(t=None, Pdb=Pdb):
