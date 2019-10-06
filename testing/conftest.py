@@ -124,10 +124,11 @@ def monkeypatch_pdb_methods(monkeypatch):
 
 
 @pytest.fixture
-def monkeypatch_complete(monkeypatch):
+def patched_completions(monkeypatch):
+    from .test_pdb import PdbTest
     import fancycompleter
 
-    def inner(PdbTest, comps):
+    def inner(text, fancy_comps, pdb_comps):
         _pdb = PdbTest()
         _pdb.reset()
         _pdb.cmdloop = lambda: None
@@ -135,14 +136,34 @@ def monkeypatch_complete(monkeypatch):
 
         def _get_comps(complete, text):
             if isinstance(complete.__self__, fancycompleter.Completer):
-                return comps["fancy"]
-            return comps["pdb"]
+                return fancy_comps[:]
+            return pdb_comps[:]
 
         monkeypatch.setattr(_pdb, "_get_all_completions", _get_comps)
         _pdb.interaction(sys._getframe(), None)
-        return _pdb.complete
+
+        comps = []
+        while True:
+            val = _pdb.complete(text, len(comps))
+            if val is None:
+                break
+            comps += [val]
+        return comps
 
     return inner
+
+
+@pytest.fixture(params=("color", "nocolor"), scope="session")
+def fancycompleter_color_param(request):
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m = MonkeyPatch()
+
+    if request.param == "color":
+        m.setattr("fancycompleter.DefaultConfig.use_colors", True)
+    else:
+        m.setattr("fancycompleter.DefaultConfig.use_colors", False)
+    return request.param
 
 
 @pytest.fixture
