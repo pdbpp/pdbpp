@@ -3528,12 +3528,13 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
     assert out.endswith("\n(Pdb++) \n")
 
 
-def get_completions(text):
+def get_completions(text, complete=None):
     """Get completions from the installed completer."""
-    readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
-    complete = readline_.get_completer()
+    if complete is None:
+        readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
+        complete = readline_.get_completer()
+        assert complete.__self__ is pdb.local.GLOBAL_PDB
     comps = []
-    assert complete.__self__ is pdb.local.GLOBAL_PDB
     while True:
         val = complete(text, len(comps))
         if val is None:
@@ -3731,6 +3732,26 @@ def test_complete_removes_duplicates_with_coloring(
 True
 # c
 """)
+
+
+class TestCompleteUnit:
+    def test_fancy_prefix_with_same_in_pdb(self, monkeypatch_complete):
+        complete = monkeypatch_complete(PdbTest, {
+            "fancy": ["foo.bar"],
+            "pdb": ["foo.bar", "foo.barbaz"],
+        })
+        assert get_completions('p foo.b', complete) == [
+            "foo.bar",
+        ]
+
+    def test_fancy_prefix_with_more_pdb(self, monkeypatch_complete):
+        complete = monkeypatch_complete(PdbTest, {
+            "fancy": ["foo.bar"],
+            "pdb": ["foo.bar", "foo.barbaz", "something else"],
+        })
+        assert get_completions('p foo.b', complete) == [
+            "foo.bar", "foo.barbaz", "something else",
+        ]
 
 
 def test_complete_uses_attributes_only_from_orig_pdb(

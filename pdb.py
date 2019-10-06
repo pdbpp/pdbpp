@@ -542,30 +542,25 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             if completions == ["\t"] and pdb_completions:
                 completions = []
 
+            self._completions = completions
             if pdb_completions:
                 pdb_prefix = fancycompleter.commonprefix(pdb_completions)
+                if '.' in text and pdb_prefix and len(pdb_completions) > 1:
+                    # Remove prefix for attr_matches from pdb completions.
+                    dotted = text.split('.')
+                    prefix = '.'.join(dotted[:-1]) + '.'
+                    prefix_len = len(prefix)
+                    pdb_completions = [
+                        x[prefix_len:] if x.startswith(prefix) else x
+                        for x in pdb_completions
+                    ]
                 if len(completions) == 1 and "." in completions[0]:
-                    # fancycompleter returned single match, or completes common
-                    # prefix via attr_matches.
-                    if completions[0].startswith(pdb_prefix):
-                        self._completions = completions
-                    else:
-                        self._completions = completions
-                else:
-                    self._completions = completions
-                    if '.' in text and pdb_prefix and len(pdb_completions) > 1:
-                        # Remove prefix for attr_matches from pdb completions.
-                        dotted = text.split('.')
-                        prefix = '.'.join(dotted[:-1]) + '.'
-                        prefix_len = len(prefix)
-                        pdb_completions = [
-                            x[prefix_len:] if x.startswith(prefix) else x
-                            for x in pdb_completions
-                        ]
+                    if pdb_prefix:
+                        pdb_completions = []
 
-                    for x in pdb_completions:
-                        if x not in clean_fancy_completions:
-                            self._completions.append(x)
+                for x in pdb_completions:
+                    if x not in clean_fancy_completions:
+                        self._completions.append(x)
             else:
                 self._completions = completions
 

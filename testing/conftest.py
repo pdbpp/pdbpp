@@ -124,6 +124,28 @@ def monkeypatch_pdb_methods(monkeypatch):
 
 
 @pytest.fixture
+def monkeypatch_complete(monkeypatch):
+    import fancycompleter
+
+    def inner(PdbTest, comps):
+        _pdb = PdbTest()
+        _pdb.reset()
+        _pdb.cmdloop = lambda: None
+        _pdb.forget = lambda: None
+
+        def _get_comps(complete, text):
+            if isinstance(complete.__self__, fancycompleter.Completer):
+                return comps["fancy"]
+            return comps["pdb"]
+
+        monkeypatch.setattr(_pdb, "_get_all_completions", _get_comps)
+        _pdb.interaction(sys._getframe(), None)
+        return _pdb.complete
+
+    return inner
+
+
+@pytest.fixture
 def monkeypatch_importerror(monkeypatch):
     @contextmanager
     def cm(mocked_imports):
