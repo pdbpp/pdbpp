@@ -3716,6 +3716,10 @@ def test_complete_removes_duplicates_with_coloring(
             else:
                 assert comps == ['foo', 'foobar', ' ']
 
+            monkeypatch_readline("disp", 0, 4)
+            comps = get_completions("disp")
+            assert comps == ['display']
+
             return True
 
         set_trace()
