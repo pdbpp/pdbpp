@@ -257,10 +257,14 @@ default value:
   Determine whether pdb++ starts in sticky mode or not.
 
 ``line_number_color = Color.turquoise``
-  The color to use for line numbers.
+  The color to use for line numbers. 
+  
+  (Note: Color.* are taken from fancycompleter so remember to import this module first.)
 
 ``filename_color = Color.yellow``
   The color to use for file names when printing the stack entries.
+  
+  (Note: Color.* are taken from fancycompleter so remember to import this module first.)
 
 ``current_line_color = "39;49;7"``
   The SGR parameters for the ANSI escape sequence to highlight the current
