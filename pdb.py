@@ -1457,6 +1457,29 @@ except for when using the function decorator.
     do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
+    def do_top(self, arg):
+        if self.curindex == 0:
+            print('*** Oldest frame', file=self.stdout)
+        else:
+            self.curindex = 0
+            self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_top = do_top
+
+
+    def do_bottom(self, arg):
+        if self.curindex + 1 == len(self.stack):
+            print('*** Newest frame', file=self.stdout)
+        else:
+            self.curindex = len(self.stack) - 1
+            self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
+            self.print_current_stack_entry()
+            self.lineno = None
+    do_bottom = do_bottom
+
     @staticmethod
     def get_terminal_size():
         fallback = (80, 24)

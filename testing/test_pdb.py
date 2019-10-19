@@ -1001,6 +1001,31 @@ def test_up_down_arg():
 """)
 
 
+def test_top_bottom():
+    def a():
+        b()
+
+    def b():
+        c()
+
+    def c():
+        set_trace()
+        return
+
+    check(
+        a, """
+[NUM] > .*c()
+-> return
+   5 frames hidden .*
+# top
+[NUM] > .*()
+-> sys.exit(main())
+# bottom
+[NUM] > .*c()
+-> return
+# c
+""")
+
 def test_parseline():
     def fn():
         c = 42
