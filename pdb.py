@@ -1459,7 +1459,8 @@ except for when using the function decorator.
 
     def do_top(self, arg):
         if self.curindex == 0:
-            print('*** Oldest frame', file=self.stdout)
+            self.error('Oldest frame')
+            return
         else:
             self.curindex = 0
             self.curframe = self.stack[self.curindex][0]
@@ -1471,7 +1472,8 @@ except for when using the function decorator.
 
     def do_bottom(self, arg):
         if self.curindex + 1 == len(self.stack):
-            print('*** Newest frame', file=self.stdout)
+            self.error('Newest frame')
+            return
         else:
             self.curindex = len(self.stack) - 1
             self.curframe = self.stack[self.curindex][0]
