@@ -806,10 +806,12 @@ def test_single_question_mark():
 
 
 def test_double_question_mark():
+    """Test do_inspect_with_source."""
     def fn():
         def f2(x, y):
             """Return product of x and y"""
             return x * y
+
         set_trace()
         a = 1
         b = 2
@@ -832,6 +834,37 @@ def test_double_question_mark():
 .* def f2(x, y):
 .*     \"\"\"Return product of x and y\"\"\"
 .*     return x \* y
+# c
+    """.format(
+        filename=__file__,
+    ))
+
+
+@pytest.mark.skipif(
+    hasattr(sys, "pypy_version_info") and sys.version_info < (3,),
+    reason="DeprecationWarning with pypy2"
+)
+def test_double_question_mark_exc():
+    """Test do_inspect_with_source with an exception."""
+    def fn():
+        try:
+            0 / 0
+        except Exception as exc:
+            e = exc  # noqa: F841
+
+        set_trace()
+        a = 1
+        return a
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden .*
+# e??
+^[[31;01mType:^[[00m           ZeroDivisionError
+^[[31;01mString Form:^[[00m    .*division.* zero
+^[[31;01mDocstring:^[[00m      .*
+^[[31;01mSource:^[[00m         -
 # c
     """.format(
         filename=__file__,

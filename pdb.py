@@ -692,9 +692,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if line.endswith('?') and not line.startswith("!"):
             arg = line.split('?', 1)[0]
             if line.endswith('??'):
-                cmd = 'source'
-                self.do_inspect(arg)
-                self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
+                cmd = "inspect_with_source"
             elif arg == '' or (
                 hasattr(self, 'do_' + arg)
                 and arg not in self.curframe.f_globals
@@ -743,7 +741,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         return cmd, arg, newline
 
+    def do_inspect_with_source(self, arg):
+        """Inspect argument with source (if available).  Used with `obj??`."""
+        self.do_inspect(arg)
+        prefix = "%-28s" % Color.set(Color.red, "Source:")
+        self._print_source(arg, prefix=prefix + "\n", quiet_msg=prefix + " -\n")
+
     def do_inspect(self, arg):
+        """Inspect argument.  Gets used with `ob??`."""
         obj = self._getval(arg)
 
         data = OrderedDict()
@@ -1372,7 +1377,7 @@ except for when using the function decorator.
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
 
-    def _get_position_of_arg(self, arg):
+    def _get_position_of_arg(self, arg, quiet=False):
         try:
             obj = self._getval(arg)
         except:
@@ -1383,15 +1388,23 @@ except for when using the function decorator.
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
-            print('** Error: %s **' % e, file=self.stdout)
+            if not quiet:
+                print('** Error: %s **' % e, file=self.stdout)
             return None, None, None
         return filename, lineno, lines
 
-    def do_source(self, arg):
-        _, lineno, lines = self._get_position_of_arg(arg)
+    def _print_source(self, obj, prefix="", quiet_msg=None):
+        """Print source of obj, with optional prefix (only if found)."""
+        _, lineno, lines = self._get_position_of_arg(obj, quiet_msg is not None)
         if lineno is None:
+            if quiet_msg:
+                self.stdout.write(quiet_msg)
             return
+        self.stdout.write(prefix)
         self._print_lines_pdbpp(lines, lineno, print_markers=False)
+
+    def do_source(self, arg):
+        self._print_source(arg)
 
     def do_frame(self, arg):
         """f(rame) [index]
