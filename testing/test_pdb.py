@@ -844,6 +844,35 @@ def test_double_question_mark():
     ))
 
 
+def test_question_mark_unit(capsys, LineMatcher):
+    _pdb = PdbTest()
+    _pdb.reset()
+
+    foo = {12: 34}  # noqa: F841
+    _pdb.setup(sys._getframe(), None)
+
+    _pdb.do_inspect("foo")
+
+    out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).fnmatch_lines([
+        "\x1b[31;01mString Form:\x1b[00m    {12: 34}"
+    ])
+
+    _pdb.do_inspect("doesnotexist")
+    out, err = capsys.readouterr()
+    assert out == "*** NameError: name 'doesnotexist' is not defined\n"
+
+    # Source for function.
+    def foo(): pass
+    _pdb.setup(sys._getframe(), None)
+    _pdb.do_inspect_with_source("foo")
+    out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).fnmatch_lines([
+        "\x1b[31;01mSource:\x1b[00m        ",
+        "* def foo(): pass",
+    ])
+
+
 def test_single_question_mark_with_existing_command(monkeypatch):
     def mocked_inspect(self, arg):
         print("mocked_inspect: %r" % arg)
