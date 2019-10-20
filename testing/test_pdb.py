@@ -775,6 +775,30 @@ new_set_trace
 """)
 
 
+def test_global_pdb_only_reused_for_same_class(monkeypatch_pdb_methods):
+    def fn():
+        class NewPdb(PdbTest, pdb.Pdb):
+            def set_trace(self, *args):
+                print("new_set_trace")
+                assert pdb.local.GLOBAL_PDB is self
+                ret = super(NewPdb, self).set_trace(*args)
+                assert pdb.local.GLOBAL_PDB is self
+                return ret
+
+        new_pdb = NewPdb()
+        new_pdb.set_trace()
+        assert pdb.local.GLOBAL_PDB is new_pdb
+
+        set_trace(cleanup=False)
+        assert pdb.local.GLOBAL_PDB is not new_pdb
+
+    check(fn, """
+new_set_trace
+=== set_trace
+=== set_trace
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
