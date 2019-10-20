@@ -183,8 +183,12 @@ class PdbMeta(type):
     def __call__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
         global_pdb = getattr(local, "GLOBAL_PDB", None)
-        in_interaction = global_pdb and global_pdb._in_interaction
-        use_global_pdb = kwargs.pop("use_global_pdb", not in_interaction)
+        if global_pdb:
+            use_global_pdb = kwargs.pop(
+                "use_global_pdb", not global_pdb._in_interaction
+            )
+        else:
+            use_global_pdb = kwargs.pop("use_global_pdb", True)
 
         frame = sys._getframe().f_back
         called_for_set_trace = False
@@ -196,8 +200,15 @@ class PdbMeta(type):
                 break
             frame = frame.f_back
 
-        same_class = global_pdb and cls.consider_as_same_class(global_pdb, cls)
-        if use_global_pdb and same_class and called_for_set_trace:
+        if (
+            use_global_pdb
+            and global_pdb
+            and called_for_set_trace
+            and (
+                hasattr(global_pdb, "_force_use_as_global_pdb")
+                or cls.use_global_pdb_for_class(global_pdb, cls)
+            )
+        ):
             if hasattr(global_pdb, "botframe"):
                 # Do not stop while tracing is active (in _set_stopinfo).
                 # But skip it with instances that have not called set_trace
@@ -223,7 +234,12 @@ class PdbMeta(type):
                         super(OrigPdb, self).set_trace(frame)
                 return OrigPdb()
 
-        set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
+        if "set_global_pdb" in kwargs:
+            set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
+            if set_global_pdb:
+                obj._force_use_as_global_pdb = True
+        else:
+            set_global_pdb = use_global_pdb
         local._pdbpp_in_init = True
         obj.__init__(*args, **kwargs)
         local._pdbpp_in_init = False
@@ -232,8 +248,10 @@ class PdbMeta(type):
         return obj
 
     @classmethod
-    def consider_as_same_class(cls, obj, C):
-        if isinstance(obj, C):
+    def use_global_pdb_for_class(cls, obj, C):
+        if type(obj) == C:
+            return True
+        if getattr(obj, "_use_global_pdb_for_class", None) == C:
             return True
         if sys.version_info < (3, 3):
             return inspect.getsourcelines(obj.__class__) == inspect.getsourcelines(C)
@@ -1146,6 +1164,7 @@ except for when using the function decorator.
                 self_withcfg.use_rawinput = self.use_rawinput
 
                 local.GLOBAL_PDB = self_withcfg
+                local.GLOBAL_PDB._use_global_pdb_for_class = self.__class__
 
         if sys.version_info < (3, ):
             do_debug_func = pdb.Pdb.do_debug.im_func
