@@ -1462,12 +1462,7 @@ except for when using the function decorator.
         if self.curindex == 0:
             self.error('Oldest frame')
             return
-        else:
-            self.curindex = 0
-            self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
-            self.lineno = None
+        self._select_frame(0)
     do_top = do_top
 
     def do_bottom(self, arg):
@@ -1475,12 +1470,7 @@ except for when using the function decorator.
         if self.curindex + 1 == len(self.stack):
             self.error('Newest frame')
             return
-        else:
-            self.curindex = len(self.stack) - 1
-            self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
-            self.lineno = None
+        self._select_frame(len(self.stack) - 1)
     do_bottom = do_bottom
 
     @staticmethod
