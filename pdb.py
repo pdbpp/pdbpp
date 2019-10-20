@@ -741,15 +741,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         return cmd, arg, newline
 
+    def do_inspect(self, arg):
+        """Inspect argument.  Used with `obj?`."""
+        self._do_inspect(arg, with_source=False)
+
     def do_inspect_with_source(self, arg):
         """Inspect argument with source (if available).  Used with `obj??`."""
-        self.do_inspect(arg)
-        prefix = "%-28s" % Color.set(Color.red, "Source:")
-        self._print_source(arg, prefix=prefix + "\n", quiet_msg=prefix + " -\n")
+        self._do_inspect(arg, with_source=True)
 
-    def do_inspect(self, arg):
-        """Inspect argument.  Gets used with `ob??`."""
-        obj = self._getval(arg)
+    def _do_inspect(self, arg, with_source=False):
+        try:
+            obj = self._getval(arg)
+        except Exception:
+            return
 
         data = OrderedDict()
         data['Type'] = type(obj).__name__
@@ -784,6 +788,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
             self.stdout.write('%-28s %s\n' % (formatted_key, value))
+
+        if with_source:
+            self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
+            _, lineno, lines = self._get_position_of_obj(obj, quiet=True)
+            if lineno is None:
+                self.stdout.write(" -\n")
+            else:
+                self.stdout.write("\n")
+                self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def default(self, line):
         """Patched version to fix namespace with list comprehensions.
@@ -1377,11 +1390,14 @@ except for when using the function decorator.
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
 
-    def _get_position_of_arg(self, arg, quiet=False):
+    def _get_position_of_arg(self, arg):
         try:
             obj = self._getval(arg)
         except:
             return None, None, None
+        return self._get_position_of_obj(obj)
+
+    def _get_position_of_obj(self, obj, quiet=False):
         if isinstance(obj, str):
             return obj, 1, None
         try:
@@ -1393,18 +1409,11 @@ except for when using the function decorator.
             return None, None, None
         return filename, lineno, lines
 
-    def _print_source(self, obj, prefix="", quiet_msg=None):
-        """Print source of obj, with optional prefix (only if found)."""
-        _, lineno, lines = self._get_position_of_arg(obj, quiet_msg is not None)
-        if lineno is None:
-            if quiet_msg:
-                self.stdout.write(quiet_msg)
-            return
-        self.stdout.write(prefix)
-        self._print_lines_pdbpp(lines, lineno, print_markers=False)
-
     def do_source(self, arg):
-        self._print_source(arg)
+        _, lineno, lines = self._get_position_of_arg(arg)
+        if lineno is None:
+            return
+        self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def do_frame(self, arg):
         """f(rame) [index]

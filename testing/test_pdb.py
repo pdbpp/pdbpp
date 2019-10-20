@@ -840,37 +840,6 @@ def test_double_question_mark():
     ))
 
 
-@pytest.mark.skipif(
-    hasattr(sys, "pypy_version_info") and sys.version_info < (3,),
-    reason="DeprecationWarning with pypy2"
-)
-def test_double_question_mark_exc():
-    """Test do_inspect_with_source with an exception."""
-    def fn():
-        try:
-            0 / 0
-        except Exception as exc:
-            e = exc  # noqa: F841
-
-        set_trace()
-        a = 1
-        return a
-
-    check(fn, r"""
-[NUM] > .*fn()
--> a = 1
-   5 frames hidden .*
-# e??
-^[[31;01mType:^[[00m           ZeroDivisionError
-^[[31;01mString Form:^[[00m    .*division.* zero
-^[[31;01mDocstring:^[[00m      .*
-^[[31;01mSource:^[[00m         -
-# c
-    """.format(
-        filename=__file__,
-    ))
-
-
 def test_single_question_mark_with_existing_command(monkeypatch):
     def mocked_inspect(self, arg):
         print("mocked_inspect: %r" % arg)
