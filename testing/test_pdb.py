@@ -787,7 +787,7 @@ def test_single_question_mark():
         return a+b+c
 
     # import pdb; pdb.set_trace()
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
@@ -799,6 +799,8 @@ def test_single_question_mark():
 ^[[31;01mFile:^[[00m           {filename}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
+# doesnotexist?
+\*\*\* NameError.*
 # c
     """.format(
         filename=__file__,
@@ -834,6 +836,8 @@ def test_double_question_mark():
 .* def f2(x, y):
 .*     \"\"\"Return product of x and y\"\"\"
 .*     return x \* y
+# doesnotexist??
+\*\*\* NameError.*
 # c
     """.format(
         filename=__file__,
