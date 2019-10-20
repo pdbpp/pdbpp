@@ -860,7 +860,9 @@ def test_question_mark_unit(capsys, LineMatcher):
 
     _pdb.do_inspect("doesnotexist")
     out, err = capsys.readouterr()
-    assert out == "*** NameError: name 'doesnotexist' is not defined\n"
+    LineMatcher(out.splitlines()).re_match_lines([
+        r"^\*\*\* NameError:",
+    ])
 
     # Source for function.
     def foo(): pass
