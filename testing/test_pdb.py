@@ -864,14 +864,29 @@ def test_question_mark_unit(capsys, LineMatcher):
         r"^\*\*\* NameError:",
     ])
 
-    # Source for function.
-    def foo(): pass
+    # Source for function, indented docstring.
+    def foo():
+        """doc_for_foo
+
+        3rd line."""
+        raise NotImplementedError()
     _pdb.setup(sys._getframe(), None)
     _pdb.do_inspect_with_source("foo")
     out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).re_match_lines([
+        r"\x1b\[31;01mDocstring:\x1b\[00m      doc_for_foo",
+        r"",
+        r"                        3rd line\.",
+        r"\x1b\[31;01mSource:\x1b\[00m        ",
+        r"\d+         def foo\(\):",
+        r"\d+             raise NotImplementedError\(\)",
+    ])
+
+    # Missing source
+    _pdb.do_inspect_with_source("str.strip")
+    out, err = capsys.readouterr()
     LineMatcher(out.splitlines()).fnmatch_lines([
-        "\x1b[31;01mSource:\x1b[00m        ",
-        "* def foo(): pass",
+        "\x1b[31;01mSource:\x1b[00m         -",
     ])
 
 

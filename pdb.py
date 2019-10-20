@@ -755,11 +755,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         except Exception:
             return
 
+        import textwrap
         data = OrderedDict()
         data['Type'] = type(obj).__name__
         data['String Form'] = str(obj).strip()
         try:
-            data['Length'] = len(obj)
+            data['Length'] = str(len(obj))
         except TypeError:
             pass
         try:
@@ -774,10 +775,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             data['Docstring'] = obj.__doc__
             data['Constructor information'] = ''
             try:
-                data[' Definition'] = '%s%s' % (arg, signature(obj))
+                data['  Definition'] = '%s%s' % (arg, signature(obj))
             except ValueError:
                 pass
-            data[' Docstring'] = obj.__init__.__doc__
+            data['  Docstring'] = obj.__init__.__doc__
         else:
             try:
                 data['Definition'] = '%s%s' % (arg, signature(obj))
@@ -787,7 +788,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
-            self.stdout.write('%-28s %s\n' % (formatted_key, value))
+            if value:
+                first_line, _, lines = str(value).partition("\n")
+                formatted_value = first_line
+                if lines:
+                    formatted_value += "\n" + textwrap.indent(lines, " " * 16)
+            else:
+                formatted_value = ""
+            self.stdout.write('%-28s %s\n' % (formatted_key, formatted_value))
 
         if with_source:
             self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
