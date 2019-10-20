@@ -787,7 +787,7 @@ def test_single_question_mark():
         return a+b+c
 
     # import pdb; pdb.set_trace()
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
@@ -799,6 +799,8 @@ def test_single_question_mark():
 ^[[31;01mFile:^[[00m           {filename}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
+# doesnotexist?
+\*\*\* NameError.*
 # c
     """.format(
         filename=__file__,
@@ -806,10 +808,12 @@ def test_single_question_mark():
 
 
 def test_double_question_mark():
+    """Test do_inspect_with_source."""
     def fn():
         def f2(x, y):
             """Return product of x and y"""
             return x * y
+
         set_trace()
         a = 1
         b = 2
@@ -832,10 +836,43 @@ def test_double_question_mark():
 .* def f2(x, y):
 .*     \"\"\"Return product of x and y\"\"\"
 .*     return x \* y
+# doesnotexist??
+\*\*\* NameError.*
 # c
     """.format(
         filename=__file__,
     ))
+
+
+def test_question_mark_unit(capsys, LineMatcher):
+    _pdb = PdbTest()
+    _pdb.reset()
+
+    foo = {12: 34}  # noqa: F841
+    _pdb.setup(sys._getframe(), None)
+
+    _pdb.do_inspect("foo")
+
+    out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).fnmatch_lines([
+        "\x1b[31;01mString Form:\x1b[00m    {12: 34}"
+    ])
+
+    _pdb.do_inspect("doesnotexist")
+    out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).re_match_lines([
+        r"^\*\*\* NameError:",
+    ])
+
+    # Source for function.
+    def foo(): pass
+    _pdb.setup(sys._getframe(), None)
+    _pdb.do_inspect_with_source("foo")
+    out, err = capsys.readouterr()
+    LineMatcher(out.splitlines()).fnmatch_lines([
+        "\x1b[31;01mSource:\x1b[00m        ",
+        "* def foo(): pass",
+    ])
 
 
 def test_single_question_mark_with_existing_command(monkeypatch):

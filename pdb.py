@@ -692,9 +692,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if line.endswith('?') and not line.startswith("!"):
             arg = line.split('?', 1)[0]
             if line.endswith('??'):
-                cmd = 'source'
-                self.do_inspect(arg)
-                self.stdout.write('%-28s\n' % Color.set(Color.red, 'Source:'))
+                cmd = "inspect_with_source"
             elif arg == '' or (
                 hasattr(self, 'do_' + arg)
                 and arg not in self.curframe.f_globals
@@ -744,7 +742,18 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return cmd, arg, newline
 
     def do_inspect(self, arg):
-        obj = self._getval(arg)
+        """Inspect argument.  Used with `obj?`."""
+        self._do_inspect(arg, with_source=False)
+
+    def do_inspect_with_source(self, arg):
+        """Inspect argument with source (if available).  Used with `obj??`."""
+        self._do_inspect(arg, with_source=True)
+
+    def _do_inspect(self, arg, with_source=False):
+        try:
+            obj = self._getval(arg)
+        except Exception:
+            return
 
         data = OrderedDict()
         data['Type'] = type(obj).__name__
@@ -779,6 +788,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
             self.stdout.write('%-28s %s\n' % (formatted_key, value))
+
+        if with_source:
+            self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
+            _, lineno, lines = self._get_position_of_obj(obj, quiet=True)
+            if lineno is None:
+                self.stdout.write(" -\n")
+            else:
+                self.stdout.write("\n")
+                self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def default(self, line):
         """Patched version to fix namespace with list comprehensions.
@@ -1377,13 +1395,17 @@ except for when using the function decorator.
             obj = self._getval(arg)
         except:
             return None, None, None
+        return self._get_position_of_obj(obj)
+
+    def _get_position_of_obj(self, obj, quiet=False):
         if isinstance(obj, str):
             return obj, 1, None
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
-            print('** Error: %s **' % e, file=self.stdout)
+            if not quiet:
+                print('** Error: %s **' % e, file=self.stdout)
             return None, None, None
         return filename, lineno, lines
 
