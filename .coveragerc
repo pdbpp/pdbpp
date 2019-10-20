@@ -2,3 +2,8 @@
 include = pdb.py, testing/*
 branch = 1
 parallel = 1
+
+[coverage:report]
+exclude_lines =
+    \#\s*pragma: no cover
+    ^\s*raise NotImplementedError\b
