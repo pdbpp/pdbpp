@@ -1458,6 +1458,7 @@ except for when using the function decorator.
     do_d = do_down
 
     def do_top(self, arg):
+        """Go to top (oldest) frame."""
         if self.curindex == 0:
             self.error('Oldest frame')
             return
@@ -1469,8 +1470,8 @@ except for when using the function decorator.
             self.lineno = None
     do_top = do_top
 
-
     def do_bottom(self, arg):
+        """Go to bottom (newest) frame."""
         if self.curindex + 1 == len(self.stack):
             self.error('Newest frame')
             return

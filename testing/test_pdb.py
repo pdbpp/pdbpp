@@ -1026,6 +1026,7 @@ def test_top_bottom():
 # c
 """)
 
+
 def test_parseline():
     def fn():
         c = 42
