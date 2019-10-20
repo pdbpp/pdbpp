@@ -1019,7 +1019,7 @@ def test_top_bottom():
    5 frames hidden .*
 # top
 [NUM] > .*()
--> sys.exit(main())
+-> .*main
 # bottom
 [NUM] > .*c()
 -> return
