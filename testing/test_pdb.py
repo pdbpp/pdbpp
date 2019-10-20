@@ -1027,6 +1027,32 @@ def test_top_bottom():
 """)
 
 
+def test_top_bottom_post_mortem():
+    def fn():
+        def throws():
+            0 / 0
+
+        try:
+            throws()
+        except:
+            pdb.post_mortem(Pdb=PdbTest)
+    check(fn, r"""
+[1] > .*throws()
+-> 0 / 0
+# top
+[0] > .*fn()
+-> throws()
+# top
+\*\*\* Oldest frame
+# bottom
+[1] > .*throws()
+-> 0 / 0
+# bottom
+\*\*\* Newest frame
+# c
+""")
+
+
 def test_parseline():
     def fn():
         c = 42
