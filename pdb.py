@@ -755,7 +755,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         except Exception:
             return
 
-        import textwrap
         data = OrderedDict()
         data['Type'] = type(obj).__name__
         data['String Form'] = str(obj).strip()
@@ -792,7 +791,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 first_line, _, lines = str(value).partition("\n")
                 formatted_value = first_line
                 if lines:
-                    formatted_value += "\n" + textwrap.indent(lines, " " * 16)
+                    indent = " " * 16
+                    formatted_value += "\n" + "\n".join(
+                        indent + line
+                        for line in lines.splitlines()
+                    )
             else:
                 formatted_value = ""
             self.stdout.write('%-28s %s\n' % (formatted_key, formatted_value))
