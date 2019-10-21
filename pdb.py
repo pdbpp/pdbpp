@@ -180,7 +180,7 @@ undefined = Undefined()
 
 
 class PdbMeta(type):
-    def __call__(cls, completekey='tab', stdin=None, stdout=None, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
         global_pdb = getattr(local, "GLOBAL_PDB", None)
         if global_pdb:
@@ -218,6 +218,10 @@ class PdbMeta(type):
                 global_pdb.set_continue()
                 global_pdb._set_trace_use_next = True
 
+            try:
+                stdout = args[2]
+            except IndexError:
+                stdout = kwargs.get("stdout", sys.stdout)
             global_pdb._setup_streams(stdout=stdout)
 
             return global_pdb
@@ -293,8 +297,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self._setup_streams(stdout=self.stdout)
 
     def _setup_streams(self, stdout):
-        if stdout is None:
-            stdout = sys.stdout
         self.stdout = self.ensure_file_can_write_unicode(stdout)
 
     def ensure_file_can_write_unicode(self, f):

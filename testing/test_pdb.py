@@ -4710,18 +4710,27 @@ def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdb.Pdb._truncate_to_visible_length(s, maxlength) == expected
 
 
-def test_stdout_reconfigured(monkeypatch):
+@pytest.mark.parametrize("pass_stdout", (None, "args", "kwargs"))
+def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
     def fn():
+        import functools
         import io
+
+        if pass_stdout == "args":
+            _PdbTest = functools.partial(PdbTest, "tab", None, sys.stdout)
+        elif pass_stdout == "kwargs":
+            _PdbTest = functools.partial(PdbTest, stdout=sys.stdout)
+        else:
+            _PdbTest = PdbTest
 
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
         print("ignored")
-        set_trace()
+        set_trace(Pdb=_PdbTest)
         sys.stdout.close()
         sys.stdout = old_stdout
-        set_trace(cleanup=False)
+        set_trace(Pdb=_PdbTest)
         sys.stdout.write('# c')  # Hack to reflect output in test.
         return
 
