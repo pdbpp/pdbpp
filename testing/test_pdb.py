@@ -4710,7 +4710,7 @@ def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdb.Pdb._truncate_to_visible_length(s, maxlength) == expected
 
 
-@pytest.mark.parametrize("pass_stdout", (None, "args", "kwargs"))
+@pytest.mark.parametrize("pass_stdout", (True, False))
 def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
     def fn():
@@ -4721,30 +4721,32 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
         with monkeypatch.context() as mp:
             mp.setattr(sys, "stdout", patched_stdout)
 
-            class _PdbTest(PdbTest):
-                def __init__(self, *args, **kwargs):
-                    args = ()
-                    kwargs = {}
-                    if pass_stdout == "args":
-                        args = ("tab", None, patched_stdout)
-                    elif pass_stdout == "kwargs":
-                        kwargs["stdout"] = patched_stdout
-                    super(_PdbTest, self).__init__(*args, **kwargs)
-
+            class _PdbTestKeepRawInput(PdbTest):
+                def __init__(self, completekey, stdin, stdout, *args, **kwargs):
+                    if pass_stdout:
+                        stdout = sys.stdout
+                    else:
+                        stdout = None
+                    super(_PdbTestKeepRawInput, self).__init__(
+                        completekey, stdin, stdout, *args, **kwargs
+                    )
                     # Keep this, which gets set to 0 with stdin being passed in.
                     self.use_rawinput = True
 
-            set_trace(Pdb=_PdbTest)
+            set_trace(Pdb=_PdbTestKeepRawInput)
+            assert pdb.local.GLOBAL_PDB.stdout is patched_stdout
+
             print(patched_stdout.getvalue())
             patched_stdout.close()
 
-        set_trace(Pdb=_PdbTest, cleanup=False)
+        set_trace(Pdb=_PdbTestKeepRawInput, cleanup=False)
+        assert pdb.local.GLOBAL_PDB.stdout is sys.stdout
         print('# c')  # Hack to reflect output in test.
         return
 
     check(fn, """
 [NUM] > .*fn()
--> print('# c')  # Hack to reflect output in test.
+-> assert pdb.local.GLOBAL_PDB.stdout is sys.stdout
    5 frames hidden .*
 # c
 # c
