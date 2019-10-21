@@ -4708,3 +4708,27 @@ do_help
 ])
 def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdb.Pdb._truncate_to_visible_length(s, maxlength) == expected
+
+
+def test_stdout_reconfigured(monkeypatch):
+    """Check that self.stdout is re-configured with global pdb."""
+    def fn():
+        import io
+
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        print("ignored")
+        set_trace()
+        sys.stdout.close()
+        sys.stdout = old_stdout
+        set_trace(cleanup=False)
+        sys.stdout.write('# c')  # Hack to reflect output in test.
+        return
+
+    check(fn, """
+[NUM] > .*fn()
+-> sys.stdout.write('# c')
+   5 frames hidden .*
+# c
+# c
+""")
