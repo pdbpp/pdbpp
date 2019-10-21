@@ -4714,10 +4714,14 @@ def test_truncate_to_visible_length(s, maxlength, expected):
 def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
     def fn():
-        import io
         import sys
+        if sys.version_info > (3,):
+            from io import StringIO
+        else:
+            from StringIO import StringIO
 
-        patched_stdout = io.StringIO()
+        patched_stdout = StringIO()
+
         with monkeypatch.context() as mp:
             mp.setattr(sys, "stdout", patched_stdout)
 
