@@ -4714,29 +4714,37 @@ def test_truncate_to_visible_length(s, maxlength, expected):
 def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
     def fn():
-        import functools
         import io
+        import sys
 
-        if pass_stdout == "args":
-            _PdbTest = functools.partial(PdbTest, "tab", None, sys.stdout)
-        elif pass_stdout == "kwargs":
-            _PdbTest = functools.partial(PdbTest, stdout=sys.stdout)
-        else:
-            _PdbTest = PdbTest
+        patched_stdout = io.StringIO()
+        with monkeypatch.context() as mp:
+            mp.setattr(sys, "stdout", patched_stdout)
 
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        print("ignored")
-        set_trace(Pdb=_PdbTest)
-        sys.stdout.close()
-        sys.stdout = old_stdout
-        set_trace(Pdb=_PdbTest)
-        sys.stdout.write('# c')  # Hack to reflect output in test.
+            class _PdbTest(PdbTest):
+                def __init__(self, *args, **kwargs):
+                    args = ()
+                    kwargs = {}
+                    if pass_stdout == "args":
+                        args = ("tab", None, patched_stdout)
+                    elif pass_stdout == "kwargs":
+                        kwargs["stdout"] = patched_stdout
+                    super(_PdbTest, self).__init__(*args, **kwargs)
+
+                    # Keep this, which gets set to 0 with stdin being passed in.
+                    self.use_rawinput = True
+
+            set_trace(Pdb=_PdbTest)
+            print(patched_stdout.getvalue())
+            patched_stdout.close()
+
+        set_trace(Pdb=_PdbTest, cleanup=False)
+        print('# c')  # Hack to reflect output in test.
         return
 
     check(fn, """
 [NUM] > .*fn()
--> sys.stdout.write('# c')
+-> print('# c')  # Hack to reflect output in test.
    5 frames hidden .*
 # c
 # c
