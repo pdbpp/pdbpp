@@ -1027,28 +1027,39 @@ def test_top_bottom():
 """)
 
 
-def test_top_bottom_post_mortem():
+def test_top_bottom_frame_post_mortem():
     def fn():
         def throws():
             0 / 0
 
-        try:
+        def f():
             throws()
+
+        try:
+            f()
         except:
             pdb.post_mortem(Pdb=PdbTest)
     check(fn, r"""
-[1] > .*throws()
+[2] > .*throws()
 -> 0 / 0
 # top
 [0] > .*fn()
--> throws()
+-> f()
 # top
 \*\*\* Oldest frame
 # bottom
-[1] > .*throws()
+[2] > .*throws()
 -> 0 / 0
 # bottom
 \*\*\* Newest frame
+# frame -1  ### Same as bottom, no error.
+[2] > .*throws()
+-> 0 / 0
+# frame -2
+[1] > .*f()
+-> throws()
+# frame -3
+\*\*\* Out of range
 # c
 """)
 

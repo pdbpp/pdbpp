@@ -1417,14 +1417,17 @@ except for when using the function decorator.
             print(
                 '*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
-        if arg < 0 or arg >= len(self.stack):
+        if abs(arg) >= len(self.stack):
             print('*** Out of range', file=self.stdout)
-        else:
+            return
+        if arg > 0:
             self.curindex = arg
-            self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
-            self.lineno = None
+        else:
+            self.curindex = len(self.stack) + arg
+        self.curframe = self.stack[self.curindex][0]
+        self.curframe_locals = self.curframe.f_locals
+        self.print_current_stack_entry()
+        self.lineno = None
     do_f = do_frame
 
     def do_up(self, arg='1'):
