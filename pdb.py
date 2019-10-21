@@ -191,15 +191,7 @@ class PdbMeta(type):
             use_global_pdb = kwargs.pop("use_global_pdb", True)
 
         frame = sys._getframe().f_back
-        called_for_set_trace = False
-        while frame:
-            if (frame.f_code.co_name == "set_trace"
-                    and frame.f_back
-                    and "set_trace" in frame.f_back.f_code.co_names):
-                called_for_set_trace = frame
-                break
-            frame = frame.f_back
-
+        called_for_set_trace = PdbMeta.called_for_set_trace(frame)
         if (
             use_global_pdb
             and global_pdb
@@ -260,6 +252,21 @@ class PdbMeta(type):
         if sys.version_info < (3, 3):
             return inspect.getsourcelines(obj.__class__) == inspect.getsourcelines(C)
         return C.__qualname__ == obj.__class__.__qualname__
+
+    @staticmethod
+    def called_for_set_trace(frame):
+        called_for_set_trace = False
+        while frame:
+            if (
+                frame.f_code.co_name == "set_trace"
+                and frame.f_back
+                and "set_trace"
+                in (frame.f_back.f_code.co_names + frame.f_back.f_code.co_varnames)
+            ):
+                called_for_set_trace = frame
+                break
+            frame = frame.f_back
+        return called_for_set_trace
 
 
 @six.add_metaclass(PdbMeta)

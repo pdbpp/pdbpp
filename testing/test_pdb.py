@@ -462,6 +462,33 @@ a: 2 --> 3
 """)
 
 
+class TestPdbMeta:
+    def test_called_for_set_trace(self):
+        assert pdb.PdbMeta.called_for_set_trace(sys._getframe()) is False
+
+        class Foo:
+            def set_trace():
+                frame = sys._getframe()
+                assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+
+        Foo.set_trace()
+
+    def test_called_for_set_trace_via_func(self):
+        def set_trace():
+            frame = sys._getframe()
+            assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+
+        set_trace()
+
+        def somefunc():
+            def meta():
+                frame = sys._getframe()
+                assert pdb.PdbMeta.called_for_set_trace(frame) is False
+            meta()
+
+        somefunc()
+
+
 def test_forget_with_new_pdb():
     """Regression test for having used local.GLOBAL_PDB in forget.
 
