@@ -837,7 +837,7 @@ def test_single_question_mark():
 # f2?
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-^[[31;01mFile:^[[00m           {filename}
+^[[31;01mFile:^[[00m           {filename}:{lnum}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
 # doesnotexist?
@@ -845,6 +845,7 @@ def test_single_question_mark():
 # c
     """.format(
         filename=__file__,
+        lnum=fn.__code__.co_firstlineno + 1,
     ))
 
 

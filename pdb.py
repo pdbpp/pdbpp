@@ -784,6 +784,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             data['File'] = inspect.getabsfile(obj)
         except TypeError:
             pass
+        else:
+            try:
+                data['File'] += ":" + str(obj.__code__.co_firstlineno)
+            except AttributeError:
+                pass
 
         if (isinstance(obj, type)
                 and hasattr(obj, '__init__')
