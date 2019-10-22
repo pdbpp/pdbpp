@@ -463,30 +463,48 @@ a: 2 --> 3
 
 
 class TestPdbMeta:
-    def test_called_for_set_trace(self):
+    def test_called_for_set_trace_false(self):
         assert pdb.PdbMeta.called_for_set_trace(sys._getframe()) is False
 
+    def test_called_for_set_trace_staticmethod(self):
+
         class Foo:
+            @staticmethod
             def set_trace():
                 frame = sys._getframe()
                 assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+                return True
 
-        Foo.set_trace()
+        assert Foo.set_trace() is True
+
+    def test_called_for_set_trace_method(self):
+
+        class Foo:
+            def set_trace(self):
+                frame = sys._getframe()
+                assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+                return True
+
+        assert Foo().set_trace() is True
 
     def test_called_for_set_trace_via_func(self):
         def set_trace():
             frame = sys._getframe()
             assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+            return True
 
-        set_trace()
+        assert set_trace() is True
+
+    def test_called_for_set_trace_via_other_func(self):
 
         def somefunc():
             def meta():
                 frame = sys._getframe()
                 assert pdb.PdbMeta.called_for_set_trace(frame) is False
             meta()
+            return True
 
-        somefunc()
+        assert somefunc() is True
 
 
 def test_forget_with_new_pdb():
