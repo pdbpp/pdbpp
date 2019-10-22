@@ -182,6 +182,23 @@ undefined = Undefined()
 class PdbMeta(type):
     def __call__(cls, completekey='tab', stdin=None, stdout=None, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
+
+        # Prevent recursion errors with pdb.set_trace() during init/debugging.
+        if getattr(local, "_pdbpp_in_init", False):
+            class OrigPdb(pdb.Pdb, object):
+                def set_trace(self, frame=None):
+                    print("pdb++: using pdb.Pdb for recursive set_trace.")
+                    if frame is None:
+                        frame = sys._getframe().f_back
+                    super(OrigPdb, self).set_trace(frame)
+            obj = OrigPdb.__new__(OrigPdb)
+            # Remove any pdb++ only kwargs.
+            kwargs.pop("Config", None)
+            obj.__init__(*args, **kwargs)
+            local._pdbpp_in_init = False
+            return obj
+        local._pdbpp_in_init = True
+
         global_pdb = getattr(local, "GLOBAL_PDB", None)
         if global_pdb:
             use_global_pdb = kwargs.pop(
@@ -214,6 +231,7 @@ class PdbMeta(type):
                 stdout = sys.stdout
             global_pdb._setup_streams(stdout=stdout)
 
+            local._pdbpp_in_init = False
             return global_pdb
 
         obj = cls.__new__(cls)
@@ -221,26 +239,16 @@ class PdbMeta(type):
             kwargs.setdefault("start_filename", called_for_set_trace.f_code.co_filename)
             kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 
-            if getattr(local, "_pdbpp_in_init", False):
-                class OrigPdb(pdb.Pdb, object):
-                    def set_trace(self, frame=None):
-                        print("pdb++: using pdb.Pdb for recursive set_trace.")
-                        if frame is None:
-                            frame = sys._getframe().f_back
-                        super(OrigPdb, self).set_trace(frame)
-                return OrigPdb()
-
         if "set_global_pdb" in kwargs:
             set_global_pdb = kwargs.pop("set_global_pdb", use_global_pdb)
             if set_global_pdb:
                 obj._force_use_as_global_pdb = True
         else:
             set_global_pdb = use_global_pdb
-        local._pdbpp_in_init = True
         obj.__init__(completekey, stdin, stdout, *args, **kwargs)
-        local._pdbpp_in_init = False
         if set_global_pdb:
             local.GLOBAL_PDB = obj
+        local._pdbpp_in_init = False
         return obj
 
     @classmethod
