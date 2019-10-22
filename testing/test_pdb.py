@@ -4835,7 +4835,9 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
             mp.setattr(sys, "stdout", patched_stdout)
 
             class _PdbTestKeepRawInput(PdbTest):
-                def __init__(self, completekey, stdin, stdout, *args, **kwargs):
+                def __init__(
+                    self, completekey="ck", stdin=None, stdout=None, *args, **kwargs
+                ):
                     if pass_stdout:
                         stdout = sys.stdout
                     else:
