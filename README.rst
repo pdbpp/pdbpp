@@ -2,7 +2,7 @@ pdb++, a drop-in replacement for pdb
 ====================================
 
 What is it?
-------------
+-----------
 
 This module is an extension of the pdb_ module of the standard library.  It is
 meant to be fully compatible with its predecessor, yet it introduces a number
@@ -34,7 +34,7 @@ unexpected behavior, please report it as a bug.
 .. _Pygments: http://pygments.org/
 
 Installation
--------------
+------------
 
 Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
 
@@ -123,7 +123,7 @@ The following are new commands that you can use from the interative
 
 
 Smart command parsing
-----------------------
+---------------------
 
 By default, pdb tries hard to interpret what you enter at the command prompt
 as one of its builtin commands.  However, this is inconvenient if you want to
@@ -256,21 +256,19 @@ default value:
 ``sticky_by_default = False``
   Determine whether pdb++ starts in sticky mode or not.
 
-``line_number_color = Color.turquoise``
+``line_number_color = pdb.Color.turquoise``
   The color to use for line numbers.
+  See ANSI_escape_code_note_.
 
-``filename_color = Color.yellow``
+``filename_color = pdb.Color.yellow``
   The color to use for file names when printing the stack entries.
+  See ANSI_escape_code_note_.
 
 ``current_line_color = "39;49;7"``
   The SGR parameters for the ANSI escape sequence to highlight the current
-  line.
-  This is set inside the SGR escape sequence ``\e[%sm`` where ``\e`` is the
-  ESC character and ``%s`` the given value.  See `SGR parameters`_.
-  The following means "reset all colors" (``0``), set foreground color to 18
-  (``48;5;18``), and background to ``21``.
-  The default uses the default foreground (``39``) and background (``49``)
-  colors, inversed (``7``).
+  line.  The default uses the default foreground (``39``) and background
+  (``49``) colors, inversed (``7``).
+  See ANSI_escape_code_note_.
 
 ``editor = None``
   The command to invoke when using the ``edit`` command. By default, it uses ``$EDITOR``
@@ -315,7 +313,7 @@ default value:
   when ``show_traceback_on_error`` is enabled.
 
 Options relevant for source code highlighting (using Pygments)
-==============================================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``use_pygments = None``
   By default Pygments_ is used for syntax highlighting of source code when it
@@ -373,9 +371,22 @@ Example::
         pygments_formatter_kwargs = {"style": "solarized-light"}
 
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
-.. _`pytest`: https://pytest.org/
 .. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 
+.. _ANSI_escape_code_note:
+
+Note on values for color options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The values for color options will be used inside of the SGR escape sequence
+``\e[%sm`` where ``\e`` is the ESC character and ``%s`` the given value.
+See `SGR parameters`_.
+
+The following means "reset all colors" (``0``), set foreground color to 18
+(``48;5;18``), and background to ``21``: ``"0;48;5;18;38;5;21"``.
+
+Constants are available via ``pdb.Color``, e.g. ``pdb.Color.red``
+(``"31;01"``), but in general any string can be used here.
 
 Coding guidelines
 -----------------
