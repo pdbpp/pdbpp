@@ -180,7 +180,7 @@ undefined = Undefined()
 
 
 class PdbMeta(type):
-    def __call__(cls, completekey='tab', stdin=None, stdout=None, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):
         """Reuse an existing instance with ``pdb.set_trace()``."""
 
         # Prevent recursion errors with pdb.set_trace() during init/debugging.
@@ -227,8 +227,7 @@ class PdbMeta(type):
                 global_pdb.set_continue()
                 global_pdb._set_trace_use_next = True
 
-            if stdout is None:
-                stdout = sys.stdout
+            stdout = kwargs.get("stdout", sys.stdout)
             global_pdb._setup_streams(stdout=stdout)
 
             local._pdbpp_in_init = False
@@ -245,7 +244,7 @@ class PdbMeta(type):
                 obj._force_use_as_global_pdb = True
         else:
             set_global_pdb = use_global_pdb
-        obj.__init__(completekey, stdin, stdout, *args, **kwargs)
+        obj.__init__(*args, **kwargs)
         if set_global_pdb:
             local.GLOBAL_PDB = obj
         local._pdbpp_in_init = False
