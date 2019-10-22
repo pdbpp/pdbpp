@@ -1132,6 +1132,14 @@ except for when using the function decorator.
         do_list.__doc__ = pdb.Pdb.do_list.__doc__
         do_l = do_list
 
+        def _select_frame(self, number):
+            assert 0 <= number < len(self.stack)
+            self.curindex = number
+            self.curframe = self.stack[self.curindex][0]
+            self.curframe_locals = self.curframe.f_locals
+            self.print_stack_entry(self.stack[self.curindex])
+            self.lineno = None
+
     def do_continue(self, arg):
         if arg != '':
             self._seen_error = False
@@ -1473,14 +1481,17 @@ except for when using the function decorator.
             print(
                 '*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
             return
-        if arg < 0 or arg >= len(self.stack):
+        if abs(arg) >= len(self.stack):
             print('*** Out of range', file=self.stdout)
-        else:
+            return
+        if arg > 0:
             self.curindex = arg
-            self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
-            self.lineno = None
+        else:
+            self.curindex = len(self.stack) + arg
+        self.curframe = self.stack[self.curindex][0]
+        self.curframe_locals = self.curframe.f_locals
+        self.print_current_stack_entry()
+        self.lineno = None
     do_f = do_frame
 
     def do_up(self, arg='1'):
@@ -1520,6 +1531,22 @@ except for when using the function decorator.
             self.lineno = None
     do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
+
+    def do_top(self, arg):
+        """Go to top (oldest) frame."""
+        if self.curindex == 0:
+            self.error('Oldest frame')
+            return
+        self._select_frame(0)
+    do_top = do_top
+
+    def do_bottom(self, arg):
+        """Go to bottom (newest) frame."""
+        if self.curindex + 1 == len(self.stack):
+            self.error('Newest frame')
+            return
+        self._select_frame(len(self.stack) - 1)
+    do_bottom = do_bottom
 
     @staticmethod
     def get_terminal_size():

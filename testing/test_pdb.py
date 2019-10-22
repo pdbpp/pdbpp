@@ -1095,6 +1095,69 @@ def test_up_down_arg():
 """)
 
 
+def test_top_bottom():
+    def a():
+        b()
+
+    def b():
+        c()
+
+    def c():
+        set_trace()
+        return
+
+    check(
+        a, """
+[NUM] > .*c()
+-> return
+   5 frames hidden .*
+# top
+[NUM] > .*()
+-> .*main
+# bottom
+[NUM] > .*c()
+-> return
+# c
+""")
+
+
+def test_top_bottom_frame_post_mortem():
+    def fn():
+        def throws():
+            0 / 0
+
+        def f():
+            throws()
+
+        try:
+            f()
+        except:
+            pdb.post_mortem(Pdb=PdbTest)
+    check(fn, r"""
+[2] > .*throws()
+-> 0 / 0
+# top
+[0] > .*fn()
+-> f()
+# top
+\*\*\* Oldest frame
+# bottom
+[2] > .*throws()
+-> 0 / 0
+# bottom
+\*\*\* Newest frame
+# frame -1  ### Same as bottom, no error.
+[2] > .*throws()
+-> 0 / 0
+# frame -2
+[1] > .*f()
+-> throws()
+# frame -3
+\*\*\* Out of range
+# c
+""")
+
+
 def test_parseline():
     def fn():
         c = 42
