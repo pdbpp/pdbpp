@@ -19,9 +19,9 @@ except ImportError:
 
 # Make sure that we are really using our pdb module.
 # (I.e. without pytest's monkeypatched set_trace).
-# Do this only once though, for when this is file is copied.
+# Do this only once though, for when this file is copied.
 if not hasattr(sys.modules.get("pdb", None), "_ensured_our_pdb"):
-    sys.modules.pop("pdb")
+    sys.modules.pop("pdb", None)
 import pdb  # noqa: E402 isort:skip
 pdb._ensured_our_pdb = True
 
@@ -1157,13 +1157,13 @@ def test_top_bottom():
 -> return
    5 frames hidden .*
 # top
-[NUM] > .*()
--> .*main
+[ 0] > .*()
+-> .*
 # bottom
-[NUM] > .*c()
+[{stack_len}] > .*c()
 -> return
 # c
-""")
+""".format(stack_len=len(traceback.extract_stack())))
 
 
 def test_top_bottom_frame_post_mortem():
