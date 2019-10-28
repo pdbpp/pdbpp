@@ -4747,6 +4747,8 @@ def test_error_with_pp():
 \*\*\* Exception: repr_exc
 # pp obj
 \*\*\* Exception: repr_exc
+# pp BadRepr.__repr__()
+\*\*\* TypeError: .*__repr__.*
 # c
 """)
 

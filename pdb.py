@@ -1184,7 +1184,7 @@ except for when using the function decorator.
         try:
             val = self._getval(arg)
         except:
-            pass
+            return
         try:
             width, height = self.get_terminal_size()
             pprint.pprint(val, self.stdout, width=width)
