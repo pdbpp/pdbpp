@@ -212,6 +212,7 @@ shortcuts = [
     ('(', '\\('),
     (')', '\\)'),
     ('^', '\\^'),
+    ('<FILE>', __file__),
     ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
     ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
     ('<COLORLNUM>', r'\^\[\[36;01m'),
@@ -1891,12 +1892,15 @@ def test_sticky_dunder_exception():
         set_trace()
         raises()
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> raises()
    5 frames hidden (try 'help hidden_frames')
 # n
 .*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+Traceback (most recent call last):
+  File "<FILE>", line \d+, in raises
+    raise InnerTestException()
 [NUM] > .*fn()
 -> raises()
    5 frames hidden .*
@@ -1927,12 +1931,15 @@ def test_sticky_dunder_exception_with_highlight():
         set_trace(Config=ConfigWithHighlight)
         raises()
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> raises()
    5 frames hidden (try 'help hidden_frames')
 # n
 .*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+Traceback (most recent call last):
+  File "<FILE>", line \d+, in raises
+    raise InnerTestException()
 [NUM] > .*fn()
 -> raises()
    5 frames hidden .*
@@ -4218,7 +4225,7 @@ def test_next_with_exception_in_call():
         except KeyError:
             print("got_keyerror")
 
-    check(fn, """
+    check(fn, r"""
 [NUM] > .*fn()
 -> try:
    5 frames hidden .*
@@ -4228,6 +4235,9 @@ def test_next_with_exception_in_call():
    5 frames hidden .*
 # n
 KeyError
+Traceback (most recent call last):
+  File "<FILE>", line \d+, in keyerror
+    raise KeyError
 [NUM] > .*fn()
 -> keyerror()
    5 frames hidden .*
