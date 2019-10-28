@@ -3666,6 +3666,10 @@ def test_complete_removes_duplicates_with_coloring(
     def fn():
         helpvar = 42  # noqa: F841
 
+        class obj:
+            foo = 1
+            foobar = 2
+
         def check_completions():
             # Patch readline to return expected results for "help".
             monkeypatch_readline("help", 0, 4)
@@ -3691,16 +3695,30 @@ def test_complete_removes_duplicates_with_coloring(
                     re.match(r"\x1b\[\d\d\d;00m\x1b\[33;01mdenominator\x1b\[00m", x)
                     for x in comps
                 )
-                if all(x.startswith("\x1b") or x == " "
-                       for x in comps):
-                    assert " " in comps
-                else:
-                    assert " " not in comps
+                assert " " in comps
             else:
                 assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
                 comps = get_completions("helpvar.")
                 assert "denominator" in comps
                 assert " " not in comps
+
+            monkeypatch_readline("p obj.f", 2, 7)
+            comps = get_completions("obj.f")
+            assert comps == ['obj.foo']
+
+            monkeypatch_readline("p obj.foo", 2, 9)
+            comps = get_completions("obj.foo")
+            if readline_param == "pyrepl":
+                assert comps == [
+                    '\x1b[000;00m\x1b[33;01mfoo\x1b[00m',
+                    '\x1b[001;00m\x1b[33;01mfoobar\x1b[00m',
+                    ' ']
+            else:
+                assert comps == ['foo', 'foobar', ' ']
+
+            monkeypatch_readline("disp", 0, 4)
+            comps = get_completions("disp")
+            assert comps == ['display']
 
             return True
 
@@ -3717,6 +3735,63 @@ def test_complete_removes_duplicates_with_coloring(
 True
 # c
 """)
+
+
+class TestCompleteUnit:
+    def test_fancy_prefix_with_same_in_pdb(self, patched_completions):
+        assert patched_completions(
+            "p foo.b",
+            ["foo.bar"],
+            ["foo.bar", "foo.barbaz"]
+        ) == ["foo.bar"]
+        assert patched_completions(
+            "p foo.b",
+            ["foo.bar"],
+            ["foo.bar", "foo.barbaz", "foo.barbaz2"]
+        ) == ["foo.bar"]
+
+    def test_fancy_prefix_with_more_pdb(self, patched_completions):
+        assert patched_completions(
+            "p foo.b", ["foo.bar"], ["foo.bar", "foo.barbaz", "something else"]
+        ) == ["foo.bar", "foo.barbaz", "something else"]
+
+    def test_fancy_with_no_pdb(self, patched_completions,
+                               fancycompleter_color_param):
+
+        if fancycompleter_color_param == "color":
+            fancy = [
+                "\x1b[000;00m\x1b[33;01mfoo\x1b[00m",
+                "\x1b[001;00m\x1b[33;01mfoobar\x1b[00m",
+                " ",
+            ]
+        else:
+            fancy = [
+                "foo",
+                "foobar",
+                " ",
+            ]
+        assert patched_completions("foo", fancy, []) == fancy
+
+    def test_fancy_with_prefixed_pdb(self, patched_completions):
+        assert patched_completions("sys.version", [
+            "version",
+            "version_info",
+            " ",
+        ], [
+            "sys.version",
+            "sys.version_info",
+        ]) == ["version", "version_info", " "]
+
+    def test_fancy_with_prefixed_pdb_other_text(self, patched_completions):
+        fancy = ["version", "version_info"]
+        pdb = ["sys.version", "sys.version_info"]
+        assert patched_completions("xxx", fancy, pdb) == fancy + pdb
+
+    def test_fancy_tab_without_pdb(self, patched_completions):
+        assert patched_completions("", ["\t"], []) == ["\t"]
+
+    def test_fancy_tab_with_pdb(self, patched_completions):
+        assert patched_completions("", ["\t"], ["help"]) == ["help"]
 
 
 def test_complete_uses_attributes_only_from_orig_pdb(
@@ -3739,6 +3814,7 @@ def test_complete_uses_attributes_only_from_orig_pdb(
                 assert get_completions("sys.version") == [
                     "version",
                     "version_info",
+                    " ",
                 ]
             return True
 
