@@ -388,6 +388,17 @@ The following means "reset all colors" (``0``), set foreground color to 18
 Constants are available via ``pdb.Color``, e.g. ``pdb.Color.red``
 (``"31;01"``), but in general any string can be used here.
 
+Tox plugin
+----------
+
+``pdb++`` ships a plugin for tox_, which installs ``pdbpp`` automatically in
+Tox environments.
+This gets skipped for isolated builds, and can be skipped by setting
+``PDBPP_SKIP_TOX=1`` in the environment.
+
+.. _tox: https://github.com/tox-dev/tox
+
+
 Coding guidelines
 -----------------
 
