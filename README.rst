@@ -258,17 +258,17 @@ default value:
 
 ``line_number_color = pdb.Color.turquoise``
   The color to use for line numbers.
-  See ANSI_escape_code_note_.
+  See `Notes on color options`_.
 
 ``filename_color = pdb.Color.yellow``
   The color to use for file names when printing the stack entries.
-  See ANSI_escape_code_note_.
+  See `Notes on color options`_.
 
 ``current_line_color = "39;49;7"``
   The SGR parameters for the ANSI escape sequence to highlight the current
   line.  The default uses the default foreground (``39``) and background
   (``49``) colors, inversed (``7``).
-  See ANSI_escape_code_note_.
+  See `Notes on color options`_.
 
 ``editor = None``
   The command to invoke when using the ``edit`` command. By default, it uses ``$EDITOR``
@@ -373,10 +373,8 @@ Example::
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 
-.. _ANSI_escape_code_note:
-
-Note on values for color options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Notes on color options
+^^^^^^^^^^^^^^^^^^^^^^
 
 The values for color options will be used inside of the SGR escape sequence
 ``\e[%sm`` where ``\e`` is the ESC character and ``%s`` the given value.
