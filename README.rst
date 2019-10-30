@@ -1,5 +1,5 @@
-pdb++, a drop-in replacement for pdb
-====================================
+pdb++, a drop-in replacement for pdb (the Python debugger)
+==========================================================
 
 What is it?
 -----------

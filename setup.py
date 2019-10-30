@@ -52,14 +52,15 @@ class install_pth_hack(Command):
 
 setup(
     name='pdbpp',
-    use_scm_version=True,
+    setup_requires='setupmeta',
+    versioning='dev',
+    maintainer='Daniel Hahler',
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb', '_pdbpp_path_hack.pdb'],
-    url='http://github.com/antocuni/pdb',
+    url='https://github.com/pdbpp/pdbpp',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
-    description='pdb++, a drop-in replacement for pdb',
     long_description=long_description,
     keywords='pdb debugger tab color completion',
     classifiers=[
@@ -95,7 +96,6 @@ setup(
             'pytest',
         ],
     },
-    setup_requires=['setuptools_scm'],
     cmdclass={
         'install': install_with_pth,
         'install_pth_hack': install_pth_hack,
