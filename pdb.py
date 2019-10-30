@@ -127,6 +127,8 @@ class DefaultConfig(object):
     default_pdb_kwargs = {
     }
 
+    use_better_exceptions = None  # default: use it when available
+
     def setup(self, pdb):
         pass
 
@@ -359,6 +361,18 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # a command like "continue")
             self.forget()
             return
+
+        if traceback and frame and self.config.show_traceback_on_error:
+            # TODO: use via_user_exception / general exc_info storing.
+            # Passed in via user_exception.
+            # Do not display the executing frame (ours).
+            tb = traceback.tb_next
+            if tb and "__exception__" in frame.f_locals:
+                # print("__tb__via__exception__")
+                print(self._format_extra_exception(
+                    *frame.f_locals["__exception__"][:2], tb
+                ))
+
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
         self.print_stack_entry(self.stack[self.curindex])
@@ -1402,6 +1416,26 @@ except for when using the function decorator.
         except KeyboardInterrupt:
             pass
 
+    def _get_better_formatter(self):
+        """Get ExceptionFormatter instance from better-exceptions."""
+        if self.config.use_better_exceptions is False:
+            return
+
+        if not hasattr(self, "_better_formatter"):
+            try:
+                from better_exceptions.formatter import ExceptionFormatter
+                if self.config.use_better_exceptions is None:
+                    self.config.use_better_exceptions = True
+            except ImportError:
+                if self.config.use_better_exceptions is None:
+                    self.config.use_better_exceptions = False
+                return None
+
+            self._better_formatter = ExceptionFormatter(
+                colored=self.config.highlight,
+            )
+        return self._better_formatter
+
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
@@ -1758,16 +1792,32 @@ except for when using the function decorator.
                 tb = tb.tb_next
                 if tb:  # only display with actual traceback.
                     self._remove_bdb_context(evalue)
-                    tb_limit = self.config.show_traceback_on_error_limit
-                    fmt_exc = traceback.format_exception(
-                        etype, evalue, tb, limit=tb_limit
+                    print(
+                        self._format_extra_exception(etype, evalue, tb),
+                        file=self.stdout,
                     )
 
-                    # Remove last line (exception string again).
-                    if len(fmt_exc) > 1 and fmt_exc[-1][0] != " ":
-                        fmt_exc.pop()
+    def _format_extra_exception(self, etype, evalue, tb):
+        tb_limit = self.config.show_traceback_on_error_limit
 
-                    print("".join(fmt_exc).rstrip(), file=self.stdout)
+        better_formatter = self._get_better_formatter()
+        if better_formatter:
+            # TODO: limit?!
+            # sys.tracebacklimit
+            # (https://docs.python.org/3/library/sys.html#sys.tracebacklimit)
+            try:
+                fmt_exc = list(better_formatter.format_exception(etype, evalue, tb))
+            except BaseException as exc:  # NOTE: pytest's Fail is not of type Exception
+                print("Exception from better-exceptions: %s (%r)" % (exc, exc))
+                fmt_exc = traceback.format_exception(etype, evalue, tb, limit=tb_limit)
+        else:
+            fmt_exc = traceback.format_exception(etype, evalue, tb, limit=tb_limit)
+
+        # Remove last line (exception string again).
+        if len(fmt_exc) > 1 and fmt_exc[-1][0] != " ":
+            fmt_exc.pop()
+
+        return "".join(fmt_exc).rstrip()
 
     @staticmethod
     def _remove_bdb_context(evalue):
