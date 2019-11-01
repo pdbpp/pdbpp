@@ -127,6 +127,8 @@ class DefaultConfig(object):
     default_pdb_kwargs = {
     }
 
+    use_relative_paths = True
+
     def setup(self, pdb):
         pass
 
@@ -615,6 +617,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             if _:
                 entry = loc + _ + self.format_source(source).rstrip()
         return entry
+
+    def canonic(self, filename):
+        if self.config.use_relative_paths:
+            relpath = os.path.relpath(filename)
+            if relpath[:2] != "..":
+                return relpath
+        return filename
 
     def try_to_decode(self, s):
         for encoding in self.config.encodings:
