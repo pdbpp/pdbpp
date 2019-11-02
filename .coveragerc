@@ -1,7 +1,21 @@
 [coverage:run]
-include = src/pdb.py, src/_pdbpp_path_hack/pdb.py, testing/*
+include =
+  src/*
+  testing/*
+  */lib/python*/site-packages/pdb.py
+  */lib/python*/site-packages/_pdbpp_path_hack/*
+  */pypy*/site-packages/pdb.py
+  */pypy*/site-packages/_pdbpp_path_hack/*
+  *\Lib\site-packages\_pdbpp_path_hack\*
+  *\Lib\site-packages\pdb.py
 branch = 1
 parallel = 1
+
+[coverage:paths]
+source = src/
+  */lib/python*/site-packages/
+  */pypy*/site-packages/
+  *\Lib\site-packages\
 
 [coverage:report]
 exclude_lines =
