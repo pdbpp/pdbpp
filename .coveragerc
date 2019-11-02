@@ -1,5 +1,5 @@
 [coverage:run]
-include = pdb.py, testing/*
+include = src/pdb.py, src/_pdbpp_path_hack/pdb.py, testing/*
 branch = 1
 parallel = 1
 
