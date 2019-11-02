@@ -56,6 +56,7 @@ setup(
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdb', '_pdbpp_path_hack.pdb'],
+    package_dir={"": "src"},
     url='http://github.com/antocuni/pdb',
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
