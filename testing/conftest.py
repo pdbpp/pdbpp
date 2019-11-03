@@ -68,6 +68,8 @@ def tmphome(request, monkeypatch):
     # Use tmpdir from testdir, if it is used.
     if "testdir" in request.fixturenames:
         tmpdir = request.getfixturevalue("testdir").tmpdir
+    elif "tmpdir" in request.fixturenames:
+        tmpdir = request.getfixturevalue("tmpdir")
     else:
         tmpdir = request.getfixturevalue("_tmphome_path")
 
