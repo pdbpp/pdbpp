@@ -202,7 +202,11 @@ class PdbMeta(type):
         global_pdb = getattr(local, "GLOBAL_PDB", None)
         if global_pdb:
             use_global_pdb = kwargs.pop(
-                "use_global_pdb", not global_pdb._in_interaction
+                "use_global_pdb",
+                (
+                    not global_pdb._in_interaction
+                    and os.environ.get("PDBPP_REUSE_GLOBAL_PDB", "1") == "1"
+                ),
             )
         else:
             use_global_pdb = kwargs.pop("use_global_pdb", True)
@@ -246,12 +250,16 @@ class PdbMeta(type):
             set_global_pdb = use_global_pdb
         obj.__init__(*args, **kwargs)
         if set_global_pdb:
+            obj._env = {"HOME": os.environ.get("HOME")}
             local.GLOBAL_PDB = obj
         local._pdbpp_in_init = False
         return obj
 
     @classmethod
     def use_global_pdb_for_class(cls, obj, C):
+        _env = getattr(obj, "_env", None)
+        if _env is not None and _env.get("HOME") != os.environ.get("HOME"):
+            return False
         if type(obj) == C:
             return True
         if getattr(obj, "_use_global_pdb_for_class", None) == C:
