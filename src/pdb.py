@@ -221,7 +221,7 @@ class PdbMeta(type):
                 hasattr(global_pdb, "_force_use_as_global_pdb")
                 or cls.use_global_pdb_for_class(global_pdb, cls)
             )
-            and os.environ["HOME"] == global_pdb._env["HOME"]
+            and os.environ.get("HOME") == global_pdb._env["HOME"]
         ):
             if hasattr(global_pdb, "botframe"):
                 # Do not stop while tracing is active (in _set_stopinfo).
@@ -251,7 +251,7 @@ class PdbMeta(type):
             set_global_pdb = use_global_pdb
         obj.__init__(*args, **kwargs)
         if set_global_pdb:
-            obj._env = {"HOME": os.environ["HOME"]}
+            obj._env = {"HOME": os.environ.get("HOME")}
             local.GLOBAL_PDB = obj
         local._pdbpp_in_init = False
         return obj
