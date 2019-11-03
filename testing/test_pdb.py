@@ -3506,8 +3506,11 @@ def test_python_m_pdb_usage():
     assert "usage: pdb.py" in out
 
 
-def test_python_m_pdb_uses_pdbpp(tmphome):
+@pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
+def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmphome):
     import subprocess
+
+    monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
     f = tmphome.ensure("test.py")
     f.write("import os\n__import__('pdb').set_trace()")
@@ -3523,9 +3526,14 @@ def test_python_m_pdb_uses_pdbpp(tmphome):
     print(out)
     print(err, file=sys.stderr)
     assert err == ""
-    assert "(Pdb)" not in out
-    assert "(Pdb++)" in out
-    assert out.endswith("\n(Pdb++) \n")
+    if PDBPP_HIJACK_PDB:
+        assert "(Pdb)" not in out
+        assert "(Pdb++)" in out
+        assert out.endswith("\n(Pdb++) \n")
+    else:
+        assert "(Pdb)" in out
+        assert "(Pdb++)" not in out
+        assert out.endswith("\n(Pdb) \n")
 
 
 def get_completions(text):
