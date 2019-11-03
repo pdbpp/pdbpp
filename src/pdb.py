@@ -1148,13 +1148,14 @@ except for when using the function decorator.
         do_list.__doc__ = pdb.Pdb.do_list.__doc__
         do_l = do_list
 
-        def _select_frame(self, number):
-            assert 0 <= number < len(self.stack)
-            self.curindex = number
-            self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
-            self.print_stack_entry(self.stack[self.curindex])
-            self.lineno = None
+    def _select_frame(self, number):
+        """Same as pdb.Pdb, but uses print_current_stack_entry (for sticky)."""
+        assert 0 <= number < len(self.stack)
+        self.curindex = number
+        self.curframe = self.stack[self.curindex][0]
+        self.curframe_locals = self.curframe.f_locals
+        self.print_current_stack_entry()
+        self.lineno = None
 
     def do_continue(self, arg):
         if arg != '':

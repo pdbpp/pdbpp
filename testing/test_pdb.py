@@ -1140,6 +1140,35 @@ def test_up_down_arg():
 """)
 
 
+def test_up_down_sticky():
+    def a():
+        b()
+
+    def b():
+        set_trace()
+        return
+
+    check(a, """
+[NUM] > .*b()
+-> return
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+> .*
+
+NUM         def b():
+NUM             set_trace()
+NUM  ->         return
+# up
+<CLEARSCREEN>
+> .*
+
+NUM         def a()
+NUM  ->         b()
+# c
+""")
+
+
 def test_top_bottom():
     def a():
         b()
