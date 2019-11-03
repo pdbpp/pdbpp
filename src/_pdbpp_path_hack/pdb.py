@@ -9,5 +9,9 @@ else:
 
     pdb_path = os.path.join(os.path.dirname(code.__file__), 'pdb.py')
 
+# Set __file__ to exec'd code.  This is good in general, and required for
+# coverage.py to use it.
+__file__ = pdb_path
+
 with open(pdb_path) as f:
     exec(compile(f.read(), pdb_path, 'exec'))
