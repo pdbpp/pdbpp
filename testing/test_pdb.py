@@ -3574,9 +3574,12 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmphome)
         import pdb
 
         fname = os.path.basename(inspect.getfile(pdb.Pdb))
-        assert fname == 'pdbpp.py', fname
+        if {PDBPP_HIJACK_PDB}:
+            assert fname == 'pdbpp.py', (fname, pdb, pdb.Pdb)
+        else:
+            assert fname == 'pdb.py', (fname, pdb, pdb.Pdb)
         pdb.set_trace()
-    """))
+    """.format(PDBPP_HIJACK_PDB=PDBPP_HIJACK_PDB)))
 
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb", str(f)],
