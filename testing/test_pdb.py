@@ -3473,9 +3473,9 @@ Breakpoint . at .*:{lineno}
 @pytest.mark.skipif(
     sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
 )
-def test_pdbrc_continue(tmpdir):
+def test_pdbrc_continue(tmphome):
     """Test that interaction is skipped with continue in pdbrc."""
-    with tmpdir.as_cwd():
+    with tmphome.as_cwd():
         with open(".pdbrc", "w") as f:
             f.writelines([
                 "p 'from_pdbrc'\n",
@@ -4844,7 +4844,7 @@ def test_do_source_without_truncating():
 """)
 
 
-def test_handles_set_trace_in_config():
+def test_handles_set_trace_in_config(tmphome):
     """Should not cause a RecursionError."""
     def fn():
         class Config(ConfigTest):
