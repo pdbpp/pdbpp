@@ -256,7 +256,10 @@ class InnerTestException(Exception):
 
 def check(func, expected):
     expected, lines = run_func(func, expected)
-    maxlen = max(map(len, expected))
+    if expected:
+        maxlen = max(map(len, expected))
+    else:
+        maxlen = 0
     all_ok = True
     print()
     for pattern, string in zip_longest(expected, lines):
