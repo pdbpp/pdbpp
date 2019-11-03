@@ -205,7 +205,7 @@ class PdbMeta(type):
                 "use_global_pdb",
                 (
                     not global_pdb._in_interaction
-                    and int(os.environ.get("PDBPP_REUSE_GLOBAL_PDB", 1))
+                    and os.environ.get("PDBPP_REUSE_GLOBAL_PDB", "1") == "1"
                 ),
             )
         else:
