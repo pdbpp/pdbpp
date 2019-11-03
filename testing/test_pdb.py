@@ -861,6 +861,27 @@ new_set_trace
 """)
 
 
+def test_global_pdb_not_reused_with_different_home(
+    monkeypatch_pdb_methods, monkeypatch
+):
+    def fn():
+        set_trace()
+        first = pdb.local.GLOBAL_PDB
+
+        set_trace(cleanup=False)
+        assert first is pdb.local.GLOBAL_PDB
+
+        monkeypatch.setenv("HOME", "something else")
+        set_trace(cleanup=False)
+        assert first is not pdb.local.GLOBAL_PDB
+
+    check(fn, """
+=== set_trace
+=== set_trace
+=== set_trace
+""")
+
+
 def test_single_question_mark():
     def fn():
         def f2(x, y):
