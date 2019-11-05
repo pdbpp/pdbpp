@@ -4827,6 +4827,40 @@ def test_error_with_pp():
 """)
 
 
+def test_count_with_pp():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# pp [1, 2, 3]
+[1, 2, 3]
+# 2pp [1, 2, 3]
+[1,
+ 2,
+ 3]
+# 80pp [1, 2, 3]
+[1, 2, 3]
+# c
+""")
+
+
+def test_ArgWithCount():
+    from pdb import ArgWithCount
+
+    obj = ArgWithCount("", None)
+    assert obj == ""
+    assert repr(obj) == "<ArgWithCount cmd_count=None value=''>"
+    assert isinstance(obj, str)
+
+    obj = ArgWithCount("foo", 42)
+    assert obj == "foo"
+    assert repr(obj) == "<ArgWithCount cmd_count=42 value='foo'>"
+
+
 def test_do_source():
     def fn():
         set_trace()
