@@ -12,18 +12,13 @@ from io import BytesIO
 import py
 import pytest
 
+import pdbpp
+
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-# Make sure that we are really using our pdb module.
-# (I.e. without pytest's monkeypatched set_trace).
-# Do this only once though, for when this file is copied.
-if not hasattr(sys.modules.get("pdb", None), "_ensured_our_pdb"):
-    sys.modules.pop("pdb", None)
-import pdb  # noqa: E402 isort:skip
-pdb._ensured_our_pdb = True
 
 pytest_plugins = ["pytester"]
 
@@ -41,7 +36,7 @@ class FakeStdin:
             return ''
 
 
-class ConfigTest(pdb.DefaultConfig):
+class ConfigTest(pdbpp.DefaultConfig):
     highlight = False
     use_pygments = False
     prompt = '# '  # because + has a special meaning in the regexp
@@ -67,7 +62,7 @@ class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):
     pass
 
 
-class PdbTest(pdb.Pdb):
+class PdbTest(pdbpp.Pdb):
     use_rawinput = 1
 
     def __init__(self, *args, **kwds):
@@ -108,15 +103,15 @@ def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
         frame = sys._getframe().f_back
 
     if cleanup:
-        pdb.cleanup()
+        pdbpp.cleanup()
 
     class PdbForFrame(Pdb):
         def set_trace(self, _frame, *args, **kwargs):
             super(PdbForFrame, self).set_trace(frame, *args, **kwargs)
 
-    newglobals = pdb.set_trace.__globals__.copy()
+    newglobals = pdbpp.set_trace.__globals__.copy()
     newglobals['Pdb'] = PdbForFrame
-    new_set_trace = pdb.rebind_globals(pdb.set_trace, newglobals)
+    new_set_trace = pdbpp.rebind_globals(pdbpp.set_trace, newglobals)
     new_set_trace(**kwds)
 
 
@@ -126,13 +121,13 @@ def set_trace(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
         frame = sys._getframe().f_back
 
     if cleanup:
-        pdb.cleanup()
+        pdbpp.cleanup()
 
     Pdb(**kwds).set_trace(frame)
 
 
 def xpm():
-    pdb.xpm(PdbTest)
+    pdbpp.xpm(PdbTest)
 
 
 def runpdb(func, input):
@@ -140,7 +135,7 @@ def runpdb(func, input):
     oldstdout = sys.stdout
     oldstderr = sys.stderr
     # Use __dict__ to avoid class descriptor (staticmethod).
-    old_get_terminal_size = pdb.Pdb.__dict__["get_terminal_size"]
+    old_get_terminal_size = pdbpp.Pdb.__dict__["get_terminal_size"]
 
     if sys.version_info < (3, ):
         text_type = unicode  # noqa: F821
@@ -162,11 +157,11 @@ def runpdb(func, input):
 
         def get_unicode_value(self):
             return self.getvalue().decode(self.encoding).replace(
-                pdb.CLEARSCREEN, "<CLEARSCREEN>\n"
+                pdbpp.CLEARSCREEN, "<CLEARSCREEN>\n"
             ).replace(chr(27), "^[")
 
     # Use a predictable terminal size.
-    pdb.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
+    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
@@ -184,7 +179,7 @@ def runpdb(func, input):
         sys.stdin = oldstdin
         sys.stdout = oldstdout
         sys.stderr = oldstderr
-        pdb.Pdb.get_terminal_size = old_get_terminal_size
+        pdbpp.Pdb.get_terminal_size = old_get_terminal_size
 
     stderr = stderr.get_unicode_value()
     if stderr:
@@ -282,7 +277,7 @@ def check(func, expected):
         if ok:
             print()
         else:
-            print(pdb.Color.set(pdb.Color.red, '    <<<<<'))
+            print(pdbpp.Color.set(pdbpp.Color.red, '    <<<<<'))
             all_ok = False
     assert all_ok
 
@@ -467,7 +462,7 @@ a: 2 --> 3
 
 class TestPdbMeta:
     def test_called_for_set_trace_false(self):
-        assert pdb.PdbMeta.called_for_set_trace(sys._getframe()) is False
+        assert pdbpp.PdbMeta.called_for_set_trace(sys._getframe()) is False
 
     def test_called_for_set_trace_staticmethod(self):
 
@@ -475,7 +470,7 @@ class TestPdbMeta:
             @staticmethod
             def set_trace():
                 frame = sys._getframe()
-                assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+                assert pdbpp.PdbMeta.called_for_set_trace(frame) is frame
                 return True
 
         assert Foo.set_trace() is True
@@ -485,7 +480,7 @@ class TestPdbMeta:
         class Foo:
             def set_trace(self):
                 frame = sys._getframe()
-                assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+                assert pdbpp.PdbMeta.called_for_set_trace(frame) is frame
                 return True
 
         assert Foo().set_trace() is True
@@ -493,7 +488,7 @@ class TestPdbMeta:
     def test_called_for_set_trace_via_func(self):
         def set_trace():
             frame = sys._getframe()
-            assert pdb.PdbMeta.called_for_set_trace(frame) is frame
+            assert pdbpp.PdbMeta.called_for_set_trace(frame) is frame
             return True
 
         assert set_trace() is True
@@ -503,7 +498,7 @@ class TestPdbMeta:
         def somefunc():
             def meta():
                 frame = sys._getframe()
-                assert pdb.PdbMeta.called_for_set_trace(frame) is False
+                assert pdbpp.PdbMeta.called_for_set_trace(frame) is False
             meta()
             return True
 
@@ -520,7 +515,7 @@ def test_forget_with_new_pdb():
     def fn():
         set_trace()
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
                 return super(NewPdb, self).set_trace(*args)
@@ -530,7 +525,7 @@ def test_forget_with_new_pdb():
 
     check(fn, """
 [NUM] > .*fn()
--> class NewPdb(PdbTest, pdb.Pdb):
+-> class NewPdb(PdbTest, pdbpp.Pdb):
    5 frames hidden .*
 # c
 new_set_trace
@@ -556,17 +551,15 @@ NUM .*
 
 def test_global_pdb_with_classmethod():
     def fn():
-        global pdb
-
         set_trace()
-        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+        assert isinstance(pdbpp.local.GLOBAL_PDB, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
         new_pdb = NewPdb()
@@ -574,12 +567,12 @@ def test_global_pdb_with_classmethod():
 
     check(fn, """
 [NUM] > .*fn()
--> assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+-> assert isinstance(pdbpp.local.GLOBAL_PDB, PdbTest)
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] .*set_trace()
--> assert pdb.local.GLOBAL_PDB is self
+-> assert pdbpp.local.GLOBAL_PDB is self
    5 frames hidden .*
 # c
 """)
@@ -588,14 +581,14 @@ new_set_trace
 def test_global_pdb_via_new_class_in_init_method():
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
-        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+        first = pdbpp.local.GLOBAL_PDB
+        assert isinstance(pdbpp.local.GLOBAL_PDB, PdbTest)
 
         class PdbLikePytest(object):
             @classmethod
             def init_pdb(cls):
 
-                class NewPdb(PdbTest, pdb.Pdb):
+                class NewPdb(PdbTest, pdbpp.Pdb):
                     def set_trace(self, frame):
                         print("new_set_trace")
                         super(NewPdb, self).set_trace(frame)
@@ -609,26 +602,26 @@ def test_global_pdb_via_new_class_in_init_method():
                 return pdb_.set_trace(frame)
 
         PdbLikePytest.set_trace()
-        second = pdb.local.GLOBAL_PDB
+        second = pdbpp.local.GLOBAL_PDB
         assert first != second
 
         PdbLikePytest.set_trace()
-        third = pdb.local.GLOBAL_PDB
+        third = pdbpp.local.GLOBAL_PDB
         assert third == second
 
     check(fn, """
 [NUM] > .*fn()
--> first = pdb.local.GLOBAL_PDB
+-> first = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] > .*fn()
--> second = pdb.local.GLOBAL_PDB
+-> second = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] > .*fn()
--> third = pdb.local.GLOBAL_PDB
+-> third = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 """)
@@ -637,10 +630,10 @@ new_set_trace
 def test_global_pdb_via_existing_class_in_init_method():
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
-        assert isinstance(pdb.local.GLOBAL_PDB, PdbTest)
+        first = pdbpp.local.GLOBAL_PDB
+        assert isinstance(pdbpp.local.GLOBAL_PDB, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, frame):
                 print("new_set_trace")
                 super(NewPdb, self).set_trace(frame)
@@ -657,26 +650,26 @@ def test_global_pdb_via_existing_class_in_init_method():
                 return pdb_.set_trace(frame)
 
         PdbViaClassmethod.set_trace()
-        second = pdb.local.GLOBAL_PDB
+        second = pdbpp.local.GLOBAL_PDB
         assert first != second
 
         PdbViaClassmethod.set_trace()
-        third = pdb.local.GLOBAL_PDB
+        third = pdbpp.local.GLOBAL_PDB
         assert third == second
 
     check(fn, """
 [NUM] > .*fn()
--> first = pdb.local.GLOBAL_PDB
+-> first = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] > .*fn()
--> second = pdb.local.GLOBAL_PDB
+-> second = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] > .*fn()
--> third = pdb.local.GLOBAL_PDB
+-> third = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 """)
@@ -685,38 +678,38 @@ new_set_trace
 def test_global_pdb_can_be_skipped():
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
+        first = pdbpp.local.GLOBAL_PDB
         assert isinstance(first, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdbpp.local.GLOBAL_PDB is not self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdbpp.local.GLOBAL_PDB is not self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
     check(fn, """
 [NUM] > .*fn()
--> first = pdb.local.GLOBAL_PDB
+-> first = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] .*set_trace()
--> assert pdb.local.GLOBAL_PDB is not self
+-> assert pdbpp.local.GLOBAL_PDB is not self
    5 frames hidden .*
-# readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
-# assert readline_.get_completer() != pdb.local.GLOBAL_PDB.complete
+# readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+# assert readline_.get_completer() != pdbpp.local.GLOBAL_PDB.complete
 # c
 [NUM] > .*fn()
--> assert pdb.local.GLOBAL_PDB is not new_pdb
+-> assert pdbpp.local.GLOBAL_PDB is not new_pdb
    5 frames hidden .*
 # c
 """)
@@ -726,23 +719,23 @@ def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
     """Same as test_global_pdb_can_be_skipped, but with mocked Pdb methods."""
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
+        first = pdbpp.local.GLOBAL_PDB
         assert isinstance(first, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdbpp.local.GLOBAL_PDB is not self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is not self
+                assert pdbpp.local.GLOBAL_PDB is not self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
     check(fn, """
 === set_trace
@@ -755,39 +748,39 @@ new_set_trace
 def test_global_pdb_can_be_skipped_but_set():
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
+        first = pdbpp.local.GLOBAL_PDB
         assert isinstance(first, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False, set_global_pdb=True)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
     check(fn, """
 [NUM] > .*fn()
--> first = pdb.local.GLOBAL_PDB
+-> first = pdbpp.local.GLOBAL_PDB
    5 frames hidden .*
 # c
 new_set_trace
 [NUM] .*set_trace()
--> assert pdb.local.GLOBAL_PDB is self
+-> assert pdbpp.local.GLOBAL_PDB is self
    5 frames hidden .*
-# readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
-# assert readline_.get_completer() == pdb.local.GLOBAL_PDB.complete
+# readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+# assert readline_.get_completer() == pdbpp.local.GLOBAL_PDB.complete
 # c
 new_set_trace
 [NUM] > .*fn()
--> assert pdb.local.GLOBAL_PDB is new_pdb
+-> assert pdbpp.local.GLOBAL_PDB is new_pdb
    5 frames hidden .*
 # c
 """)
@@ -796,23 +789,23 @@ new_set_trace
 def test_global_pdb_can_be_skipped_but_set_unit(monkeypatch_pdb_methods):
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
+        first = pdbpp.local.GLOBAL_PDB
         assert isinstance(first, PdbTest)
 
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 ret = super(NewPdb, self).set_trace(*args)
-                assert pdb.local.GLOBAL_PDB is self
+                assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
         new_pdb = NewPdb(use_global_pdb=False, set_global_pdb=True)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
     check(fn, """
 === set_trace
@@ -825,7 +818,7 @@ new_set_trace
 
 def test_global_pdb_only_reused_for_same_class(monkeypatch_pdb_methods):
     def fn():
-        class NewPdb(PdbTest, pdb.Pdb):
+        class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
                 ret = super(NewPdb, self).set_trace(*args)
@@ -833,23 +826,23 @@ def test_global_pdb_only_reused_for_same_class(monkeypatch_pdb_methods):
 
         new_pdb = NewPdb()
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
         # What "debug" does, for coverage.
         new_pdb = NewPdb()
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is new_pdb
-        pdb.local.GLOBAL_PDB._use_global_pdb_for_class = PdbTest
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
+        pdbpp.local.GLOBAL_PDB._use_global_pdb_for_class = PdbTest
         set_trace(cleanup=False)
-        assert pdb.local.GLOBAL_PDB is new_pdb
+        assert pdbpp.local.GLOBAL_PDB is new_pdb
 
         # Explicit kwarg for coverage.
         new_pdb = NewPdb(set_global_pdb=False)
         new_pdb.set_trace()
-        assert pdb.local.GLOBAL_PDB is not new_pdb
+        assert pdbpp.local.GLOBAL_PDB is not new_pdb
 
     check(fn, """
 new_set_trace
@@ -869,14 +862,14 @@ def test_global_pdb_not_reused_with_different_home(
 ):
     def fn():
         set_trace()
-        first = pdb.local.GLOBAL_PDB
+        first = pdbpp.local.GLOBAL_PDB
 
         set_trace(cleanup=False)
-        assert first is pdb.local.GLOBAL_PDB
+        assert first is pdbpp.local.GLOBAL_PDB
 
         monkeypatch.setenv("HOME", "something else")
         set_trace(cleanup=False)
-        assert first is not pdb.local.GLOBAL_PDB
+        assert first is not pdbpp.local.GLOBAL_PDB
 
     check(fn, """
 === set_trace
@@ -1027,7 +1020,7 @@ mocked_inspect: 'a.__class__'
 # !a?
 do_shell_called: a?
 \\*\\*\\* SyntaxError:
-# mp.delattr(pdb.local.GLOBAL_PDB.__class__, "do_shell")
+# mp.delattr(pdbpp.local.GLOBAL_PDB.__class__, "do_shell")
 # !a?
 \\*\\*\\* SyntaxError:
 # help a
@@ -1230,7 +1223,7 @@ def test_top_bottom_frame_post_mortem():
         try:
             f()
         except:
-            pdb.post_mortem(Pdb=PdbTest)
+            pdbpp.post_mortem(Pdb=PdbTest)
     check(fn, r"""
 [2] > .*throws()
 -> 0 / 0
@@ -1328,15 +1321,15 @@ def test_parseline_with_existing_command():
 [NUM] > .*fn()
 -> return c
    5 frames hidden .*
-# print(pdb.local.GLOBAL_PDB.parseline("foo = "))
+# print(pdbpp.local.GLOBAL_PDB.parseline("foo = "))
 ('foo', '=', 'foo =')
-# print(pdb.local.GLOBAL_PDB.parseline("c = "))
+# print(pdbpp.local.GLOBAL_PDB.parseline("c = "))
 (None, None, 'c = ')
-# print(pdb.local.GLOBAL_PDB.parseline("a = "))
+# print(pdbpp.local.GLOBAL_PDB.parseline("a = "))
 (None, None, 'a = ')
-# print(pdb.local.GLOBAL_PDB.parseline("list()"))
+# print(pdbpp.local.GLOBAL_PDB.parseline("list()"))
 (None, None, 'list()')
-# print(pdb.local.GLOBAL_PDB.parseline("next(my_iter)"))
+# print(pdbpp.local.GLOBAL_PDB.parseline("next(my_iter)"))
 (None, None, 'next(my_iter)')
 # c
 42
@@ -1695,14 +1688,14 @@ def test_shortlist_with_second_set_trace_resets_lineno():
 NUM \t    def fn():
 NUM \t        def f1():
 NUM \t            set_trace(cleanup=False)
-# import pdb; pdb.local.GLOBAL_PDB.lineno
+# import pdb; pdbpp.local.GLOBAL_PDB.lineno
 {set_lineno}
 # c
 --Return--
 [NUM] > .*f1()->None
 -> set_trace(cleanup=False)
    5 frames hidden .*
-# import pdb; pdb.local.GLOBAL_PDB.lineno
+# import pdb; pdbpp.local.GLOBAL_PDB.lineno
 # c
     """.format(
         line_num=fn.__code__.co_firstlineno,
@@ -1949,7 +1942,7 @@ def test_sticky_dunder_exception():
 -> raises()
    5 frames hidden (try 'help hidden_frames')
 # n
-.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+.*InnerTestException.*  ### via pdbpp.Pdb.user_exception (differs on py3/py27)
 [NUM] > .*fn()
 -> raises()
    5 frames hidden .*
@@ -1985,7 +1978,7 @@ def test_sticky_dunder_exception_with_highlight():
 -> raises()
    5 frames hidden (try 'help hidden_frames')
 # n
-.*InnerTestException.*  ### via pdb.Pdb.user_exception (differs on py3/py27)
+.*InnerTestException.*  ### via pdbpp.Pdb.user_exception (differs on py3/py27)
 [NUM] > .*fn()
 -> raises()
    5 frames hidden .*
@@ -2195,7 +2188,7 @@ def test_postmortem_noargs():
             a = 1  # noqa: F841
             1/0
         except ZeroDivisionError:
-            pdb.post_mortem(Pdb=PdbTest)
+            pdbpp.post_mortem(Pdb=PdbTest)
 
     check(fn, """
 [NUM] > .*fn()
@@ -2211,7 +2204,7 @@ def test_postmortem_needs_exceptioncontext():
     except AttributeError:
         # Python 3 doesn't have sys.exc_clear
         pass
-    py.test.raises(AssertionError, pdb.post_mortem, Pdb=PdbTest)
+    py.test.raises(AssertionError, pdbpp.post_mortem, Pdb=PdbTest)
 
 
 def test_exception_through_generator():
@@ -2522,7 +2515,7 @@ RUN epaste \+%d
 
 
 def test_side_effects_free():
-    r = pdb.side_effects_free
+    r = pdbpp.side_effects_free
     assert r.match('  x')
     assert r.match('x.y[12]')
     assert not r.match('x(10)')
@@ -2557,10 +2550,10 @@ RUN epaste \+%d
 def test_enable_disable_via_module():
     def fn():
         x = 1
-        pdb.disable()
+        pdbpp.disable()
         set_trace_via_module()
         x = 2
-        pdb.enable()
+        pdbpp.enable()
         set_trace_via_module()
         return x
 
@@ -2582,7 +2575,7 @@ def test_enable_disable_from_prompt_via_class():
         x = 1
         pdb_.set_trace()
         x = 2
-        pdb.enable()
+        pdbpp.enable()
         pdb_.set_trace()
         return x
 
@@ -2590,7 +2583,7 @@ def test_enable_disable_from_prompt_via_class():
 [NUM] > .*fn()
 -> x = 1
    5 frames hidden .*
-# pdb.disable()
+# pdbpp.disable()
 # c
 [NUM] > .*fn()
 -> return x
@@ -2602,14 +2595,14 @@ def test_enable_disable_from_prompt_via_class():
 
 
 def test_hideframe():
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         pass
-    assert g.__code__.co_consts[-1] is pdb._HIDE_FRAME
+    assert g.__code__.co_consts[-1] is pdbpp._HIDE_FRAME
 
 
 def test_hide_hidden_frames():
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         set_trace()
         return 'foo'
@@ -2639,7 +2632,7 @@ def test_hide_hidden_frames():
 
 
 def test_hide_current_frame():
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         set_trace()
         return 'foo'
@@ -2666,7 +2659,7 @@ def test_hide_current_frame():
 def test_hide_frame_for_set_trace_on_class():
     def g():
         # Simulate set_trace, with frame=None.
-        pdb.cleanup()
+        pdbpp.cleanup()
         _pdb = PdbTest()
         _pdb.set_trace()
         return 'foo'
@@ -2687,12 +2680,12 @@ def test_hide_frame_for_set_trace_on_class():
 
 
 def test_list_hidden_frames():
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         set_trace()
         return 'foo'
 
-    @pdb.hideframe
+    @pdbpp.hideframe
     def k():
         return g()
 
@@ -2734,7 +2727,7 @@ def test_hidden_pytest_frames():
 
     def k(g=g):
         return g()
-    k = pdb.rebind_globals(k, {'__tracebackhide__': True})
+    k = pdbpp.rebind_globals(k, {'__tracebackhide__': True})
 
     def fn():
         k()
@@ -2771,7 +2764,7 @@ def test_hidden_unittest_frames():
 
     def g(s=s):
         return s()
-    g = pdb.rebind_globals(g, {'__unittest': True})
+    g = pdbpp.rebind_globals(g, {'__unittest': True})
 
     def fn():
         return g()
@@ -2801,7 +2794,7 @@ def test_dont_show_hidden_frames_count():
     class MyConfig(ConfigTest):
         show_hidden_frames_count = False
 
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         set_trace(Config=MyConfig)
         return 'foo'
@@ -2821,7 +2814,7 @@ def test_disable_hidden_frames():
     class MyConfig(ConfigTest):
         enable_hidden_frames = False
 
-    @pdb.hideframe
+    @pdbpp.hideframe
     def g():
         set_trace(Config=MyConfig)
         return 'foo'
@@ -2841,7 +2834,7 @@ def test_break_on_setattr():
     # we don't use a class decorator to keep 2.5 compatibility
     class Foo(object):
         pass
-    Foo = pdb.break_on_setattr('x', Pdb=PdbTest)(Foo)
+    Foo = pdbpp.break_on_setattr('x', Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -2875,7 +2868,7 @@ def test_break_on_setattr_without_hidden_frames():
 
     class Foo(object):
         pass
-    Foo = pdb.break_on_setattr('x', Pdb=PdbWithConfig)(Foo)
+    Foo = pdbpp.break_on_setattr('x', Pdb=PdbWithConfig)(Foo)
 
     def fn():
         obj = Foo()
@@ -2903,7 +2896,7 @@ def test_break_on_setattr_condition():
     class Foo(object):
         pass
     # we don't use a class decorator to keep 2.5 compatibility
-    Foo = pdb.break_on_setattr('x', condition=mycond, Pdb=PdbTest)(Foo)
+    Foo = pdbpp.break_on_setattr('x', condition=mycond, Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -2938,7 +2931,7 @@ def test_break_on_setattr_non_decorator():
         def break_if_a(obj, value):
             return obj is a
 
-        pdb.break_on_setattr("bar", condition=break_if_a, Pdb=PdbTest)(Foo)
+        pdbpp.break_on_setattr("bar", condition=break_if_a, Pdb=PdbTest)(Foo)
         b.bar = 10
         a.bar = 42
 
@@ -2955,7 +2948,7 @@ def test_break_on_setattr_overridden():
     class Foo(object):
         def __setattr__(self, attr, value):
             object.__setattr__(self, attr, value+1)
-    Foo = pdb.break_on_setattr('x', Pdb=PdbTest)(Foo)
+    Foo = pdbpp.break_on_setattr('x', Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -3221,7 +3214,7 @@ Deleted breakpoint NUM
     ))
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "error"),
+@pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "error"),
                     reason="no error method")
 def test_continue_arg_with_error():
     def fn():
@@ -3310,7 +3303,7 @@ def test_frame_cmd_changes_locals():
 """.format(frame_num_a=count_frames() + 2 - 5))
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "_cmdloop"),
+@pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_cmdloop"),
                     reason="_cmdloop is not available")
 def test_sigint_in_interaction_with_new_cmdloop():
     def fn():
@@ -3332,7 +3325,7 @@ ENTERING RECURSIVE DEBUGGER
 """)
 
 
-@pytest.mark.skipif(hasattr(pdb.pdb.Pdb, "_cmdloop"),
+@pytest.mark.skipif(hasattr(pdbpp.pdb.Pdb, "_cmdloop"),
                     reason="_cmdloop is available")
 def test_sigint_in_interaction_without_new_cmdloop():
     def fn():
@@ -3355,11 +3348,11 @@ ENTERING RECURSIVE DEBUGGER
     # Reset pdb, which did not clean up correctly.
     # Needed for PyPy (Python 2.7.13[pypy-7.1.0-final]) with coverage and
     # restoring trace function.
-    pdb.local.GLOBAL_PDB.reset()
+    pdbpp.local.GLOBAL_PDB.reset()
 
 
 def test_debug_rebind_globals(monkeypatch):
-    class PdbWithCustomDebug(pdb.pdb.Pdb):
+    class PdbWithCustomDebug(pdbpp.pdb.Pdb):
         def do_debug(self, arg):
             if "PdbTest" not in globals():
                 # Do not use assert here, since it might fail with "NameError:
@@ -3369,7 +3362,7 @@ def test_debug_rebind_globals(monkeypatch):
                 pytest.fail("PdbTest is not in globals.")
             print("called_do_debug", Pdb, self)  # noqa: F821
 
-    monkeypatch.setattr(pdb.pdb, "Pdb", PdbWithCustomDebug)
+    monkeypatch.setattr(pdbpp.pdb, "Pdb", PdbWithCustomDebug)
 
     class CustomPdbTest(PdbTest, PdbWithCustomDebug):
         pass
@@ -3391,7 +3384,7 @@ called_do_debug.*
 """)
 
 
-@pytest.mark.skipif(not hasattr(pdb.pdb.Pdb, "_previous_sigint_handler"),
+@pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_previous_sigint_handler"),
                     reason="_previous_sigint_handler is not available")
 def test_interaction_restores_previous_sigint_handler():
     """Test is based on cpython's test_pdb_issue_20766."""
@@ -3489,7 +3482,7 @@ Breakpoint . at .*:{lineno}
 [NUM] > .*fn()
 -> print(2)
    5 frames hidden .*
-# import pdb; pdb.local.GLOBAL_PDB.clear_all_breaks()
+# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
 # c
 2
 """.format(lineno=lineno + 3))
@@ -3517,7 +3510,7 @@ Breakpoint . at .*:{lineno}
 [NUM] > .*inner()->None
 -> set_trace(cleanup=False)
    5 frames hidden .*
-# import pdb; pdb.local.GLOBAL_PDB.clear_all_breaks()
+# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
 # c
 1
 """.format(lineno=lineno + 8))
@@ -3604,10 +3597,10 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmphome)
 
 def get_completions(text):
     """Get completions from the installed completer."""
-    readline_ = pdb.local.GLOBAL_PDB.fancycompleter.config.readline
+    readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
     complete = readline_.get_completer()
     comps = []
-    assert complete.__self__ is pdb.local.GLOBAL_PDB
+    assert complete.__self__ is pdbpp.local.GLOBAL_PDB
     while True:
         val = complete(text, len(comps))
         if val is None:
@@ -3669,7 +3662,7 @@ def test_completes_from_pdb(monkeypatch_readline):
 
                 # NOTE: number depends on bpb.Breakpoint class state, just ensure that
                 #       is a number.
-                completion = pdb.local.GLOBAL_PDB.complete("", 0)
+                completion = pdbpp.local.GLOBAL_PDB.complete("", 0)
                 assert int(completion) > 0
 
                 # Patch readline to return expected results for "p ".
@@ -3749,20 +3742,20 @@ def test_complete_removes_duplicates_with_coloring(
             monkeypatch_readline("help", 0, 4)
 
             if readline_param == "pyrepl":
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("help") == [
                     "\x1b[000;00m\x1b[00mhelp\x1b[00m",
                     "\x1b[001;00m\x1b[33;01mhelpvar\x1b[00m",
                     " ",
                 ]
             else:
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
                 assert get_completions("help") == ["help", "helpvar"]
 
             # Patch readline to return expected results for "p helpvar.".
             monkeypatch_readline("p helpvar.", 2, 10)
             if readline_param == "pyrepl":
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 comps = get_completions("helpvar.")
                 assert type(helpvar.denominator) == int
                 assert any(
@@ -3771,7 +3764,7 @@ def test_complete_removes_duplicates_with_coloring(
                 )
                 assert " " in comps
             else:
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
                 comps = get_completions("helpvar.")
                 assert "denominator" in comps
                 assert " " not in comps
@@ -3877,14 +3870,14 @@ def test_complete_uses_attributes_only_from_orig_pdb(
             monkeypatch_readline("p sys.version", 2, 13)
 
             if readline_param == "pyrepl":
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("sys.version") == [
                     "\x1b[000;00m\x1b[32;01mversion\x1b[00m",
                     "\x1b[001;00m\x1b[00mversion_info\x1b[00m",
                     " ",
                 ]
             else:
-                assert pdb.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
+                assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is False
                 assert get_completions("sys.version") == [
                     "version",
                     "version_info",
@@ -4009,11 +4002,11 @@ def test_complete_with_bang(monkeypatch_readline):
         def check_completions():
             # Patch readline to return expected results for "!a_va".
             monkeypatch_readline("!a_va", 0, 5)
-            assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+            assert pdbpp.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
 
             # Patch readline to return expected results for "list(a_va".
             monkeypatch_readline("list(a_va", 5, 9)
-            assert pdb.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
+            assert pdbpp.local.GLOBAL_PDB.complete("a_va", 0) == "a_var"
             return True
 
         set_trace()
@@ -4057,18 +4050,18 @@ def test_completer_after_debug(monkeypatch_readline):
 [NUM] > .*fn()
 .*
    5 frames hidden .*
-# pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+# pdbpp.local.GLOBAL_PDB.curframe.f_code.co_name
 'fn'
 # debug inner()
 ENTERING RECURSIVE DEBUGGER
 [1] > <string>(1)<module>()
-(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+(#) pdbpp.local.GLOBAL_PDB.curframe.f_code.co_name
 '<module>'
 (#) s
 --Call--
 [NUM] > .*inner()
 -> def inner():
-(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+(#) pdbpp.local.GLOBAL_PDB.curframe.f_code.co_name
 'inner'
 (#) r
 inner_end
@@ -4215,7 +4208,7 @@ def test_rawinput_with_debug():
 # debug 1
 ENTERING RECURSIVE DEBUGGER
 [NUM] > <string>(1)<module>()->None
-(#) import pdb; print(pdb.local.GLOBAL_PDB.use_rawinput)
+(#) import pdb; print(pdbpp.local.GLOBAL_PDB.use_rawinput)
 1
 (#) p sys._getframe().f_back.f_locals['self'].use_rawinput
 1
@@ -4570,7 +4563,7 @@ def test_rebind_globals_kwonly():
 
     sig = str(inspect.signature(func))
     assert sig == "(*args, header=None)"
-    new = pdb.rebind_globals(func, globals())
+    new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig
 
 
@@ -4588,7 +4581,7 @@ def test_rebind_globals_annotations():
              "(ann: str = None)",
              "(ann:str=None)",
         )
-    new = pdb.rebind_globals(func, globals())
+    new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig
 
 
@@ -4614,7 +4607,7 @@ ENTERING RECURSIVE DEBUGGER
 [NUM] > .*inner()->None
 -> set_trace(cleanup=False)
    5 frames hidden .*
-(#) pdb.local.GLOBAL_PDB.curframe.f_code.co_name
+(#) pdbpp.local.GLOBAL_PDB.curframe.f_code.co_name
 'inner'
 (#) debug inner_inner()
 ENTERING RECURSIVE DEBUGGER
@@ -4635,7 +4628,7 @@ def test_set_trace_with_incomplete_pdb():
         set_trace(cleanup=False)
 
         assert hasattr(existing_pdb, "botframe")
-        assert pdb.local.GLOBAL_PDB is existing_pdb
+        assert pdbpp.local.GLOBAL_PDB is existing_pdb
     check(fn, """
 [NUM] > .*fn()
 .*
@@ -4657,12 +4650,12 @@ def test_config_gets_start_filename():
 
         set_trace(Config=MyConfig)
 
-        assert pdb.local.GLOBAL_PDB.start_lineno == set_trace_lineno
+        assert pdbpp.local.GLOBAL_PDB.start_lineno == set_trace_lineno
 
     check(fn, r"""
 config_setup
 [NUM] > .*fn()
--> assert pdb.local.GLOBAL_PDB.start_lineno == set_trace_lineno
+-> assert pdbpp.local.GLOBAL_PDB.start_lineno == set_trace_lineno
    5 frames hidden .*
 # c
 """)
@@ -4780,9 +4773,9 @@ def test_set_trace_in_default_code():
     """set_trace while not tracing and should not (re)set the global pdb."""
     def fn():
         def f():
-            before = pdb.local.GLOBAL_PDB
+            before = pdbpp.local.GLOBAL_PDB
             set_trace(cleanup=False)
-            assert before is pdb.local.GLOBAL_PDB
+            assert before is pdbpp.local.GLOBAL_PDB
         set_trace()
 
     check(fn, r"""
@@ -4791,12 +4784,12 @@ def test_set_trace_in_default_code():
 -> set_trace()
    5 frames hidden .*
 # f()
-# import pdb; pdb.local.GLOBAL_PDB.curframe is not None
+# import pdbpp; pdbpp.local.GLOBAL_PDB.curframe is not None
 True
 # l {line_num}, 2
 NUM \t    def fn():
 NUM \t        def f():
-NUM \t            before = pdb.local.GLOBAL_PDB
+NUM \t            before = pdbpp.local.GLOBAL_PDB
 # c
     """.format(
         line_num=fn.__code__.co_firstlineno,
@@ -5002,7 +4995,7 @@ do_help
     ("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m"),
 ])
 def test_truncate_to_visible_length(s, maxlength, expected):
-    assert pdb.Pdb._truncate_to_visible_length(s, maxlength) == expected
+    assert pdbpp.Pdb._truncate_to_visible_length(s, maxlength) == expected
 
 
 @pytest.mark.parametrize("pass_stdout", (True, False))
@@ -5035,19 +5028,19 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
                     self.use_rawinput = True
 
             set_trace(Pdb=_PdbTestKeepRawInput)
-            assert pdb.local.GLOBAL_PDB.stdout is patched_stdout
+            assert pdbpp.local.GLOBAL_PDB.stdout is patched_stdout
 
             print(patched_stdout.getvalue())
             patched_stdout.close()
 
         set_trace(Pdb=_PdbTestKeepRawInput, cleanup=False)
-        assert pdb.local.GLOBAL_PDB.stdout is sys.stdout
+        assert pdbpp.local.GLOBAL_PDB.stdout is sys.stdout
         print('# c')  # Hack to reflect output in test.
         return
 
     check(fn, """
 [NUM] > .*fn()
--> assert pdb.local.GLOBAL_PDB.stdout is sys.stdout
+-> assert pdbpp.local.GLOBAL_PDB.stdout is sys.stdout
    5 frames hidden .*
 # c
 # c
