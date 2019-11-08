@@ -85,13 +85,24 @@ def import_from_stdlib(name):
 pdb = import_from_stdlib('pdb')
 
 
-def rebind_globals(func, newglobals):
+def _newfunc(func, newglobals):
     newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
                                  func.__defaults__, func.__closure__)
     if sys.version_info >= (3, ):
         newfunc.__annotations__ = func.__annotations__
         newfunc.__kwdefaults__ = func.__kwdefaults__
     return newfunc
+
+def rebind_globals(func, newglobals):
+    if hasattr(func, "__code__"):
+        return _newfunc(func, newglobals)
+
+    import functools
+
+    if isinstance(func, functools.partial):
+        return functools.partial(_newfunc(func.func, newglobals), *func.args, **func.keywords)
+
+    raise ValueError("cannot handle func {!r}".format(func))
 
 
 class DefaultConfig(object):

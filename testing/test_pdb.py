@@ -4585,6 +4585,29 @@ def test_rebind_globals_annotations():
     assert str(inspect.signature(new)) == sig
 
 
+def test_rebind_globals_with_partial():
+    import functools
+
+    global test_global
+    test_global = 0
+
+    def func(a, b):
+        global test_global
+        return a + b + test_global
+
+    pfunc = functools.partial(func)
+    assert pfunc(0, 0) == 0
+
+    newglobals = globals().copy()
+    newglobals['test_global'] = 1
+
+    new = pdbpp.rebind_globals(pfunc, newglobals)
+    sig = str(inspect.signature(func))
+    assert sig == "(a, b)"
+    assert str(inspect.signature(new)) == sig
+    assert new(1, 40) == 42
+
+
 def test_debug_with_set_trace():
     def fn():
         def inner():
