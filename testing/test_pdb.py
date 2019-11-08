@@ -4600,11 +4600,7 @@ def test_rebind_globals_with_partial():
 
     newglobals = globals().copy()
     newglobals['test_global'] = 1
-
     new = pdbpp.rebind_globals(pfunc, newglobals)
-    sig = str(inspect.signature(func))
-    assert sig == "(a, b)"
-    assert str(inspect.signature(new)) == sig
     assert new(1, 40) == 42
 
 
