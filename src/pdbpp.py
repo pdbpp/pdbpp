@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 pdb++, a drop-in replacement for pdb
 ====================================
@@ -177,6 +178,21 @@ class Undefined:
 
 
 undefined = Undefined()
+
+
+class ArgWithCount(str):
+    """Extend arguments with a count, e.g. "10pp …"."""
+    def __new__(cls, value, count, **kwargs):
+        obj = super(ArgWithCount, cls).__new__(cls, value)
+        obj.cmd_count = count
+        return obj
+
+    def __repr__(self):
+        return "<{} cmd_count={!r} value={}>".format(
+            self.__class__.__name__,
+            self.cmd_count,
+            super(ArgWithCount, self).__repr__(),
+        )
 
 
 class PdbMeta(type):
@@ -765,17 +781,26 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 and (newline[1] == "'" or newline[1] == '"')
             ):
                 cmd, arg, newline = None, None, line
+            else:
+                # Handle "count" prefix with commands, transferring it to "arg".
+                m = re.match(r"(\d+)(\w+)", cmd)
+                if m:
+                    arg = ArgWithCount(arg, count=int(m.group(1)))
+                    cmd = m.group(2)
 
-            elif hasattr(self, "do_" + cmd):
-                if (
-                    self.curframe
-                    and (cmd in self.curframe.f_globals or cmd in self.curframe_locals)
-                    and cmd + arg == line  # not for "debug ..." etc
-                ) or arg.startswith("="):
-                    cmd, arg, newline = None, None, line
-                elif arg.startswith("(") and cmd in ("list", "next"):
-                    # heuristic: handle "list(...", "next(..." etc as builtin.
-                    cmd, arg, newline = None, None, line
+                if hasattr(self, "do_" + cmd):
+                    if (
+                        self.curframe
+                        and (
+                            cmd in self.curframe.f_globals
+                            or cmd in self.curframe_locals
+                        )
+                        and cmd + arg == line  # not for "debug ..." etc
+                    ) or arg.startswith("="):
+                        cmd, arg, newline = None, None, line
+                    elif arg.startswith("(") and cmd in ("list", "next"):
+                        # heuristic: handle "list(...", "next(..." etc as builtin.
+                        cmd, arg, newline = None, None, line
 
         # Fix cmd to not be None when used in completions.
         # This would trigger a TypeError (instead of AttributeError) in
@@ -1190,12 +1215,21 @@ except for when using the function decorator.
             self.error(traceback.format_exception_only(*exc_info)[-1].strip())
 
     def do_pp(self, arg):
+        """[width]pp expression
+        Pretty-print the value of the expression.
+        """
+        width = getattr(arg, "cmd_count", None)
         try:
             val = self._getval(arg)
         except:
             return
+        if width is None:
+            try:
+                width, _ = self.get_terminal_size()
+            except Exception as exc:
+                self.message("warning: could not get terminal size ({})".format(exc))
+                width = None
         try:
-            width, height = self.get_terminal_size()
             pprint.pprint(val, self.stdout, width=width)
         except:
             exc_info = sys.exc_info()[:2]
