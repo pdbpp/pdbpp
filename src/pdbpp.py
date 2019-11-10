@@ -93,6 +93,7 @@ def _newfunc(func, newglobals):
         newfunc.__kwdefaults__ = func.__kwdefaults__
     return newfunc
 
+
 def rebind_globals(func, newglobals):
     if hasattr(func, "__code__"):
         return _newfunc(func, newglobals)
@@ -100,7 +101,9 @@ def rebind_globals(func, newglobals):
     import functools
 
     if isinstance(func, functools.partial):
-        return functools.partial(_newfunc(func.func, newglobals), *func.args, **func.keywords)
+        return functools.partial(
+            _newfunc(func.func, newglobals), *func.args, **func.keywords
+        )
 
     raise ValueError("cannot handle func {!r}".format(func))
 
