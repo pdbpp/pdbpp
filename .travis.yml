@@ -26,9 +26,10 @@ jobs:
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
       script:
         - python -m tox -e py38-coverage
-        # - c:/users/travis/build/pdbpp/pdbpp/.tox/py37-coverage/scripts/python.exe t_windows.py
+        - c:/users/travis/build/pdbpp/pdbpp/.tox/py38-coverage/scripts/python.exe t_windows.py
         # Test without colorama (re-use same toxenv for performance reasons).
         - .tox/py38-coverage/Scripts/python.exe -m pip uninstall -y colorama
+        - c:/users/travis/build/pdbpp/pdbpp/.tox/py38-coverage/scripts/python.exe t_windows.py
         - python -m tox -e py38-coverage
 
     # - name: 'py37 (osx)'
