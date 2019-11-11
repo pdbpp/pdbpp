@@ -68,7 +68,7 @@ before_install:
       done
       set +x
     fi
-    if [ -n "$INSTALL_PYTHON" ]; then
+    if [ -n "$PYENV_GLOBAL" ]; then
       pyenv global $PYENV_GLOBAL
     fi
 
