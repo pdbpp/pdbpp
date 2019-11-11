@@ -28,19 +28,16 @@ jobs:
       env:
         - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
         - INSTALL_PYTHON="python-3.5 python-3.4"
-        - PYENV_GLOBAL="3.6.7 3.5 3.4 2.7.15"
 
     - name: 'py38 + py37 + checkqa'
       env:
         - TOXENV=py38-coverage,py37-coverage,checkqa
         - INSTALL_PYTHON="python-3.8"
-        - PYENV_GLOBAL="3.8 3.7"
 
     - name: 'pypy3 + pypy'
       env:
         - TOXENV=pypy3-coverage,pypy-coverage
         - INSTALL_PYTHON="pypy pypy3"
-        - PYENV_GLOBAL="pypy3 pypy"
 
     - stage: release
       name: 'release'
@@ -65,15 +62,12 @@ before_install:
         url="https://storage.googleapis.com/travis-ci-language-archives/python/binaries/ubuntu/16.04/x86_64/$v.tar.bz2"
         curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
       done
-
-      for v in /opt/python/*/bin; do
-        PATH="$v:$PATH"
-      done
       set +x
     fi
-    if [ -n "$PYENV_GLOBAL" ]; then
-      pyenv global $PYENV_GLOBAL
-    fi
+    for v in /opt/python/*/bin; do
+      echo "Adding to PATH: $v"
+      PATH="$v:$PATH"
+    done
 
 install:
   - pyenv versions
