@@ -27,7 +27,9 @@ jobs:
     - name: 'py38 + checkqa'
       language: python
       python: '3.8'
-      env: TOXENV=py38-coverage,checkqa
+      env:
+        - TOXENV=py38-coverage,py37-coverage,checkqa
+        - PYENV_GLOBAL="3.8 3.7"
 
     - name: 'pypy + pypy3'
       env:
@@ -65,7 +67,9 @@ before_install:
         curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
       done
       set +x
-      pyenv global "$PYENV_GLOBAL"
+    fi
+    if [ -n "$INSTALL_PYTHON" ]; then
+      pyenv global $PYENV_GLOBAL
     fi
 
 install:
