@@ -1,5 +1,5 @@
 dist: xenial
-language: python
+language: generic
 cache: false
 
 env:
@@ -28,13 +28,22 @@ jobs:
     - name: 'py38 + checkqa'
       python: '3.8'
       env: TOXENV=py38-coverage,checkqa
+      before_install:
+        - pyenv version
+        - pyenv global 3.8
 
     - name: 'pypy3 + pypy'
       python: '2.7'
       env: TOXENV=pypy-coverage,pypy3-coverage
+      before_install:
+        - pyenv version
+        - pyenv global pypy,pypy3
 
     - name: 'py36 + py35 + py34 + py27'
       env: TOXENV=py36-coverage,py35-coverage,py34-coverage,py27-coverage
+      before_install:
+        - pyenv version
+        - pyenv global pypy,pypy3
 
     - stage: release
       name: 'release'
