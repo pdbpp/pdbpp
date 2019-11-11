@@ -30,9 +30,9 @@ jobs:
         - INSTALL_PYTHON="python-3.8"
         - PYENV_GLOBAL="3.8 3.7"
 
-    - name: 'pypy + pypy3'
+    - name: 'pypy3 + pypy'
       env:
-        - TOXENV=pypy-coverage,pypy3-coverage
+        - TOXENV=pypy3-coverage,pypy-coverage
         - INSTALL_PYTHON="pypy pypy3"
         - PYENV_GLOBAL="pypy3 pypy"
 
