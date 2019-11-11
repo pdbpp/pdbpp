@@ -19,7 +19,6 @@ jobs:
       os: windows
       language: shell
       before_install:
-        - python --version
         - choco install --no-progress python --version 3.8.0
         - refreshenv
       env:
