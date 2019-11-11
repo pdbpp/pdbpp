@@ -5063,3 +5063,24 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
 # c
 # c
 """)
+
+
+def test_position_of_obj_unwraps():
+    import contextlib
+
+    @contextlib.contextmanager
+    def cm():
+        pass
+
+    pdb_ = PdbTest()
+    pos = pdb_._get_position_of_obj(cm)
+
+    if hasattr(inspect, "unwrap"):
+        assert pos[0] == __file__
+        assert pos[2] == [
+            "    @contextmanager\n",
+            "    def cm():\n",
+            "        pass\n",
+        ]
+    else:
+        assert pos[0] == contextlib.__file__.rstrip("c")
