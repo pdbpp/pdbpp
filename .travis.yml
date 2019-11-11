@@ -15,26 +15,33 @@ stages:
 
 jobs:
   include:
-    # - name: 'py37 (osx)'
-    #   os: osx
-    #   osx_image: xcode10.2
-    #   language: generic
-    #   env: TOXENV=py37-coverage
-    #   before_install:
-    #     - ln -sfn "$(which python3)" /usr/local/bin/python
-    #     - python -V
-    #     - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
+    - name: 'py37 (osx)'
+      os: osx
+      osx_image: xcode10.2
+      language: generic
+      env: TOXENV=py37-coverage
+      before_install:
+        - ln -sfn "$(which python3)" /usr/local/bin/python
+        - python -V
+        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
-    # - name: 'py38 + checkqa'
-    #   python: '3.8'
-    #   env: TOXENV=py38-coverage,checkqa
+    - name: 'py38 + checkqa'
+      python: '3.8'
+      env: TOXENV=py38-coverage,checkqa
 
-    - name: 'pypy3 + pypy'
+    - name: 'pypy3'
       python: pypy,pypy3
-      env: TOXENV=pypy-coverage,pypy3-coverage
+      env: TOXENV=pypy3-coverage
+    - name: 'pypy'
+      python: pypy
+      env: TOXENV=pypy-coverage
 
-    # - name: 'py35 + py34'
-    #   env: TOXENV=py35-coverage,py34-coverage
+    - name: 'py35'
+      python: '3.5'
+      env: TOXENV=py35-coverage
+    - name: 'py34'
+      python: '3.4'
+      env: TOXENV=py34-coverage
 
     - name: 'py36 + py27'
       env: TOXENV=py36-coverage,py27-coverage
