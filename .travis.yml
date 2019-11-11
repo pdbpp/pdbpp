@@ -24,7 +24,7 @@ jobs:
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
-    - name: 'py38 + checkqa'
+    - name: 'py38 + py37 + checkqa'
       language: python
       python: '3.8'
       env:
