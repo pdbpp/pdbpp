@@ -28,7 +28,7 @@ jobs:
         - python -m tox -e py38-coverage
         # - c:/users/travis/build/pdbpp/pdbpp/.tox/py37-coverage/scripts/python.exe t_windows.py
         # Test without colorama (re-use same toxenv for performance reasons).
-        - .tox/py38-coverage/Scripts/python.exe -m pip uninstall colorama
+        - .tox/py38-coverage/Scripts/python.exe -m pip uninstall -y colorama
         - python -m tox -e py38-coverage
 
     # - name: 'py37 (osx)'
