@@ -66,7 +66,7 @@ before_install:
         curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
       done
 
-      for v in /home/travis/virtualenv/python*/bin; do
+      for v in /opt/python/*/bin; do
         PATH="$v:$PATH"
       done
       set +x
