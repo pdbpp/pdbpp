@@ -82,7 +82,7 @@ before_script:
   - python -m pip freeze
 
 script:
-  - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@my-master"
+  - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@my-master;python_version>='3.5'"
 
 after_script:
   - |
