@@ -349,6 +349,26 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def _setup_streams(self, stdout):
         self.stdout = self.ensure_file_can_write_unicode(stdout)
 
+        if os.name == 'nt':
+            try:
+                import colorama
+                supports_color = True
+            except ImportError:
+                supports_color = False
+        else:
+            supports_color = True
+
+        # Setup highlight/use_pygments for detected color support.
+        if self.config.highlight is None or self.config.use_pygments is None:
+            if self.config.highlight is None:
+                self.config.highlight = supports_color
+
+        if os.name == "nt" and supports_color:
+            if self.config.highlight or self.config.use_pygments is not False:
+                self.stdout = colorama.AnsiToWin32(
+                    self.stdout, convert=True, strip=True
+                ).stream
+
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
         if (not hasattr(f, 'stream')
