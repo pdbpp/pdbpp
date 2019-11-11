@@ -29,13 +29,13 @@ jobs:
       python: '3.8'
       env: TOXENV=py38-coverage,checkqa
 
-    - name: 'py27 + pypy'
+    - name: 'pypy3 + pypy'
       python: '2.7'
-      env: TOXENV=pypy-coverage,py27-coverage
+      env: TOXENV=pypy-coverage,pypy3-coverage
 
-    - name: 'py35 + py34 + pypy3'
+    - name: 'py35 + py34 + py27'
       python: '3.5'
-      env: TOXENV=py35-coverage,py34-coverage,pypy3-coverage
+      env: TOXENV=py35-coverage,py34-coverage,py27-coverage
 
     - stage: release
       name: 'release'
