@@ -15,6 +15,22 @@ stages:
 
 jobs:
   include:
+    - name: Windows
+      os: windows
+      language: shell
+      before_install:
+        - choco install --no-progress python
+      env:
+        - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+        - TOXENV=uses_custom_script
+        - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
+      script:
+        - tox -e py37-coverage
+        - c:/users/travis/build/pdbpp/pdbpp/.tox/py37-coverage/scripts/python.exe t_windows.py
+        # Test without colorama (re-use same toxenv for performance reasons).
+        - .tox/py37-coverage/Scripts/python.exe -m pip uninstall colorama
+        - tox -e py37-coverage
+
     - name: 'py37 (osx)'
       os: osx
       osx_image: xcode10.2
