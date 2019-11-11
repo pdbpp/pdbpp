@@ -31,29 +31,29 @@ jobs:
         - .tox/py37-coverage/Scripts/python.exe -m pip uninstall colorama
         - tox -e py37-coverage
 
-    - name: 'py37 (osx)'
-      os: osx
-      osx_image: xcode10.2
-      env: TOXENV=py37-coverage
-      before_install:
-        - ln -sfn "$(which python3)" /usr/local/bin/python
-        - python -V
-        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
-
-    - name: 'py36 + py35 + py34 + py27'
-      env:
-        - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
-        - INSTALL_PYTHON="python-3.5 python-3.4"
-
-    - name: 'py38 + py37 + checkqa'
-      env:
-        - TOXENV=py38-coverage,py37-coverage,checkqa
-        - INSTALL_PYTHON="python-3.8"
-
-    - name: 'pypy3 + pypy'
-      env:
-        - TOXENV=pypy3-coverage,pypy-coverage
-        - INSTALL_PYTHON="pypy pypy3"
+    # - name: 'py37 (osx)'
+    #   os: osx
+    #   osx_image: xcode10.2
+    #   env: TOXENV=py37-coverage
+    #   before_install:
+    #     - ln -sfn "$(which python3)" /usr/local/bin/python
+    #     - python -V
+    #     - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
+    #
+    # - name: 'py36 + py35 + py34 + py27'
+    #   env:
+    #     - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
+    #     - INSTALL_PYTHON="python-3.5 python-3.4"
+    #
+    # - name: 'py38 + py37 + checkqa'
+    #   env:
+    #     - TOXENV=py38-coverage,py37-coverage,checkqa
+    #     - INSTALL_PYTHON="python-3.8"
+    #
+    # - name: 'pypy3 + pypy'
+    #   env:
+    #     - TOXENV=pypy3-coverage,pypy-coverage
+    #     - INSTALL_PYTHON="pypy pypy3"
 
     - stage: release
       name: 'release'
