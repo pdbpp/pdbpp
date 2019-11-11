@@ -110,7 +110,7 @@ def rebind_globals(func, newglobals):
 
 class DefaultConfig(object):
     prompt = '(Pdb++) '
-    highlight = True
+    highlight = None
     sticky_by_default = False
 
     # Pygments.
