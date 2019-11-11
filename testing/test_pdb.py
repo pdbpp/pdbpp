@@ -5080,7 +5080,7 @@ def test_position_of_obj_unwraps():
         assert pos[2] == [
             "    @contextlib.contextmanager\n",
             "    def cm():\n",
-            "        pass\n",
+            "        raise NotImplementedError()\n",
         ]
     else:
         assert pos[0] == contextlib.__file__.rstrip("c")
