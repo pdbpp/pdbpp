@@ -2445,7 +2445,7 @@ RUN emacs \+%d %s
 """ % (src_compile_lineno, filename))
 
 
-def test_put(tmphome):
+def test_put():
     def fn():
         set_trace()
         return 42
@@ -2523,7 +2523,7 @@ def test_side_effects_free():
     assert not r.match('x = 10')
 
 
-def test_put_side_effects_free(tmphome):
+def test_put_side_effects_free():
     def fn():
         x = 10  # noqa: F841
         set_trace()
@@ -3519,10 +3519,9 @@ Breakpoint . at .*:{lineno}
 @pytest.mark.skipif(
     sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
 )
-def test_pdbrc_continue(tmphome, tmpdir):
+def test_pdbrc_continue(tmpdirhome):
     """Test that interaction is skipped with continue in pdbrc."""
-    assert os.getcwd() == str(tmphome)
-    assert os.getcwd() == str(tmpdir)
+    assert os.getcwd() == str(tmpdirhome)
     with open(".pdbrc", "w") as f:
         f.writelines([
             "p 'from_pdbrc'\n",
@@ -3554,13 +3553,13 @@ def test_python_m_pdb_usage():
 
 
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
-def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmphome):
+def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     import subprocess
     import textwrap
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
-    f = tmphome.ensure("test.py")
+    f = tmpdir.ensure("test.py")
     f.write(textwrap.dedent("""
         import inspect
         import os
@@ -3927,21 +3926,21 @@ True
 """)
 
 
-def test_integration(testdir, tmphome, readline_param):
+def test_integration(testdir, readline_param):
     """Integration test."""
-    import os
     import sys
 
-    assert os.getcwd() == tmphome
-    f = tmphome.ensure("test_file.py")
+    tmpdir = testdir.tmpdir
+
+    f = tmpdir.ensure("test_file.py")
     f.write("print('before'); __import__('pdb').set_trace(); print('after')")
 
     if readline_param != "pyrepl":
         # Create empty pyrepl module to ignore any installed pyrepl.
-        mocked_pyrepl = tmphome.ensure("pyrepl.py")
+        mocked_pyrepl = tmpdir.ensure("pyrepl.py")
         mocked_pyrepl.write("")
 
-    child = testdir.spawn(sys.executable + " " + str(f), expect_timeout=1)
+    child = testdir.spawn(sys.executable + " test_file.py", expect_timeout=1)
     child.expect_exact("\n(Pdb++) ")
 
     if readline_param != "pyrepl":
@@ -4956,7 +4955,7 @@ def test_do_source_without_truncating():
 """)
 
 
-def test_handles_set_trace_in_config(tmphome, tmpdir):
+def test_handles_set_trace_in_config(tmpdir):
     """Should not cause a RecursionError."""
     def fn():
         class Config(ConfigTest):
