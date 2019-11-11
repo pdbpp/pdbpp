@@ -5070,7 +5070,7 @@ def test_position_of_obj_unwraps():
 
     @contextlib.contextmanager
     def cm():
-        pass
+        raise NotImplementedError()
 
     pdb_ = PdbTest()
     pos = pdb_._get_position_of_obj(cm)
