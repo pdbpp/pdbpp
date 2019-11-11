@@ -20,7 +20,6 @@ jobs:
       language: shell
       before_install:
         - choco install --no-progress python --version 3.8.0
-        - refreshenv
       env:
         - PATH=/c/Python38:/c/Python38/Scripts:$PATH
         - TOXENV=uses_custom_script
