@@ -35,13 +35,13 @@ jobs:
       env:
         - TOXENV=pypy-coverage,pypy3-coverage
         - INSTALL_PYTHON="pypy pypy3"
-        - PYENV_GLOBAL="pypy pypy3"
+        - PYENV_GLOBAL="pypy3 pypy"
 
-    - name: 'py34 + py35 + py36 + py27'
+    - name: 'py36 + py35 + py34 + py27'
       env:
         - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
-        - INSTALL_PYTHON="python-3.4 python-3.5"
-        - PYENV_GLOBAL="3.4 3.5 3.6.7 2.7.15"
+        - INSTALL_PYTHON="python-3.5 python-3.4"
+        - PYENV_GLOBAL="3.6.7 3.5 3.4 2.7.15"
 
     - stage: release
       name: 'release'
@@ -76,10 +76,10 @@ install:
   - pyenv versions
   - pyenv version
   - python --version
-  - python -m pip install tox==3.13.2
+  - sudo python -m pip install tox==3.13.2
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - python -m pip install virtualenv==16.7.3
+  - sudo python -m pip install virtualenv==16.7.3
 
 before_script:
   - python -m pip --version
