@@ -3926,9 +3926,11 @@ True
 """)
 
 
-def test_integration(testdir, tmpdir, readline_param):
+def test_integration(testdir, readline_param):
     """Integration test."""
     import sys
+
+    tmpdir = testdir.tmpdir
 
     f = tmpdir.ensure("test_file.py")
     f.write("print('before'); __import__('pdb').set_trace(); print('after')")
@@ -3938,7 +3940,7 @@ def test_integration(testdir, tmpdir, readline_param):
         mocked_pyrepl = tmpdir.ensure("pyrepl.py")
         mocked_pyrepl.write("")
 
-    child = testdir.spawn(sys.executable + " " + str(f), expect_timeout=1)
+    child = testdir.spawn(sys.executable + " test_file.py", expect_timeout=1)
     child.expect_exact("\n(Pdb++) ")
 
     if readline_param != "pyrepl":
