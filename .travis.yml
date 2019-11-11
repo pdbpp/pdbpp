@@ -4,9 +4,8 @@ cache: false
 
 env:
   global:
-    - PYTEST_ADDOPTS="-vv"
+    - PYTEST_ADDOPTS="-vv --cov-report=xml:coverage-travis.xml"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
-    - SUBMIT_COVERAGE=1
 
 stages:
   - name: test
