@@ -30,7 +30,7 @@ jobs:
       env: TOXENV=py38-coverage,checkqa
 
     - name: 'pypy3'
-      python: pypy,pypy3
+      python: 'pypy3'
       env: TOXENV=pypy3-coverage
     - name: 'pypy'
       python: pypy
