@@ -1,10 +1,10 @@
 dist: xenial
-language: python
+language: generic
 cache: false
 
 env:
   global:
-    - PYTEST_ADDOPTS=-vv
+    - PYTEST_ADDOPTS="-vv --cov-report=xml:coverage-travis.xml"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
 
 stages:
@@ -15,36 +15,32 @@ stages:
 
 jobs:
   include:
-    - os: osx
+    - name: 'py37 (osx)'
+      os: osx
       osx_image: xcode10.2
-      language: generic
       env: TOXENV=py37-coverage
       before_install:
         - ln -sfn "$(which python3)" /usr/local/bin/python
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
-    - python: 'pypy'
-      env: TOXENV=pypy-coverage
-    - python: 'pypy3'
-      env: TOXENV=pypy3-coverage
-    - python: '3.7'
-      env: TOXENV=py37-coverage
-    - python: '3.6'
-      env: TOXENV=py36-coverage
-    - python: '3.5'
-      env: TOXENV=py35-coverage
-    - python: '3.4'
-      env: TOXENV=py34-coverage
-    - python: '2.7'
-      env: TOXENV=py27-coverage
-    - python: '3.8'
-      env: TOXENV=py38-coverage
+    - name: 'py36 + py35 + py34 + py27'
+      env:
+        - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
+        - INSTALL_PYTHON="python-3.5 python-3.4"
 
-    - python: '3.7'
-      env: TOXENV=checkqa
+    - name: 'py38 + py37 + checkqa'
+      env:
+        - TOXENV=py38-coverage,py37-coverage,checkqa
+        - INSTALL_PYTHON="python-3.8"
+
+    - name: 'pypy3 + pypy'
+      env:
+        - TOXENV=pypy3-coverage,pypy-coverage
+        - INSTALL_PYTHON="pypy pypy3"
 
     - stage: release
+      name: 'release'
       python: '3.7'
       script: skip
       install: skip
@@ -58,22 +54,40 @@ jobs:
           distributions: 'sdist bdist_wheel'
           repo: pdbpp/pdbpp
 
+before_install:
+  - |
+    if [ -n "$INSTALL_PYTHON" ]; then
+      set -x
+      for v in $INSTALL_PYTHON; do
+        url="https://storage.googleapis.com/travis-ci-language-archives/python/binaries/ubuntu/16.04/x86_64/$v.tar.bz2"
+        curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
+      done
+      set +x
+    fi
+    for v in /opt/python/*/bin; do
+      echo "Adding to PATH: $v"
+      PATH="$v:$PATH"
+    done
+
 install:
-  - pip install tox==3.13.2
+  - pyenv versions
+  - python --version
+  - python -m pip install --user tox==3.13.2
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - pip install virtualenv==16.7.3
+  - python -m pip install --user virtualenv==16.7.3
 
 before_script:
-  - pip --version
-  - pip freeze
+  - python -m pip --version
+  - python -m pip freeze
 
 script:
-  - tox
+  - python -m tox
 
 after_script:
   - |
     if [[ "$TOXENV" != checkqa ]]; then
+      python -m coverage report -m
       # Unset TRAVIS_CMD to work around https://github.com/codecov/codecov-bash/issues/174.
       env -u TRAVIS_CMD bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n "${TRAVIS_PYTHON_VERSION}" -F "${TRAVIS_OS_NAME}"
     fi
