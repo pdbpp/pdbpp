@@ -24,6 +24,12 @@ jobs:
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
+    - name: 'py36 + py35 + py34 + py27'
+      env:
+        - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
+        - INSTALL_PYTHON="python-3.5 python-3.4"
+        - PYENV_GLOBAL="3.6.7 3.5 3.4 2.7.15"
+
     - name: 'py38 + py37 + checkqa'
       env:
         - TOXENV=py38-coverage,py37-coverage,checkqa
@@ -35,12 +41,6 @@ jobs:
         - TOXENV=pypy3-coverage,pypy-coverage
         - INSTALL_PYTHON="pypy pypy3"
         - PYENV_GLOBAL="pypy3 pypy"
-
-    - name: 'py36 + py35 + py34 + py27'
-      env:
-        - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
-        - INSTALL_PYTHON="python-3.5 python-3.4"
-        - PYENV_GLOBAL="3.6.7 3.5 3.4 2.7.15"
 
     - stage: release
       name: 'release'
