@@ -76,10 +76,10 @@ install:
   - pyenv versions
   - pyenv version
   - python --version
-  - sudo python -m pip install tox==3.13.2
+  - python -m pip install --user tox==3.13.2
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - sudo python -m pip install virtualenv==16.7.3
+  - python -m pip install --user virtualenv==16.7.3
 
 before_script:
   - python -m pip --version
