@@ -86,7 +86,6 @@ before_install:
     done
 
 install:
-  - pyenv versions
   - python --version
   - python -m pip install --user tox==3.13.2
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
