@@ -29,12 +29,14 @@ jobs:
       python: '3.8'
       env: TOXENV=py38-coverage,checkqa
 
-    - name: 'pypy3'
-      python: 'pypy3'
-      env: TOXENV=pypy3-coverage
-    - name: 'pypy'
-      python: pypy
-      env: TOXENV=pypy-coverage
+    - name: 'pypy + pypy3'
+      env: TOXENV=pypy-coverage,pypy3-coverage
+      before_install:
+        - |
+          for v in pypy pypy3; do
+            url="https://storage.googleapis.com/travis-ci-language-archives/python/binaries/ubuntu/16.04/x86_64/$v.tar.bz2"
+            curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
+          done
 
     - name: 'py35'
       python: '3.5'
