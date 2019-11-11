@@ -15,11 +15,11 @@ stages:
 
 jobs:
   include:
-    - name: 'osx: py37 + py36'
+    - name: 'py37 (osx)'
       os: osx
       osx_image: xcode10.2
       language: generic
-      env: TOXENV=py37-coverage,py36-coverage
+      env: TOXENV=py37-coverage
       before_install:
         - ln -sfn "$(which python3)" /usr/local/bin/python
         - python -V
@@ -33,9 +33,8 @@ jobs:
       python: '2.7'
       env: TOXENV=pypy-coverage,pypy3-coverage
 
-    - name: 'py35 + py34 + py27'
-      python: '3.5'
-      env: TOXENV=py35-coverage,py34-coverage,py27-coverage
+    - name: 'py36 + py35 + py34 + py27'
+      env: TOXENV=py36-coverage,py35-coverage,py34-coverage,py27-coverage
 
     - stage: release
       name: 'release'
