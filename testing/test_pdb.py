@@ -5078,7 +5078,7 @@ def test_position_of_obj_unwraps():
     if hasattr(inspect, "unwrap"):
         assert pos[0] == __file__
         assert pos[2] == [
-            "    @contextmanager\n",
+            "    @contextlib.contextmanager\n",
             "    def cm():\n",
             "        pass\n",
         ]
