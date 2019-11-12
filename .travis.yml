@@ -25,6 +25,7 @@ jobs:
         - TOXENV=uses_custom_script
         - PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-append"
       script:
+        - env
         - python -m tox -e py38-coverage --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@colorama"
         - c:/users/travis/build/pdbpp/pdbpp/.tox/py38-coverage/scripts/python.exe t_windows.py
         # Test without colorama (re-use same toxenv for performance reasons).
