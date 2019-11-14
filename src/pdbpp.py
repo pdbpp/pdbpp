@@ -361,6 +361,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     _in_interaction = False
 
     def __init__(self, *args, **kwds):
+        if has_colorama_on_windows:
+            # Do not strip the ANSI codes - they don't do anything on Windows
+            # and stripping them would mean updating many tests.
+            colorama.init(strip=False)
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
