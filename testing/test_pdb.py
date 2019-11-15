@@ -5054,7 +5054,7 @@ def test_truncate_to_visible_length(s, maxlength, expected):
 
 @pytest.mark.parametrize("pass_stdout", (True, False))
 @pytest.mark.skipif(
-    sys.platform=="win32",
+    sys.platform == "win32",
     reason=(
         "IndexError: not a valid key: 'ck'. I think this is an issue"
         " with pyreadline?"
