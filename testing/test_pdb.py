@@ -5176,16 +5176,3 @@ is_skipped_module\? testing.test_pdb
    5 frames hidden (try 'help hidden_frames')
 # c
 """)
-
-
-@pytest.mark.parametrize(
-    "filename, expected", [
-        (r"C:\foo\bar\baz.py", "c:/foo/bar/baz.py"),
-        (r"C:\Program Files\Python36\foo.py", "c:/program files/python36/foo.py"),
-        (None, None),
-    ],
-)
-def test_normalize_path(filename, expected):
-    if sys.platform != "win32":
-        expected = filename
-    assert pdbpp._normalize_path(filename) == expected

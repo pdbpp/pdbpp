@@ -68,37 +68,6 @@ def __getattr__(name):
     raise AttributeError
 
 
-def _normalize_path(filename):
-    r"""
-    Converts windows-style paths, eg "C:\foo\bar" to
-    (a) be lowercase and
-    (b) use forward slashes
-
-    Returns the original filename if not on a Windows system.
-
-    The basic idea is that paths on Windows are stupid and because we need to
-    support Python < 3.6, we can't easily use pathlib. A lot of the tests
-    are regex comparisons, and what happens is that the forward-slashed
-    Windows paths end up looking like they have escape characters in them
-    (namely \p in ...\pdbpp...).
-
-    So we simply modify those path strings and replace all backslashes
-    ``\`` with forward slashes ``/``.
-
-    In addition, Windows is a case-insensitive file system, so ``C:\foo`` is
-    the same as ``c:\foo``. This again causes the regex-based tests to
-    fail, so we add in ``os.path.normcase`` which, on Windows, changes
-    things to lowercase.
-    """
-    if filename is None:
-        return None
-
-    if sys.platform == "win32":
-        filename = os.path.normcase(filename)
-        filename = filename.replace("\\", r"/")
-    return filename
-
-
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
     result = types.ModuleType(name)
@@ -300,10 +269,7 @@ class PdbMeta(type):
 
         obj = cls.__new__(cls)
         if called_for_set_trace:
-            kwargs.setdefault(
-                "start_filename",
-                _normalize_path(called_for_set_trace.f_code.co_filename),
-            )
+            kwargs.setdefault("start_filename", called_for_set_trace.f_code.co_filename)
             kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 
         if "set_global_pdb" in kwargs:
@@ -679,7 +645,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             match = self.stack_entry_regexp.match(entry)
             if match:
                 filename, lineno, other = match.groups()
-                filename = _normalize_path(filename)
                 filename = Color.set(self.config.filename_color, filename)
                 lineno = Color.set(self.config.line_number_color, lineno)
                 entry = '%s(%s)%s' % (filename, lineno, other)
@@ -886,7 +851,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         except TypeError:
             pass
         try:
-            data['File'] = _normalize_path(inspect.getabsfile(obj))
+            data['File'] = inspect.getabsfile(obj)
         except TypeError:
             pass
         else:
@@ -1410,7 +1375,6 @@ except for when using the function decorator.
                 self.stdout.write(CLEARSCREEN)
             frame, lineno = self.stack[self.curindex]
             filename = self.canonic(frame.f_code.co_filename)
-            filename = _normalize_path(filename)
             s = '> %s(%r)' % (filename, lineno)
             print(s, file=self.stdout)
             print(file=self.stdout)
@@ -1564,7 +1528,7 @@ except for when using the function decorator.
         if isinstance(obj, str):
             return obj, 1, None
         try:
-            filename = _normalize_path(inspect.getabsfile(obj))
+            filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
             if not quiet:
@@ -1693,7 +1657,6 @@ except for when using the function decorator.
         frame = self.curframe
         lineno = frame.f_lineno
         filename = os.path.abspath(frame.f_code.co_filename)
-        filename = _normalize_path(filename)
         return filename, lineno
 
     def _quote_filename(self, filename):
@@ -1739,10 +1702,8 @@ except for when using the function decorator.
         "Open an editor visiting the current file at the current line"
         if arg == '':
             filename, lineno = self._get_current_position()
-            filename = _normalize_path(filename)
         else:
             filename, lineno, _ = self._get_position_of_arg(arg)
-            filename = _normalize_path(filename)
             if filename is None:
                 return
         # this case handles code generated with py.code.Source()
@@ -1750,7 +1711,6 @@ except for when using the function decorator.
         match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
         if match:
             filename = match.group(1)
-            filename = _normalize_path(filename)
             lineno = int(match.group(2))
 
         try:
@@ -1836,7 +1796,6 @@ except for when using the function decorator.
         self._stopped_for_set_trace = False
 
         self.start_filename = frame.f_code.co_filename
-        self.start_filename = _normalize_path(self.start_filename)
         self.start_lineno = frame.f_lineno
 
         return super(Pdb, self).set_trace(frame)
