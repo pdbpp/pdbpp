@@ -3600,7 +3600,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     else:
         assert "(Pdb)" in out
         assert "(Pdb++)" not in out
-        assert out.endswith("\n(Pdb) \n")
+        assert out.endswith("\n(Pdb) " + os.linesep)
 
 
 def get_completions(text):
