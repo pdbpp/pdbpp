@@ -3243,6 +3243,13 @@ Deleted breakpoint NUM
 
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "error"),
                     reason="no error method")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason=(
+        "UnicodeDecodeError: 'charmap' codec can't decode byte 0x81 in"
+        " position 6998: character maps to <undefined>"
+    ),
+)
 def test_continue_arg_with_error():
     def fn():
         set_trace()
