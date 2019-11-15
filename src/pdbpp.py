@@ -70,12 +70,11 @@ def __getattr__(name):
 
 def _normalize_path(filename):
     r"""
-    Converts windows-style paths, eg "C:\foo\bar" to be safe for processing
+    Converts windows-style paths, eg "C:\foo\bar" to
+    (a) be lowercase and
+    (b) use forward slashes
 
-    For windows support, we want to make sure that any paths we use have
-    forward slashes so that we don't have to deal with escaping things.
-
-    No affect on non-windows systems.
+    Returns the original filename if not on a Windows system.
     """
     if filename is None:
         return None
