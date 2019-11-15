@@ -271,9 +271,11 @@ def check(func, expected):
     all_ok = True
     print()
     for pattern, string in zip_longest(expected, lines):
+        # Sometimes we can't adjust the expected output of a file path
+        # (like `stacktrace.format_exc`), so in those cases we just skip
+        # checking those lines if we're testing on Windows.
         if isinstance(pattern, str) and "SKIPLINEWIN" in pattern:
             if sys.platform == "win32":
-                # We were told to skip this line check for Windows systems.
                 print("line skipped")
                 continue
             else:
