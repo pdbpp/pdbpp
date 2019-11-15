@@ -94,6 +94,16 @@ class PdbTest(pdbpp.Pdb):
         return self.default(arg)
 
 
+def _normpath_and_escape(filename):
+    """
+    Normalizes the path and escapes it for regex. Only affects Windows.
+    """
+    filename = pdbpp._normalize_path(filename)
+    # Initially I thought I had to do more here spefically for testing, such
+    # as escaping things for regex, hence why this function exists.
+    return filename
+
+
 def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
     """set_trace helper that goes through pdb.set_trace.
 
@@ -914,7 +924,7 @@ def test_single_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
         lnum_nodoc=fn.__code__.co_firstlineno + 1,
         lnum_f2=fn.__code__.co_firstlineno + 4,
     ))
@@ -953,7 +963,7 @@ def test_double_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -1968,7 +1978,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -2004,7 +2014,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -2080,7 +2090,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -2186,7 +2196,7 @@ NUM             except AssertionError:
 NUM  ->             xpm()
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -2243,7 +2253,7 @@ AssertionError.*
 -> for i in gen():
 # c
     """.format(
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -2390,7 +2400,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, filename))
+""" % (return42_lineno, _normpath_and_escape(filename)))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2402,7 +2412,7 @@ RUN emacs \+%d %s
 # edit
 RUN emacs \+%d %s
 # c
-""" % (call_fn_lineno, filename))
+""" % (call_fn_lineno, _normpath_and_escape(filename)))
 
 
 def test_edit_obj():
@@ -2425,7 +2435,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, filename))
+""" % (bar_lineno, _normpath_and_escape(filename)))
 
 
 def test_edit_py_code_source():
@@ -2451,7 +2461,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, filename))
+""" % (src_compile_lineno, _normpath_and_escape(filename)))
 
 
 def test_put():
@@ -3219,7 +3229,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -3251,7 +3261,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=__file__,
+        filename=_normpath_and_escape(__file__),
     ))
 
 
@@ -4672,7 +4682,7 @@ def test_config_gets_start_filename():
         class MyConfig(ConfigTest):
             def setup(self, pdb):
                 print("config_setup")
-                assert pdb.start_filename == __file__
+                assert pdb.start_filename == _normpath_and_escape(__file__)
                 assert pdb.start_lineno == setup_lineno
 
         set_trace(Config=MyConfig)
@@ -5085,7 +5095,7 @@ def test_position_of_obj_unwraps():
     pos = pdb_._get_position_of_obj(cm)
 
     if hasattr(inspect, "unwrap"):
-        assert pos[0] == __file__
+        assert pos[0] == pdbpp._normalize_path(__file__)
         assert pos[2] == [
             "    @contextlib.contextmanager\n",
             "    def cm():\n",
