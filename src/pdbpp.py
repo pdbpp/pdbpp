@@ -75,6 +75,20 @@ def _normalize_path(filename):
     (b) use forward slashes
 
     Returns the original filename if not on a Windows system.
+
+    The basic idea is that paths on Windows are stupid and because we need to
+    support Python < 3.6, we can't easily use pathlib. A lot of the tests
+    are regex comparisons, and what happens is that the forward-slashed
+    Windows paths end up looking like they have escape characters in them
+    (namely \p in ...\pdbpp...).
+
+    So we simply modify those path strings and replace all backslashes
+    ``\`` with forward slashes ``/``.
+
+    In addition, Windows is a case-insensitive file system, so ``C:\foo`` is
+    the same as ``c:\foo``. This again causes the regex-based tests to
+    fail, so we add in ``os.path.normcase`` which, on Windows, changes
+    things to lowercase.
     """
     if filename is None:
         return None
