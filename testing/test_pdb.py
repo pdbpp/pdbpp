@@ -274,14 +274,6 @@ def check(func, expected):
     all_ok = True
     print()
     for pattern, string in zip_longest(expected, lines):
-        if isinstance(pattern, str) and "SKIPLINEWIN" in pattern:
-            if sys.platform == "win32":
-                # We were told to skip this line check for Windows systems.
-                print("line skipped")
-                continue
-            else:
-                # Remove the mark or else things will break.
-                pattern = pattern.replace("SKIPLINEWIN", "")
         if pattern is not None and string is not None:
             ok = re.match(pattern, string)
         else:
@@ -2189,9 +2181,9 @@ def test_exception_lineno():
 
     check(fn, """
 Traceback (most recent call last):
-SKIPLINEWIN  File "{filename}", line NUM, in fn
+  File "{filename}", line NUM, in fn
     bar()
-SKIPLINEWIN  File "{filename}", line NUM, in bar
+  File "{filename}", line NUM, in bar
     assert False
 AssertionError.*
 
@@ -2254,9 +2246,9 @@ def test_exception_through_generator():
 
     check(fn, """
 Traceback (most recent call last):
-SKIPLINEWIN  File "{filename}", line NUM, in fn
+  File "{filename}", line NUM, in fn
     for i in gen():
-SKIPLINEWIN  File "{filename}", line NUM, in gen
+  File "{filename}", line NUM, in gen
     assert False
 AssertionError.*
 
@@ -3235,7 +3227,7 @@ def test_continue_arg():
 -> x = 1
    5 frames hidden .*
 # c {break_lnum}
-SKIPLINEWINBreakpoint NUM at {filename}:{break_lnum}
+Breakpoint NUM at {filename}:{break_lnum}
 Deleted breakpoint NUM
 [NUM] > .*fn()
 -> z = 3
