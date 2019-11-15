@@ -16,12 +16,27 @@ import pytest
 import pdbpp
 
 try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
+
+try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
 
 
 pytest_plugins = ["pytester"]
+
+# Windows support
+RE_THIS_FILE = re.escape(__file__)
+if sys.platform == 'win32':
+    THIS_FILE_CANONICAL = __file__.lower()
+else:
+    THIS_FILE_CANONICAL = __file__
+RE_THIS_FILE_CANONICAL = re.escape(THIS_FILE_CANONICAL)
+RE_THIS_FILE_CANONICAL_QUOTED = re.escape(quote(THIS_FILE_CANONICAL))
+RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
 
 
 class FakeStdin:
@@ -93,18 +108,6 @@ class PdbTest(pdbpp.Pdb):
         """
         print("do_shell_called: %r" % arg)
         return self.default(arg)
-
-
-def _normpath_and_escape(filename):
-    """
-    Normalizes the filename. Only affects Windows.
-
-    See docstring for ``pdbpp._normalize_path()``.
-    """
-    filename = pdbpp._normalize_path(filename)
-    # Initially I thought I had to do more here spefically for testing, such
-    # as escaping things for regex, hence why this function exists.
-    return filename
 
 
 def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
@@ -935,7 +938,7 @@ def test_single_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
         lnum_nodoc=fn.__code__.co_firstlineno + 1,
         lnum_f2=fn.__code__.co_firstlineno + 4,
     ))
@@ -974,7 +977,7 @@ def test_double_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -1989,7 +1992,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2025,7 +2028,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2101,7 +2104,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2207,7 +2210,7 @@ NUM             except AssertionError:
 NUM  ->             xpm()
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -2264,7 +2267,7 @@ AssertionError.*
 -> for i in gen():
 # c
     """.format(
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -2411,7 +2414,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, _normpath_and_escape(filename)))
+""" % (return42_lineno, RE_THIS_FILE_QUOTED))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2423,7 +2426,7 @@ RUN emacs \+%d %s
 # edit
 RUN emacs \+%d %s
 # c
-""" % (call_fn_lineno, _normpath_and_escape(filename)))
+""" % (call_fn_lineno, RE_THIS_FILE_QUOTED))
 
 
 def test_edit_obj():
@@ -2446,7 +2449,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, _normpath_and_escape(filename)))
+""" % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_edit_py_code_source():
@@ -2472,7 +2475,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, _normpath_and_escape(filename)))
+""" % (src_compile_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_put():
@@ -3240,7 +3243,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -3279,7 +3282,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=_normpath_and_escape(__file__),
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -4704,7 +4707,7 @@ def test_config_gets_start_filename():
         class MyConfig(ConfigTest):
             def setup(self, pdb):
                 print("config_setup")
-                assert pdb.start_filename == _normpath_and_escape(__file__)
+                assert pdb.start_filename.lower() == THIS_FILE_CANONICAL.lower()
                 assert pdb.start_lineno == setup_lineno
 
         set_trace(Config=MyConfig)
@@ -5124,7 +5127,7 @@ def test_position_of_obj_unwraps():
     pos = pdb_._get_position_of_obj(cm)
 
     if hasattr(inspect, "unwrap"):
-        assert pos[0] == pdbpp._normalize_path(__file__)
+        assert pos[0] == THIS_FILE_CANONICAL
         assert pos[2] == [
             "    @contextlib.contextmanager\n",
             "    def cm():\n",
