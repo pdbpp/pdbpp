@@ -97,7 +97,9 @@ class PdbTest(pdbpp.Pdb):
 
 def _normpath_and_escape(filename):
     """
-    Normalizes the path and escapes it for regex. Only affects Windows.
+    Normalizes the filename. Only affects Windows.
+
+    See docstring for ``pdbpp._normalize_path()``.
     """
     filename = pdbpp._normalize_path(filename)
     # Initially I thought I had to do more here spefically for testing, such
