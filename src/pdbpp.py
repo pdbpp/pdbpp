@@ -1767,6 +1767,15 @@ except for when using the function decorator.
             del self._set_trace_use_next
             self.set_next(self._via_set_trace_frame)
 
+    def stop_here(self, frame):
+        # Always stop at starting frame (https://bugs.python.org/issue38806).
+        if self.stopframe is None:
+            if getattr(self, "_via_set_trace_frame", None) == frame:
+                if not self._stopped_for_set_trace:
+                    self._stopped_for_set_trace = True
+                    return True
+        return super(Pdb, self).stop_here(frame)
+
     def set_trace(self, frame=None):
         """Remember starting frame.
 
@@ -1782,6 +1791,7 @@ except for when using the function decorator.
         if frame is None:
             frame = sys._getframe().f_back
         self._via_set_trace_frame = frame
+        self._stopped_for_set_trace = False
 
         self.start_filename = frame.f_code.co_filename
         self.start_lineno = frame.f_lineno
