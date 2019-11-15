@@ -1,0 +1,11 @@
+environment:
+  matrix:
+    - TOXENV: py36
+
+build: off
+
+install:
+  - pip install tox==3.13.2
+
+test_script:
+  - tox --force-dep="pytest @ git+https://github.com/dougthor42/pytest.git@win"
