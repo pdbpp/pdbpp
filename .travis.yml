@@ -29,15 +29,21 @@ jobs:
         - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
         - INSTALL_PYTHON="python-3.5 python-3.4"
 
-    - name: 'py38 + py37 + checkqa'
+    - name: 'py38 + py37'
       env:
-        - TOXENV=py38-coverage,py37-coverage,checkqa
+        - TOXENV=py38-coverage,py37-coverage
         - INSTALL_PYTHON="python-3.8"
 
     - name: 'pypy3 + pypy'
       env:
         - TOXENV=pypy3-coverage,pypy-coverage
         - INSTALL_PYTHON="pypy pypy3"
+
+    - name: 'checkqa'
+      language: python
+      python: '3.8'
+      env:
+        - TOXENV=checkqa
 
     - stage: release
       name: 'release'
