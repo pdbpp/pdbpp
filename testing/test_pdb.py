@@ -2395,9 +2395,6 @@ def test_edit():
     _, lineno = inspect.getsourcelines(fn)
     return42_lineno = lineno + 2
     call_fn_lineno = lineno + 5
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2430,9 +2427,6 @@ def test_edit_obj():
     def bar():
         pass
     _, bar_lineno = inspect.getsourcelines(bar)
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2455,10 +2449,6 @@ def test_edit_py_code_source():
     exec(src.compile(), dic)  # 8th line from the beginning of the function
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
-
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(bar, r"""
 [NUM] > .*bar()
