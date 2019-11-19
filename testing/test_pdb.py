@@ -29,10 +29,10 @@ except ImportError:
 pytest_plugins = ["pytester"]
 
 # Windows support
-# The basic idea is that paths on Windows are dumb because of forward slashes.
+# The basic idea is that paths on Windows are dumb because of backslashes.
 # Typically this would be resolved by using `pathlib`, but we need to maintain
 # support for pre-Py36 versions.
-# A lot of tests are regex checks and the forward-slashed Windows paths end
+# A lot of tests are regex checks and the back-slashed Windows paths end
 # up looking like they have escape characters in them (specifically the `\p`
 # in `...\pdbpp`). So we need to make sure to escape those strings.
 # In addtion, Windows is a case-insensitive file system. Most introspection
