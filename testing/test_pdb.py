@@ -5084,3 +5084,44 @@ def test_position_of_obj_unwraps():
         ]
     else:
         assert pos[0] == contextlib.__file__.rstrip("c")
+
+
+def test_set_trace_in_skipped_module(testdir):
+    def fn():
+        class SkippingPdbTest(PdbTest):
+            def __init__(self, *args, **kwargs):
+                kwargs["skip"] = ["testing.test_pdb"]
+                super(SkippingPdbTest, self).__init__(*args, **kwargs)
+
+                self.calls = []
+
+            def is_skipped_module(self, module_name):
+                self.calls.append(module_name)
+                if len(self.calls) == 1:
+                    print("is_skipped_module?", module_name)
+                    ret = super(SkippingPdbTest, self).is_skipped_module(module_name)
+                    assert module_name == "testing.test_pdb"
+                    assert ret is True
+                    return True
+                return False
+
+        set_trace(Pdb=SkippingPdbTest)  # 1
+        set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 2
+        set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 3
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 2
+   5 frames hidden (try 'help hidden_frames')
+# n
+is_skipped_module\? testing.test_pdb
+[NUM] > .*fn()
+-> set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 3
+   5 frames hidden (try 'help hidden_frames')
+# c
+--Return--
+[NUM] > .*fn()
+-> set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 3
+   5 frames hidden (try 'help hidden_frames')
+# c
+""")
