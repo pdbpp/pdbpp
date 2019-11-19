@@ -29,19 +29,11 @@ except ImportError:
 pytest_plugins = ["pytester"]
 
 # Windows support
-# The basic idea is that paths on Windows are dumb because of forward slashes.
-# Typically this would be resolved by using `pathlib`, but we need to maintain
-# support for pre-Py36 versions.
-# A lot of tests are regex checks and the forward-slashed Windows paths end
-# up looking like they have escape characters in them (specifically the `\p`
-# in `...\pdbpp`). So we need to make sure to escape those strings.
-# In addtion, Windows is a case-insensitive file system. Most introspection
-# tools return the `normcase` version (eg: all lowercase), so we adjust the
-# canonical filename accordingly.
 RE_THIS_FILE = re.escape(__file__)
-THIS_FILE_CANONICAL = __file__
 if sys.platform == 'win32':
     THIS_FILE_CANONICAL = __file__.lower()
+else:
+    THIS_FILE_CANONICAL = __file__
 RE_THIS_FILE_CANONICAL = re.escape(THIS_FILE_CANONICAL)
 RE_THIS_FILE_CANONICAL_QUOTED = re.escape(quote(THIS_FILE_CANONICAL))
 RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
