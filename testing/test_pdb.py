@@ -982,8 +982,8 @@ def test_question_mark_unit(capsys, LineMatcher):
         r"",
         r"                        3rd line\.",
         r"\x1b\[31;01mSource:\x1b\[00m        ",
-        r"\d+         def foo\(\):",
-        r"\d+             raise NotImplementedError\(\)",
+        r" ?\d+         def foo\(\):",
+        r" ?\d+             raise NotImplementedError\(\)",
     ])
 
     # Missing source
