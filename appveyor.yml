@@ -5,7 +5,7 @@ environment:
 build: off
 
 install:
-  - pip install tox==3.13.2
+  - python -m pip install --user git+https://github.com/blueyed/tox@master
 
 test_script:
-  - tox --force-dep="pytest @ git+https://github.com/dougthor42/pytest.git@win"
+  - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest@my-master"
