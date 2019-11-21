@@ -3237,15 +3237,22 @@ Deleted breakpoint NUM
     ))
 
 
-@pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "error"),
-                    reason="no error method")
-@pytest.mark.skipif(
+# On Windows, it seems like this file is handled as cp1252-encoded instead
+# of utf8 (even though the "# -*- coding: utf-8 -*-" line exists) and the
+# core pdb code does not support that. Or something to that effect, I don't
+# actually know.
+# UnicodeDecodeError: 'charmap' codec can't decode byte 0x81 in position
+# 6998: character maps to <undefined>.
+# So we XFail this test on Windows.
+@pytest.mark.xfail(
     sys.platform == "win32",
     reason=(
-        "UnicodeDecodeError: 'charmap' codec can't decode byte 0x81 in"
-        " position 6998: character maps to <undefined>"
+        "Windows encoding issue. See comments and"
+        " https://github.com/pdbpp/pdbpp/issues/341"
     ),
 )
+@pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "error"),
+                    reason="no error method")
 def test_continue_arg_with_error():
     def fn():
         set_trace()
