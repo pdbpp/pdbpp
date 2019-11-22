@@ -3246,6 +3246,8 @@ Deleted breakpoint NUM
 # So we XFail this test on Windows.
 @pytest.mark.xfail(
     sys.platform == "win32",
+    raises=UnicodeDecodeError,
+    strict=True,
     reason=(
         "Windows encoding issue. See comments and"
         " https://github.com/pdbpp/pdbpp/issues/341"
