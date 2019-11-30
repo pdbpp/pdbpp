@@ -1,4 +1,6 @@
 environment:
+  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-travis.xml"
+
   matrix:
     - TOXENV: py38-coverage
 
