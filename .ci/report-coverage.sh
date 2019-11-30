@@ -2,12 +2,12 @@
 #
 # Submit/report coverage when run from Travis for "coverage" tox factors.
 
+set -ex
+
 coverage_xml="coverage-travis.xml"
 if ! [ -f "$coverage_xml" ]; then
   exit
 fi
-
-set -ex
 
 codecov_bash=/tmp/codecov-bash.sh
 
