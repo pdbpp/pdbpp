@@ -342,10 +342,12 @@ def test_config_pygments(monkeypatch):
         pygments.formatters.TerminalTrueColorFormatter
     )
 
-    source = Pdb(Config=Config).format_source("print(42)")
-    assert source.startswith("\x1b[38;2;0;128;")
-    assert "print\x1b[39" in source
-    assert source.endswith("m42\x1b[39m)\n")
+    formatted_source = Pdb(Config=Config).format_source("print(42)")
+    assert formatted_source in (
+        '\x1b[38;2;0;128;0;01mprint\x1b[39;00m(\x1b[38;2;102;102;102m42\x1b[39m)\n',
+        # Might happen on AppVeyor?
+        '\x1b[38;2;0;128;0mprint\x1b[39m(\x1b[38;2;102;102;102m42\x1b[39m)\n',
+    )
 
 
 @pytest.mark.parametrize("use_pygments", (None, True, False))
