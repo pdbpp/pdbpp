@@ -5124,7 +5124,10 @@ def test_position_of_obj_unwraps():
             "        raise NotImplementedError()\n",
         ]
     else:
-        assert pos[0] == contextlib.__file__.rstrip("c")
+        contextlib_file = contextlib.__file__
+        if sys.platform == 'win32':
+            contextlib_file = contextlib_file.lower()
+        assert pos[0] == contextlib_file.rstrip("c")
 
 
 def test_set_trace_in_skipped_module(testdir):
