@@ -1,5 +1,6 @@
 environment:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-travis.xml"
+  CODECOV_FLAG: "windows"
 
   matrix:
     - TOXENV: py38-coverage

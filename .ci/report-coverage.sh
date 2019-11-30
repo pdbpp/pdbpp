@@ -16,5 +16,5 @@ if ! [ -f "$codecov_bash" ]; then
   chmod +x "$codecov_bash"
 fi
 
-"$codecov_bash" -Z -X fix -f "$coverage_xml" -n "${TOX_ENV_NAME%-coverage}" -F "$TRAVIS_OS_NAME,${TOX_ENV_NAME%-coverage}"
+"$codecov_bash" -Z -X fix -f "$coverage_xml" -n "${TOX_ENV_NAME%-coverage}" -F "${CODECOV_FLAG},${TOX_ENV_NAME%-coverage}"
 rm "$coverage_xml"
