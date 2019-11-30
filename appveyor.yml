@@ -12,7 +12,7 @@ build: off
 
 install:
   - python -m pip install --user git+https://github.com/blueyed/tox@master
-  - python -m tox -v --notest --force-dep="$PYTEST"
+  - python -m tox -v --notest --force-dep="%PYTEST%"
 
 test_script:
-  - python -m tox --force-dep="$PYTEST"
+  - python -m tox --force-dep="%PYTEST%"
