@@ -1,6 +1,6 @@
 environment:
   matrix:
-    - TOXENV: py38
+    - TOXENV: py38-coverage
 
 build: off
 
