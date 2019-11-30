@@ -12,7 +12,7 @@ fi
 codecov_bash=/tmp/codecov-bash.sh
 
 if ! [ -f "$codecov_bash" ]; then
-  curl -sSf --retry 5 -o "$codecov_bash" https://raw.githubusercontent.com/blueyed/codecov-bash/debug/codecov
+  curl -sSf --retry 5 -o "$codecov_bash" https://codecov.io/bash
   chmod +x "$codecov_bash"
 fi
 
