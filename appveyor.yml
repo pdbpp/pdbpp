@@ -6,6 +6,7 @@ build: off
 
 install:
   - python -m pip install --user git+https://github.com/blueyed/tox@master
+  - python -m tox -v --notest --force-dep="pytest @ git+https://github.com/blueyed/pytest@my-master"
 
 test_script:
-  - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest@my-master"
+  - python -m tox -vv
