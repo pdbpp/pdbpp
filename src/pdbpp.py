@@ -880,6 +880,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
+            if value is None:
+                continue
             if value:
                 first_line, _, lines = str(value).partition("\n")
                 formatted_value = first_line
