@@ -162,7 +162,7 @@ def setbgcolor(line, color):
         # I tried, but not in emacs. To set the background color, it needs to
         # have also an explicit foreground color, e.g. 'ESC[37;44m'. These
         # three lines are a hack, they try to add a foreground color to all
-        # escape sequences wich are not recognized by emacs. However, we need
+        # escape sequences which are not recognized by emacs. However, we need
         # to pick one specific fg color: I choose white (==37), but you might
         # want to change it.  These lines seems to work fine with the ANSI
         # codes produced by pygments, but they are surely not a general
