@@ -880,6 +880,9 @@ def test_global_pdb_not_reused_with_different_home(
 
 def test_single_question_mark():
     def fn():
+        def nodoc():
+            pass
+
         def f2(x, y):
             """Return product of x and y"""
             return x * y
@@ -889,7 +892,6 @@ def test_single_question_mark():
         c = 3
         return a+b+c
 
-    # import pdb; pdb.set_trace()
     check(fn, r"""
 [NUM] > .*fn()
 -> a = 1
@@ -899,15 +901,21 @@ def test_single_question_mark():
 # f2?
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-^[[31;01mFile:^[[00m           {filename}:{lnum}
+^[[31;01mFile:^[[00m           {filename}:{lnum_f2}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
+# nodoc?
+.*Type:.*function
+.*String Form:.*<function .*nodoc at .*>
+^[[31;01mFile:^[[00m           {filename}:{lnum_nodoc}
+^[[31;01mDefinition:^[[00m     nodoc()
 # doesnotexist?
 \*\*\* NameError.*
 # c
     """.format(
         filename=__file__,
-        lnum=fn.__code__.co_firstlineno + 1,
+        lnum_nodoc=fn.__code__.co_firstlineno + 1,
+        lnum_f2=fn.__code__.co_firstlineno + 4,
     ))
 
 
