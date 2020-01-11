@@ -989,7 +989,7 @@ def test_question_mark_unit(capsys, LineMatcher):
     LineMatcher(out.splitlines()).re_match_lines([
         r"\x1b\[31;01mDocstring:\x1b\[00m      doc_for_foo",
         r"",
-        r"                        3rd line\.",
+        r"                3rd line\.",
         r"\x1b\[31;01mSource:\x1b\[00m        ",
         r" ?\d+         def foo\(\):",
         r" ?\d+             raise NotImplementedError\(\)",
