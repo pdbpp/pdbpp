@@ -864,19 +864,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 and hasattr(obj, '__init__')
                 and getattr(obj, '__module__') != '__builtin__'):
             # Class - show definition and docstring for constructor
-            data['Docstring'] = obj.__doc__
+            data['Docstring'] = inspect.getdoc(obj)
             data['Constructor information'] = ''
             try:
                 data['  Definition'] = '%s%s' % (arg, signature(obj))
             except ValueError:
                 pass
-            data['  Docstring'] = obj.__init__.__doc__
+            data['  Docstring'] = inspect.getdoc(obj.__init__)
         else:
             try:
                 data['Definition'] = '%s%s' % (arg, signature(obj))
             except (TypeError, ValueError):
                 pass
-            data['Docstring'] = obj.__doc__
+            data['Docstring'] = inspect.getdoc(obj)
 
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
