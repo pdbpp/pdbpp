@@ -346,6 +346,17 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.hidden_frames = []
         self._setup_streams(stdout=self.stdout)
 
+    @property
+    def prompt(self):
+        return self._prompt
+
+    @prompt.setter
+    def prompt(self, value):
+        """Ensure there is "++" in the prompt always."""
+        if "++" not in value:
+            value = re.sub(r"(\w)(\s*\W\s*)?$", r"\1++\2", value)
+        self._prompt = value
+
     def _setup_streams(self, stdout):
         self.stdout = self.ensure_file_can_write_unicode(stdout)
 
