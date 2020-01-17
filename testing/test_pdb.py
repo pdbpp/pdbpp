@@ -4582,13 +4582,10 @@ def test_rebind_globals_annotations():
     func = globals()["func"]
 
     sig = str(inspect.signature(func))
-    if sys.version_info < (3, 5):
-        assert sig == "(ann:str=None)"
-    else:
-        assert sig in (
-             "(ann: str = None)",
-             "(ann:str=None)",
-        )
+    assert sig in (
+         "(ann: str = None)",
+         "(ann:str=None)",
+    )
     new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig
 

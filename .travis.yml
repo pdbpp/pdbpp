@@ -24,10 +24,10 @@ jobs:
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
-    - name: 'py36 + py35 + py34 + py27'
+    - name: 'py36 + py35 + py27'
       env:
-        - TOXENV=py34-coverage,py35-coverage,py36-coverage,py27-coverage
-        - INSTALL_PYTHON="python-3.5 python-3.4"
+        - TOXENV=py35-coverage,py36-coverage,py27-coverage
+        - INSTALL_PYTHON="python-3.5"
 
     - name: 'py38 + py37'
       env:
