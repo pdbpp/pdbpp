@@ -58,6 +58,10 @@ setup(
     py_modules=['pdbpp', '_pdbpp_path_hack.pdb'],
     package_dir={"": "src"},
     url='http://github.com/antocuni/pdb',
+    project_urls={
+        'Bug Tracker': 'http://github.com/antocuni/pdb/issues',
+        'Source Code': 'http://github.com/antocuni/pdb',
+    },
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
     description='pdb++, a drop-in replacement for pdb',
