@@ -1544,7 +1544,8 @@ except for when using the function decorator.
 
     def do_frame(self, arg):
         """f(rame) [index]
-        Go to frame.
+        Go to given frame.  The first frame is 0, negative index is counted
+        from the end (i.e. -1 is the last one).
         Without argument, display current frame.
         """
         if not arg:
@@ -1561,7 +1562,7 @@ except for when using the function decorator.
         if abs(arg) >= len(self.stack):
             print('*** Out of range', file=self.stdout)
             return
-        if arg > 0:
+        if arg >= 0:
             self.curindex = arg
         else:
             self.curindex = len(self.stack) + arg
