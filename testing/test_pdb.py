@@ -1082,8 +1082,17 @@ def test_frame():
 # f
 [{frame_num_a}] > .*a()
 -> b()
+# f 0
+[ 0] > .*()
+-> .*
+# f -1
+[{stack_len}] > .*c()
+-> return
 # c
-""".format(frame_num_a=count_frames() + 2 - 5))
+    """.format(
+        frame_num_a=count_frames() + 2 - 5,
+        stack_len=len(traceback.extract_stack())
+    ))
 
 
 @pytest.mark.skipif(sys.version_info < (3, 6),
