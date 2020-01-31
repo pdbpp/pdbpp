@@ -302,6 +302,9 @@ def test_prompt_setter():
     assert p.prompt == "custom++  "
     p.prompt = ""
     assert p.prompt == ""
+    # Not changed (also used in tests).
+    p.prompt = "# "
+    assert p.prompt == "# "
     # Can be forced.
     p._prompt = "custom"
     assert p.prompt == "custom"

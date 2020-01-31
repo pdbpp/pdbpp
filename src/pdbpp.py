@@ -354,7 +354,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def prompt(self, value):
         """Ensure there is "++" in the prompt always."""
         if "++" not in value:
-            value = re.sub(r"(\w)(\s*\W\s*)?$", r"\1++\2", value)
+            m = re.match(r"^(.*\w)(\s*\W\s*)?$", value)
+            if m:
+                value = "{}++{}".format(*m.groups(""))
         self._prompt = value
 
     def _setup_streams(self, stdout):
