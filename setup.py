@@ -57,7 +57,7 @@ setup(
     author_email='anto.cuni@gmail.com',
     py_modules=['pdbpp', '_pdbpp_path_hack.pdb'],
     package_dir={"": "src"},
-    url='http://github.com/antocuni/pdb',
+    url='https://github.com/pdbpp/pdbpp',
     project_urls={
         'Bug Tracker': 'https://github.com/pdbpp/pdbpp/issues',
         'Source Code': 'https://github.com/pdbpp/pdbpp',
