@@ -59,8 +59,8 @@ setup(
     package_dir={"": "src"},
     url='http://github.com/antocuni/pdb',
     project_urls={
-        'Bug Tracker': 'http://github.com/antocuni/pdb/issues',
-        'Source Code': 'http://github.com/antocuni/pdb',
+        'Bug Tracker': 'https://github.com/pdbpp/pdbpp/issues',
+        'Source Code': 'https://github.com/pdbpp/pdbpp',
     },
     license='BSD',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
