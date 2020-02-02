@@ -1013,7 +1013,7 @@ def test_question_mark_unit(capsys, LineMatcher):
     LineMatcher(out.splitlines()).re_match_lines([
         r"\x1b\[31;01mDocstring:\x1b\[00m      doc_for_foo",
         r"",
-        r"                        3rd line\.",
+        r"                3rd line\.",
         r"\x1b\[31;01mSource:\x1b\[00m        ",
         r" ?\d+         def foo\(\):",
         r" ?\d+             raise NotImplementedError\(\)",
@@ -1106,8 +1106,17 @@ def test_frame():
 # f
 [{frame_num_a}] > .*a()
 -> b()
+# f 0
+[ 0] > .*()
+-> .*
+# f -1
+[{stack_len}] > .*c()
+-> return
 # c
-""".format(frame_num_a=count_frames() + 2 - 5))
+    """.format(
+        frame_num_a=count_frames() + 2 - 5,
+        stack_len=len(traceback.extract_stack())
+    ))
 
 
 @pytest.mark.skipif(sys.version_info < (3, 6),

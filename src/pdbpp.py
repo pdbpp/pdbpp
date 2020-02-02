@@ -864,19 +864,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 and hasattr(obj, '__init__')
                 and getattr(obj, '__module__') != '__builtin__'):
             # Class - show definition and docstring for constructor
-            data['Docstring'] = obj.__doc__
+            data['Docstring'] = inspect.getdoc(obj)
             data['Constructor information'] = ''
             try:
                 data['  Definition'] = '%s%s' % (arg, signature(obj))
             except ValueError:
                 pass
-            data['  Docstring'] = obj.__init__.__doc__
+            data['  Docstring'] = inspect.getdoc(obj.__init__)
         else:
             try:
                 data['Definition'] = '%s%s' % (arg, signature(obj))
             except (TypeError, ValueError):
                 pass
-            data['Docstring'] = obj.__doc__
+            data['Docstring'] = inspect.getdoc(obj)
 
         for key, value in data.items():
             formatted_key = Color.set(Color.red, key + ':')
@@ -1544,7 +1544,8 @@ except for when using the function decorator.
 
     def do_frame(self, arg):
         """f(rame) [index]
-        Go to frame.
+        Go to given frame.  The first frame is 0, negative index is counted
+        from the end (i.e. -1 is the last one).
         Without argument, display current frame.
         """
         if not arg:
@@ -1561,7 +1562,7 @@ except for when using the function decorator.
         if abs(arg) >= len(self.stack):
             print('*** Out of range', file=self.stdout)
             return
-        if arg > 0:
+        if arg >= 0:
             self.curindex = arg
         else:
             self.curindex = len(self.stack) + arg
