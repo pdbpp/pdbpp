@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import bdb
 import inspect
+import os
 import os.path
 import re
 import sys
@@ -15,12 +16,35 @@ import pytest
 import pdbpp
 
 try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
+
+try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
 
 
 pytest_plugins = ["pytester"]
+
+# Windows support
+# The basic idea is that paths on Windows are dumb because of backslashes.
+# Typically this would be resolved by using `pathlib`, but we need to maintain
+# support for pre-Py36 versions.
+# A lot of tests are regex checks and the back-slashed Windows paths end
+# up looking like they have escape characters in them (specifically the `\p`
+# in `...\pdbpp`). So we need to make sure to escape those strings.
+# In addtion, Windows is a case-insensitive file system. Most introspection
+# tools return the `normcase` version (eg: all lowercase), so we adjust the
+# canonical filename accordingly.
+RE_THIS_FILE = re.escape(__file__)
+THIS_FILE_CANONICAL = __file__
+if sys.platform == 'win32':
+    THIS_FILE_CANONICAL = __file__.lower()
+RE_THIS_FILE_CANONICAL = re.escape(THIS_FILE_CANONICAL)
+RE_THIS_FILE_CANONICAL_QUOTED = re.escape(quote(THIS_FILE_CANONICAL))
+RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
 
 
 class FakeStdin:
@@ -914,7 +938,7 @@ def test_single_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
         lnum_nodoc=fn.__code__.co_firstlineno + 1,
         lnum_f2=fn.__code__.co_firstlineno + 4,
     ))
@@ -953,7 +977,7 @@ def test_double_question_mark():
 \*\*\* NameError.*
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -1977,7 +2001,7 @@ NUM  ->         raises()
 InnerTestException:
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2013,7 +2037,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2089,7 +2113,7 @@ NUM  ->             return 40 \\+ 2
 42
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -2195,7 +2219,7 @@ NUM             except AssertionError:
 NUM  ->             xpm()
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -2252,7 +2276,7 @@ AssertionError.*
 -> for i in gen():
 # c
     """.format(
-        filename=__file__,
+        filename=RE_THIS_FILE,
     ))
 
 
@@ -2388,9 +2412,6 @@ def test_edit():
     _, lineno = inspect.getsourcelines(fn)
     return42_lineno = lineno + 2
     call_fn_lineno = lineno + 5
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2399,7 +2420,7 @@ def test_edit():
 # edit
 RUN emacs \+%d %s
 # c
-""" % (return42_lineno, filename))
+""" % (return42_lineno, RE_THIS_FILE_QUOTED))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -2411,7 +2432,7 @@ RUN emacs \+%d %s
 # edit
 RUN emacs \+%d %s
 # c
-""" % (call_fn_lineno, filename))
+""" % (call_fn_lineno, RE_THIS_FILE_QUOTED))
 
 
 def test_edit_obj():
@@ -2423,9 +2444,6 @@ def test_edit_obj():
     def bar():
         pass
     _, bar_lineno = inspect.getsourcelines(bar)
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
@@ -2434,7 +2452,7 @@ def test_edit_obj():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (bar_lineno, filename))
+""" % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_edit_py_code_source():
@@ -2449,10 +2467,6 @@ def test_edit_py_code_source():
     bar = dic['bar']
     src_compile_lineno = base_lineno + 8
 
-    filename = os.path.abspath(__file__)
-    if filename.endswith('.pyc'):
-        filename = filename[:-1]
-
     check(bar, r"""
 [NUM] > .*bar()
 -> return 42
@@ -2460,7 +2474,7 @@ def test_edit_py_code_source():
 # edit bar
 RUN emacs \+%d %s
 # c
-""" % (src_compile_lineno, filename))
+""" % (src_compile_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_put():
@@ -3228,10 +3242,26 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
+# On Windows, it seems like this file is handled as cp1252-encoded instead
+# of utf8 (even though the "# -*- coding: utf-8 -*-" line exists) and the
+# core pdb code does not support that. Or something to that effect, I don't
+# actually know.
+# UnicodeDecodeError: 'charmap' codec can't decode byte 0x81 in position
+# 6998: character maps to <undefined>.
+# So we XFail this test on Windows.
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    raises=UnicodeDecodeError,
+    strict=True,
+    reason=(
+        "Windows encoding issue. See comments and"
+        " https://github.com/pdbpp/pdbpp/issues/341"
+    ),
+)
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "error"),
                     reason="no error method")
 def test_continue_arg_with_error():
@@ -3260,7 +3290,7 @@ Deleted breakpoint NUM
 # c
     """.format(
         break_lnum=line_z,
-        filename=__file__,
+        filename=RE_THIS_FILE_CANONICAL,
     ))
 
 
@@ -3605,11 +3635,14 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     if PDBPP_HIJACK_PDB:
         assert "(Pdb)" not in out
         assert "(Pdb++)" in out
-        assert out.endswith("\n(Pdb++) \n")
+        if sys.platform == 'win32' and sys.version_info < (3,):  # XXX ???
+            assert out.endswith("\n(Pdb++) " + os.linesep)
+        else:
+            assert out.endswith("\n(Pdb++) \n")
     else:
         assert "(Pdb)" in out
         assert "(Pdb++)" not in out
-        assert out.endswith("\n(Pdb) \n")
+        assert out.endswith("\n(Pdb) " + os.linesep)
 
 
 def get_completions(text):
@@ -4681,7 +4714,7 @@ def test_config_gets_start_filename():
         class MyConfig(ConfigTest):
             def setup(self, pdb):
                 print("config_setup")
-                assert pdb.start_filename == __file__
+                assert pdb.start_filename.lower() == THIS_FILE_CANONICAL.lower()
                 assert pdb.start_lineno == setup_lineno
 
         set_trace(Config=MyConfig)
@@ -5051,7 +5084,7 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
 
             class _PdbTestKeepRawInput(PdbTest):
                 def __init__(
-                    self, completekey="ck", stdin=None, stdout=None, *args, **kwargs
+                    self, completekey="tab", stdin=None, stdout=None, *args, **kwargs
                 ):
                     if pass_stdout:
                         stdout = sys.stdout
@@ -5094,14 +5127,17 @@ def test_position_of_obj_unwraps():
     pos = pdb_._get_position_of_obj(cm)
 
     if hasattr(inspect, "unwrap"):
-        assert pos[0] == __file__
+        assert pos[0] == THIS_FILE_CANONICAL
         assert pos[2] == [
             "    @contextlib.contextmanager\n",
             "    def cm():\n",
             "        raise NotImplementedError()\n",
         ]
     else:
-        assert pos[0] == contextlib.__file__.rstrip("c")
+        contextlib_file = contextlib.__file__
+        if sys.platform == 'win32':
+            contextlib_file = contextlib_file.lower()
+        assert pos[0] == contextlib_file.rstrip("c")
 
 
 def test_set_trace_in_skipped_module(testdir):
