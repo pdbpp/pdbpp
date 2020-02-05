@@ -1766,6 +1766,40 @@ NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
 """.format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
 
 
+def test_truncated_source_with_highlight():
+
+    def fn():
+        """some docstring longer than maxlength for truncate_long_lines, which is 80"""
+        a = 1
+        set_trace(Config=ConfigWithHighlight)
+
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> return a
+   5 frames hidden .*
+# l {line_num}, 5
+<COLORNUM> +\t$
+<COLORNUM> +\t    def fn():
+<COLORNUM> +\t        \"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"
+<COLORNUM> +\t        a = 1
+<COLORNUM> +\t        set_trace(Config=ConfigWithHighlight)
+<COLORNUM> +\t$
+# sticky
+<CLEARSCREEN>
+[NUM] > .*fn(), 5 frames hidden
+
+<COLORNUM> +       def fn():
+<COLORNUM> +           \"\"\"some docstring longer than maxlength for truncate_long_lines
+<COLORNUM> +           a = 1
+<COLORNUM> +           set_trace(Config=ConfigWithHighlight)
+<COLORNUM> +$
+<COLORCURLINE> +->         return a                                                       <COLORRESET>
+# c
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+
+
 def test_truncated_source_with_pygments_and_highlight():
 
     def fn():
