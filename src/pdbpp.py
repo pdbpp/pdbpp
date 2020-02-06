@@ -170,6 +170,10 @@ class DefaultConfig(object):
     line_number_color = Color.turquoise
     filename_color = Color.yellow
     current_line_color = "39;49;7"  # default fg, bg, inversed
+    # Windows/colorama doesn't support 'inversed', so instead of using the
+    # terminal default colors, we just use black-on-white
+    if sys.platform == "win32":
+        current_line_color = "30;47"  # black, white
 
     show_traceback_on_error = True
     show_traceback_on_error_limit = None
