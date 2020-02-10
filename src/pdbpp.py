@@ -1978,21 +1978,6 @@ except for when using the function decorator.
             # Work around above returning width, height = 0, 0 in Emacs
             width = width if width != 0 else fallback[0]
             height = height if height != 0 else fallback[1]
-
-            # Hack to remove the linewrap. Not sure why it happens...
-            # During a sticky, the current line looks like so (vertical bars
-            # denote the edge of the cmd/powershell window):
-            #   | 2         import pdb; pdb.set_trace()     |
-            #   | 3  ->     a = 1                           |
-            #   |                                           |
-            #   | 4         b = 2                           |
-            # Simply resizing the terminal a little wider results in:
-            #   | 2         import pdb; pdb.set_trace()      |
-            #   | 3  ->     a = 1                            |
-            #   | 4         b = 2                            |
-            # So I figure we just fake the terminal size a bit. /shrug.
-            if has_colorama_on_windows:
-                width -= 1
             return width, height
         else:
             return get_terminal_size(fallback)
