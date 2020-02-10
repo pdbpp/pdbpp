@@ -69,13 +69,6 @@ except ImportError:
         return dec
 
 has_colorama_on_windows = False
-if sys.platform == "win32":
-    try:
-        import colorama
-        has_colorama_on_windows = True
-    except ImportError:
-        # No windows support. Do we want to stop trying all coloring?
-        print("Please install 'colorama' for color support on Windows.")
 
 
 # If it contains only _, digits, letters, [] or dots, it's probably side
@@ -365,10 +358,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     _in_interaction = False
 
     def __init__(self, *args, **kwds):
-        if has_colorama_on_windows:
-            # Do not strip the ANSI codes - they don't do anything on Windows
-            # and stripping them would mean updating many tests.
-            colorama.init(strip=False)
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
@@ -384,6 +373,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._disable_pytest_capture_maybe()
         kwargs = self.config.default_pdb_kwargs.copy()
         kwargs.update(**kwds)
+        if sys.platform == "win32":
+            try:
+                import colorama
+                has_colorama_on_windows = True
+                # Do not strip the ANSI codes - they don't do anything on Windows
+                # and stripping them would mean updating many tests.
+                colorama.init(strip=False)
+            except ImportError:
+                print("Please install 'colorama' for color support on Windows.")
         super(Pdb, self).__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
