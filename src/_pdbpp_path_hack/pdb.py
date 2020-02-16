@@ -1,14 +1,13 @@
-# this file is needed to hijack pdb without eggs
+"""Hijack the stdlib pdb module on import.
+
+This gets inserted to the beginning of sys.path via pdbpp_hijack_pdb.pth.
+
+You can set PDBPP_HIJACK_PDB=0 as an environment variable to skip it.
+"""
 import os
 import sys
 
-if int(os.environ.get('PDBPP_HIJACK_PDB', 1)):
-    pdb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pdbpp.py')
-else:
-    # Use original pdb.
-    import code  # arbitrary module which stays in the same dir as pdb
-
-    pdb_path = os.path.join(os.path.dirname(code.__file__), 'pdb.py')
+pdb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pdbpp.py')
 
 # Set __file__ to exec'd code.  This is good in general, and required for
 # coverage.py to use it.
