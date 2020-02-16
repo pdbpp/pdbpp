@@ -3645,7 +3645,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
         if {PDBPP_HIJACK_PDB}:
             assert fname == 'pdbpp.py', (fname, pdb, pdb.Pdb)
         else:
-            assert fname == 'pdb.py', (fname, pdb, pdb.Pdb)
+            assert fname in ('pdb.py', 'pdb.pyc'), (fname, pdb, pdb.Pdb)
         pdb.set_trace()
     """.format(PDBPP_HIJACK_PDB=PDBPP_HIJACK_PDB)))
 
