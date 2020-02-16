@@ -306,6 +306,34 @@ def check(func, expected):
     assert all_ok
 
 
+def test_prompt_setter():
+    from pdb import Pdb
+
+    p = Pdb()
+    assert p.prompt == "(Pdb++) "
+
+    p.prompt = "(Pdb)"
+    assert p.prompt == "(Pdb++)"
+    p.prompt = "ipdb> "
+    assert p.prompt == "ipdb++> "
+    p.prompt = "custom"
+    assert p.prompt == "custom++"
+    p.prompt = "custom "
+    assert p.prompt == "custom++ "
+    p.prompt = "custom :"
+    assert p.prompt == "custom++ :"
+    p.prompt = "custom  "
+    assert p.prompt == "custom++  "
+    p.prompt = ""
+    assert p.prompt == ""
+    # Not changed (also used in tests).
+    p.prompt = "# "
+    assert p.prompt == "# "
+    # Can be forced.
+    p._prompt = "custom"
+    assert p.prompt == "custom"
+
+
 def test_config_pygments(monkeypatch):
     from pdb import DefaultConfig, Pdb
     import pygments.formatters
