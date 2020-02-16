@@ -17,13 +17,10 @@ stages:
 jobs:
   include:
     - name: 'py37 (osx)'
+      python: 3.7
       os: osx
       osx_image: xcode10.2
       env: TOXENV=py37-coverage
-      before_install:
-        - ln -sfn "$(which python3)" /usr/local/bin/python
-        - python -V
-        - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
     - name: 'py38'
       env: TOXENV=py38-coverage
