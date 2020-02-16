@@ -19,6 +19,7 @@ jobs:
     - name: 'py37 (osx)'
       os: osx
       osx_image: xcode10.2
+      language: generic
       env: TOXENV=py37-coverage
       before_install:
         - ln -sfn "$(which python3)" /usr/local/bin/python
