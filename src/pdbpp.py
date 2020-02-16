@@ -760,23 +760,53 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 if RE_COLOR_ESCAPES.sub("", x)[:2] != "__"
             ]
 
-    stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
-
     def format_stack_entry(self, frame_lineno, lprefix=': '):
-        entry = super(Pdb, self).format_stack_entry(frame_lineno, lprefix)
-        entry = self.try_to_decode(entry)
+        """Return a string with information about a stack entry.
+
+        The stack entry frame_lineno is a (frame, lineno) tuple.  The
+        return string contains the canonical filename, the function name
+        or '<lambda>', the input arguments, the return value, and the
+        line of code (if it exists).
+
+        This is overridden in pdbpp completely to avoid having to parse the
+        returned value from pdb.Pdb, and to allow for easier improving of it,
+        e.g. with regard to displaying args.
+        """
+        import linecache
+
+        frame, lineno = frame_lineno
+        filename = self.canonic(frame.f_code.co_filename)
+
         if self.config.highlight:
-            match = self.stack_entry_regexp.match(entry)
-            if match:
-                filename, lineno, other = match.groups()
-                filename = Color.set(self.config.filename_color, filename)
-                lineno = Color.set(self.config.line_number_color, lineno)
-                entry = '%s(%s)%s' % (filename, lineno, other)
-        if self.config.use_pygments is not False:
-            loc, _, source = entry.rpartition(lprefix)
-            if _:
-                entry = loc + _ + self.format_source(source).rstrip()
-        return entry
+            colored_filename = Color.set(self.config.filename_color, filename)
+            colored_lineno = Color.set(self.config.line_number_color, lineno)
+            s = "%s(%s)" % (colored_filename, colored_lineno)
+        else:
+            s = "%s(%r)" % (filename, lineno)
+
+        if frame.f_code.co_name:
+            s += frame.f_code.co_name
+        else:
+            s += "<lambda>"
+        s += '()'
+        if '__return__' in frame.f_locals:
+            try:
+                import reprlib
+            except ImportError:
+                import repr as reprlib  # Python 2.7
+
+            rv = frame.f_locals['__return__']
+            s += '->'
+            s += reprlib.repr(rv)
+
+        line = linecache.getline(filename, lineno, frame.f_globals)
+        if line:
+            line = line.strip()
+            if self.config.use_pygments is not False:
+                line = self.format_source(line).rstrip()
+            s += lprefix + line
+
+        return s
 
     def try_to_decode(self, s):
         for encoding in self.config.encodings:
