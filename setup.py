@@ -1,11 +1,10 @@
 from __future__ import print_function
+from sysconfig import get_path
 
 import io
 import os.path
-from distutils.core import Command
 
 from setuptools import setup
-from setuptools.command.install import install
 
 PTH_HACK_FNAME = 'pdbpp_hijack_pdb.pth'
 
@@ -16,39 +15,6 @@ readme = io.open(readme_path, encoding='utf-8').read()
 changelog = io.open(changelog_path, encoding='utf-8').read()
 
 long_description = readme + '\n\n' + changelog
-
-
-class install_with_pth(install):
-    sub_commands = install.sub_commands + [
-        ('install_pth_hack', lambda self:
-            self.single_version_externally_managed)
-    ]
-
-
-class install_pth_hack(Command):
-    user_options = [
-        ('install-dir=', 'd', "directory to install to"),
-    ]
-
-    @property
-    def target(self):
-        return os.path.join(self.install_dir, PTH_HACK_FNAME)
-
-    def get_outputs(self):
-        return [self.target]
-
-    def initialize_options(self):
-        self.install_dir = None
-
-    def finalize_options(self):
-        self.set_undefined_options(
-            'install', ('install_lib', 'install_dir'))
-
-    def run(self):
-        with open(PTH_HACK_FNAME) as infp:
-            with open(self.target, 'w') as outfp:
-                outfp.write(infp.read())
-
 
 setup(
     name='pdbpp',
@@ -101,8 +67,10 @@ setup(
         ],
     },
     setup_requires=['setuptools_scm'],
-    cmdclass={
-        'install': install_with_pth,
-        'install_pth_hack': install_pth_hack,
-    }
+    data_files=[
+        (
+            os.path.relpath(get_path("purelib"), get_path("data")),
+            ["pdbpp_hijack_pdb.pth"],
+        ),
+    ],
 )
