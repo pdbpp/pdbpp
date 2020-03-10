@@ -1620,7 +1620,7 @@ def test_truncated_source_with_pygments():
 # l {line_num}, 5
 NUM +\t$
 NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +\t        ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39m
+NUM +\t        ^[[38;5;124;03m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39;00m
 NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +\t$
@@ -1629,7 +1629,7 @@ NUM +\t$
 >.*
 
 NUM +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +           ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39m
+NUM +           ^[[38;5;124;03m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39;00m
 NUM +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +$
@@ -1654,7 +1654,7 @@ def test_truncated_source_with_pygments_and_highlight():
 # l {line_num}, 5
 <COLORNUM> +\t$
 <COLORNUM> +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +\t        ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39m
+<COLORNUM> +\t        ^[[38;5;124;03m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39;00m
 <COLORNUM> +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +\t$
@@ -1663,7 +1663,7 @@ def test_truncated_source_with_pygments_and_highlight():
 >.*
 
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +           ^[[38;5;124m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39m
+<COLORNUM> +           ^[[38;5;124;03m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39;00m
 <COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +$
