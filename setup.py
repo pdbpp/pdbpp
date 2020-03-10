@@ -6,8 +6,6 @@ import os.path
 
 from setuptools import setup
 
-PTH_HACK_FNAME = 'pdbpp_hijack_pdb.pth'
-
 readme_path = os.path.join(os.path.dirname(__file__), 'README.rst')
 changelog_path = os.path.join(os.path.dirname(__file__), 'CHANGELOG')
 
