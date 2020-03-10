@@ -1886,20 +1886,31 @@ if hasattr(pdb, '_usage'):
     _usage = pdb._usage
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall pm main set_trace'.split():
+for name in 'run runeval runctx runcall main set_trace'.split():
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
 
 
+# Post-Mortem interface
+
 def post_mortem(t=None, Pdb=Pdb):
+    # handling the default
     if t is None:
+        # sys.exc_info() returns (type, value, traceback) if an exception is
+        # being handled, otherwise it returns None
         t = sys.exc_info()[2]
-        assert t is not None, "post_mortem outside of exception context"
+    if t is None:
+        raise ValueError("A valid traceback must be passed if no "
+                         "exception is being handled")
 
     p = Pdb()
     p.reset()
     p.interaction(None, t)
+
+
+def pm(Pdb=Pdb):
+    post_mortem(sys.last_traceback, Pdb=Pdb)
 
 
 def cleanup():
@@ -1912,7 +1923,7 @@ def cleanup():
 def xpm(Pdb=Pdb):
     """
     To be used inside an except clause, enter a post-mortem pdb
-    related to the just catched exception.
+    related to the just caught exception.
     """
     info = sys.exc_info()
     print(traceback.format_exc())
