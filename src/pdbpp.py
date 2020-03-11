@@ -41,6 +41,14 @@ except ImportError:
         def signature(obj):
             return ' [pip install funcsigs to show the signature]'
 
+try:
+    from functools import lru_cache
+except ImportError:
+    def lru_cache(*_, **__):
+        def dec(fn):
+            return fn
+
+        return dec
 
 # If it contains only _, digits, letters, [] or dots, it's probably side
 # effects free.
@@ -337,13 +345,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         super(Pdb, self).__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
-        self.sticky = self.config.sticky_by_default
-        self.first_time_sticky = self.sticky
-        self.sticky_ranges = {}  # frame --> (start, end)
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
         self.show_hidden_frames = False
         self.hidden_frames = []
+
+        # Sticky mode.
+        self.sticky = self.config.sticky_by_default
+        self.first_time_sticky = self.sticky
+        self.sticky_ranges = {}  # frame --> (start, end)
+        self._sticky_messages = []  # Message queue for sticky mode.
+        self._sticky_last_frame = None
+        self._sticky_skip_cls = False
+
         self._setup_streams(stdout=self.stdout)
 
     @property
@@ -412,8 +426,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
-        self.print_stack_entry(self.stack[self.curindex])
-        self.print_hidden_frames_count()
+        if not self.sticky:
+            self.print_stack_entry(self.stack[self.curindex])
+            self.print_hidden_frames_count()
 
         with self._custom_completer():
             self.config.before_interaction_hook(self)
@@ -424,6 +439,36 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.cmdloop()
 
         self.forget()
+
+    def _sticky_handle_cls(self):
+        if not self._sticky_skip_cls:
+            self.stdout.write(CLEARSCREEN)
+            self.stdout.flush()
+            self._sticky_last_frame = None
+
+    def postcmd(self, stop, line):
+        """Handle clearing of the screen for sticky mode."""
+        stop = super(Pdb, self).postcmd(stop, line)
+        if self.sticky:
+            if stop:
+                self._sticky_handle_cls()
+            else:
+                if self._sticky_messages:
+                    for msg in self._sticky_messages:
+                        print(msg, file=self.stdout)
+                    self._sticky_messages = []
+                self._sticky_last_frame = self.stack[self.curindex]
+        return stop
+
+    def set_continue(self):
+        if self.sticky:
+            self._sticky_skip_cls = True
+        super(Pdb, self).set_continue()
+
+    def set_quit(self):
+        if self.sticky:
+            self._sticky_skip_cls = True
+        super(Pdb, self).set_quit()
 
     @contextlib.contextmanager
     def _custom_completer(self):
@@ -757,6 +802,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         src = self.try_to_decode(src)
         return self._highlight(src)
 
+    @lru_cache(maxsize=64)
+    def _highlight_cached(self, src):
+        return self._highlight(src)
+
     def _format_line(self, lineno, marker, line, lineno_width):
         lineno = ('%%%dd' % lineno_width) % lineno
         if self.config.highlight:
@@ -1019,7 +1068,7 @@ except for when using the function decorator.
 
     do_ll = do_longlist
 
-    def _printlonglist(self, linerange=None):
+    def _printlonglist(self, linerange=None, max_lines=None):
         try:
             if self.curframe.f_code.co_name == '<module>':
                 # inspect.getsourcelines is buggy in this case: if we just
@@ -1044,7 +1093,7 @@ except for when using the function decorator.
             end = min(end, lineno+len(lines))
             lines = lines[start-lineno:end-lineno]
             lineno = start
-        self._print_lines_pdbpp(lines, lineno)
+        self._print_lines_pdbpp(lines, lineno, max_lines=max_lines)
 
     @staticmethod
     def _truncate_to_visible_length(s, maxlength):
@@ -1081,7 +1130,7 @@ except for when using the function decorator.
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret
 
-    def _print_lines_pdbpp(self, lines, lineno, print_markers=True):
+    def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
                  for line in lines]  # force tabs to 4 spaces
@@ -1095,8 +1144,6 @@ except for when using the function decorator.
             maxlength = max(width - 9, 16)
             lines = [self._truncate_to_visible_length(line, maxlength)
                      for line in lines]
-        else:
-            maxlength = max(map(len, lines))
 
         if print_markers:
             exc_lineno = self.tb_lineno.get(self.curframe, None)
@@ -1109,6 +1156,11 @@ except for when using the function decorator.
                     if len(lines) > maxlines:
                         lines = lines[:maxlines]
                         lines.append('...')
+
+        if max_lines and len(lines) > max_lines:
+            cutoff = max_lines - len(lines)
+            lines = lines[0 - max_lines:]
+            lineno -= cutoff
 
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:
@@ -1382,22 +1434,48 @@ except for when using the function decorator.
 
     def _print_if_sticky(self):
         if self.sticky:
-            if self.first_time_sticky:
-                self.first_time_sticky = False
-            else:
-                self.stdout.write(CLEARSCREEN)
             frame, lineno = self.stack[self.curindex]
-            filename = self.canonic(frame.f_code.co_filename)
-            s = '> %s(%r)' % (filename, lineno)
+            if self._sticky_last_frame and frame != self._sticky_last_frame:
+                self._sticky_handle_cls()
+            stack_entry = self._get_formatted_stack_entry(
+                self.stack[self.curindex], "__CUTOFF_MARKER__"
+            )
+            s = stack_entry.split("__CUTOFF_MARKER__")[0]  # hack
+            top_extra_lines = 0
+            if self._sticky_messages:
+                for msg in self._sticky_messages:
+                    if msg == "--Return--" and (
+                        "__return__" in frame.f_locals
+                        or "__exception__" in frame.f_locals
+                    ):
+                        # Handled below.
+                        continue
+                    if msg.startswith("--") and msg.endswith("--"):
+                        s += ", {}".format(msg)
+                    else:
+                        print(msg, file=self.stdout)
+                        top_extra_lines += 1
+                self._sticky_messages = []
+
+            if self.config.show_hidden_frames_count:
+                n = len(self.hidden_frames)
+                if n:
+                    plural = n > 1 and "s" or ""
+                    s += ", %d frame%s hidden" % (n, plural)
             print(s, file=self.stdout)
             print(file=self.stdout)
-            sticky_range = self.sticky_ranges.get(self.curframe, None)
-            self._printlonglist(sticky_range)
 
+            width, height = self.get_terminal_size()
+            len_visible = len(RE_COLOR_ESCAPES.sub("", s))
+            top_extra_lines += (len_visible - 1) // width + 2
+
+            sticky_range = self.sticky_ranges.get(self.curframe, None)
+
+            after_lines = []
             if '__exception__' in frame.f_locals:
                 s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
                 if s:
-                    print(s, file=self.stdout)
+                    after_lines.append(s)
 
             elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -1411,7 +1489,17 @@ except for when using the function decorator.
                 s = ' return ' + s
                 if self.config.highlight:
                     s = Color.set(self.config.line_number_color, s)
-                print(s, file=self.stdout)
+                after_lines.append(s)
+
+            # Arrange for prompt and extra lines on top (location + newline
+            # typically), and keep an empty line at the end (after prompt), so
+            # that any output shows up at the top.
+            max_lines = height - top_extra_lines - len(after_lines) - 2
+
+            self._printlonglist(sticky_range, max_lines=max_lines)
+
+            for line in after_lines:
+                print(line, file=self.stdout)
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
@@ -1451,8 +1539,9 @@ except for when using the function decorator.
 
         If ``start`` and ``end`` are given, sticky mode is enabled and
         only lines within that range (extremes included) will be
-        displayed.
+        displayed (for the current frame).
         """
+        was_sticky = self.sticky
         if arg:
             try:
                 start, end = map(int, arg.split())
@@ -1465,6 +1554,8 @@ except for when using the function decorator.
         else:
             self.sticky = not self.sticky
             self.sticky_range = None
+        if not was_sticky and self.sticky:
+            self._sticky_handle_cls()
         self._print_if_sticky()
 
     def print_stack_trace(self):
@@ -1475,6 +1566,14 @@ except for when using the function decorator.
             pass
 
     def print_stack_entry(
+        self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
+    ):
+        print(
+            self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
+            file=self.stdout,
+        )
+
+    def _get_formatted_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
         frame, lineno = frame_lineno
@@ -1495,11 +1594,9 @@ except for when using the function decorator.
 
         # Format stack index (keeping same width across stack).
         frame_prefix = ("[%%%dd] " % frame_prefix_width) % frame_index
-
         marker_frameno = fmt.format(marker=marker, frame_prefix=frame_prefix)
-        print(marker_frameno, file=self.stdout, end="")
 
-        print(self.format_stack_entry(frame_lineno, lprefix), file=self.stdout)
+        return marker_frameno + self.format_stack_entry(frame_lineno, lprefix)
 
     def print_current_stack_entry(self):
         if self.sticky:
@@ -1507,15 +1604,8 @@ except for when using the function decorator.
         else:
             self.print_stack_entry(self.stack[self.curindex])
 
-    def user_exception(self, frame, exc_info):
-        self._skip_sticky = True
-        return super(Pdb, self).user_exception(frame, exc_info)
-
     def preloop(self):
-        if getattr(self, "_skip_sticky", False):
-            del self._skip_sticky
-        else:
-            self._print_if_sticky()
+        self._print_if_sticky()
 
         display_list = self._get_display_list()
         for expr, oldvalue in display_list.items():
@@ -1823,10 +1913,14 @@ except for when using the function decorator.
             return False
         return super(Pdb, self).is_skipped_module(module_name)
 
-    if not hasattr(pdb.Pdb, 'message'):  # For py27.
-
-        def message(self, msg):
-            print(msg, file=self.stdout)
+    def message(self, msg):
+        if self.sticky:
+            if sys._getframe().f_back.f_code.co_name == "user_exception":
+                # Exceptions are handled in sticky mode explicitly.
+                return
+            self._sticky_messages.append(msg)
+            return
+        print(msg, file=self.stdout)
 
     def error(self, msg):
         """Override/enhance default error method to display tracebacks."""

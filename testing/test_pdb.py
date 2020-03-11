@@ -233,6 +233,7 @@ shortcuts = [
     ('^', '\\^'),
     ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
     ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
+    ('<COLORFNAME>', r'\^\[\[33;01m'),
     ('<COLORLNUM>', r'\^\[\[36;01m'),
     ('<COLORRESET>', r'\^\[\[00m'),
     ('NUM', ' *[0-9]+'),
@@ -1241,14 +1242,14 @@ def test_up_down_sticky():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-> .*
+[NUM] > .*b(), 5 frames hidden
 
 NUM         def b():
 NUM             set_trace()
 NUM  ->         return
 # up
 <CLEARSCREEN>
-> .*
+[NUM] > .*a(), 5 frames hidden
 
 NUM         def a()
 NUM  ->         b()
@@ -1626,7 +1627,7 @@ NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +\t$
 # sticky
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 NUM +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
@@ -1660,7 +1661,7 @@ def test_truncated_source_with_pygments_and_highlight():
 <COLORNUM> +\t$
 # sticky
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 <COLORNUM> +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
@@ -1877,7 +1878,7 @@ def test_sticky():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             set_trace()
@@ -1886,11 +1887,8 @@ NUM             b = 2
 NUM             c = 3
 NUM             return a
 # n
-[NUM] > .*fn()
--> b = 2
-   5 frames hidden .*
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             set_trace()
@@ -1924,7 +1922,7 @@ def test_sticky_range():
    5 frames hidden .*
 # sticky %d %d
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 %d \\s+         set_trace()
 NUM  ->         a = 1
@@ -1945,10 +1943,7 @@ def test_sticky_by_default():
         return a
 
     check(fn, """
-[NUM] > .*fn()
--> a = 1
-   5 frames hidden .*
-.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             set_trace(Config=MyConfig)
@@ -1957,11 +1952,8 @@ NUM             b = 2
 NUM             c = 3
 NUM             return a
 # n
-[NUM] > .*fn()
--> b = 2
-   5 frames hidden .*
 <CLEARSCREEN>
->.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             set_trace(Config=MyConfig)
@@ -1984,10 +1976,7 @@ def test_sticky_by_default_with_use_pygments_auto():
         return a
 
     check(fn, """
-[NUM] > .*fn()
--> a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
-   5 frames hidden .*
-.*
+[NUM] > .*fn(), 5 frames hidden
 
 NUM         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 NUM             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
@@ -2018,7 +2007,7 @@ def test_sticky_dunder_exception():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-> {filename}(NUM)
+[NUM] > {filename}(NUM)fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             def raises():
@@ -2054,7 +2043,7 @@ def test_sticky_dunder_exception_with_highlight():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-> {filename}(NUM)
+[NUM] > <COLORFNAME>{filename}<COLORRESET>(<COLORNUM>)fn(), 5 frames hidden
 
 <COLORNUM>         def fn():
 <COLORNUM>             def raises():
@@ -2109,6 +2098,10 @@ def test_sticky_dunder_return():
         set_trace()
         returns()
 
+    if sys.version_info < (3,):
+        py27_return = "--Return--\n"
+    else:
+        py27_return = ""
     check(fn, """
 [NUM] > .*fn()
 -> returns()
@@ -2120,19 +2113,15 @@ def test_sticky_dunder_return():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
->.*
+[NUM] > .*(NUM)returns(), 5 frames hidden
 
 NUM  ->         def returns():
 NUM                 return 40 \\+ 2
 # retval
 \\*\\*\\* Not yet returned!
 # r
---Return--
-[NUM] > .*(NUM)returns()->42
--> return 40 \\+ 2
-   5 frames hidden .*
 <CLEARSCREEN>
-> {filename}(NUM)
+""" + py27_return + """[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
 
 NUM             def returns():
 NUM  ->             return 40 \\+ 2
@@ -2145,7 +2134,7 @@ NUM  ->             return 40 \\+ 2
     ))
 
 
-def test_sticky_with_user_exception_does_not_clear_screen():
+def test_sticky_with_user_exception():
     def fn():
         def throws():
             raise InnerTestException()
@@ -2153,6 +2142,10 @@ def test_sticky_with_user_exception_does_not_clear_screen():
         set_trace()
         throws()
 
+    if sys.version_info < (3,):
+        py27_exc = "InnerTestException: InnerTestException()\n"
+    else:
+        py27_exc = ""
     check(fn, """
 [NUM] > .*fn()
 -> throws()
@@ -2164,24 +2157,23 @@ def test_sticky_with_user_exception_does_not_clear_screen():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
->.*
+[NUM] > .*throws(), 5 frames hidden
 
 NUM  ->         def throws():
 NUM                 raise InnerTestException()
 # n
-[NUM] > .*throws()
--> raise InnerTestException()
-   5 frames hidden .*
 <CLEARSCREEN>
->.*
+[NUM] > .*throws(), 5 frames hidden
 
 NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
-.*InnerTestException
-[NUM] > .*throws()
--> raise InnerTestException()
-   5 frames hidden .*
+<CLEARSCREEN>
+""" + py27_exc + """[NUM] > .*throws(), 5 frames hidden
+
+NUM             def throws():
+NUM  ->             raise InnerTestException()
+InnerTestException:
 # c
 """)
 
