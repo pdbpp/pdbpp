@@ -4160,6 +4160,8 @@ def test_ensure_file_can_write_unicode():
 @pytest.mark.skipif(sys.version_info >= (3, 0),
                     reason="test is python2 specific")
 def test_py2_ensure_file_can_write_unicode():
+    import StringIO
+
     stdout = StringIO.StringIO()
     stdout.encoding = 'ascii'
 
