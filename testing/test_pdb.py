@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import bdb
 import inspect
+import io
 import os
 import os.path
 import re
@@ -14,6 +15,7 @@ import py
 import pytest
 
 import pdbpp
+from pdbpp import DefaultConfig, Pdb, StringIO
 
 try:
     from shlex import quote
@@ -60,7 +62,7 @@ class FakeStdin:
             return ''
 
 
-class ConfigTest(pdbpp.DefaultConfig):
+class ConfigTest(DefaultConfig):
     highlight = False
     use_pygments = False
     prompt = '# '  # because + has a special meaning in the regexp
@@ -308,9 +310,7 @@ def check(func, expected):
 
 
 def test_prompt_setter():
-    from pdb import Pdb
-
-    p = Pdb()
+    p = pdbpp.Pdb()
     assert p.prompt == "(Pdb++) "
 
     p.prompt = "(Pdb)"
@@ -336,7 +336,6 @@ def test_prompt_setter():
 
 
 def test_config_pygments(monkeypatch):
-    from pdb import DefaultConfig, Pdb
     import pygments.formatters
 
     assert not hasattr(DefaultConfig, "use_terminal256formatter")
@@ -379,8 +378,6 @@ def test_config_pygments(monkeypatch):
 
 @pytest.mark.parametrize("use_pygments", (None, True, False))
 def test_config_missing_pygments(use_pygments, monkeypatch_importerror):
-    from pdb import DefaultConfig, Pdb
-
     class Config(DefaultConfig):
         pass
 
@@ -410,7 +407,6 @@ def test_config_missing_pygments(use_pygments, monkeypatch_importerror):
 
 
 def test_config_pygments_deprecated_use_terminal256formatter(monkeypatch):
-    from pdb import DefaultConfig, Pdb
     import pygments.formatters
 
     monkeypatch.setenv("TERM", "xterm-256color")
@@ -1513,7 +1509,6 @@ def lineno():
     ("help", "print the list of available commands."),
 ])
 def test_help(command, expected_regex):
-    from pdb import StringIO
     instance = PdbTest()
     instance.stdout = StringIO()
 
@@ -3618,6 +3613,12 @@ def test_python_m_pdb_usage():
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     import subprocess
     import textwrap
+    from sysconfig import get_path
+
+    if PDBPP_HIJACK_PDB:
+        pth = os.path.join(get_path("purelib"), "_pdbpp_path_hack")
+        if not os.path.exists(pth):
+            pytest.skip("Missing pth file ({}), editable install?".format(pth))
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
@@ -4144,9 +4145,6 @@ ok_end
 
 
 def test_ensure_file_can_write_unicode():
-    import io
-    from pdb import DefaultConfig, Pdb
-
     out = io.BytesIO(b"")
     stdout = io.TextIOWrapper(out, encoding="latin1")
 
@@ -4163,7 +4161,6 @@ def test_ensure_file_can_write_unicode():
                     reason="test is python2 specific")
 def test_py2_ensure_file_can_write_unicode():
     import StringIO
-    from pdb import DefaultConfig, Pdb
 
     stdout = StringIO.StringIO()
     stdout.encoding = 'ascii'
@@ -4925,7 +4922,7 @@ def test_count_with_pp():
 
 
 def test_ArgWithCount():
-    from pdb import ArgWithCount
+    from pdbpp import ArgWithCount
 
     obj = ArgWithCount("", None)
     assert obj == ""
