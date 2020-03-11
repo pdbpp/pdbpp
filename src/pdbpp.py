@@ -345,7 +345,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         super(Pdb, self).__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
+        self.tb_lineno = {}  # frame --> lineno where the exception raised
+        self.history = []
+        self.show_hidden_frames = False
+        self.hidden_frames = []
 
+        # Sticky mode.
         self.sticky = self.config.sticky_by_default
         self.first_time_sticky = self.sticky
         self.sticky_ranges = {}  # frame --> (start, end)
@@ -353,10 +358,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self._sticky_last_frame = None
         self._sticky_skip_cls = False
 
-        self.tb_lineno = {}  # frame --> lineno where the exception raised
-        self.history = []
-        self.show_hidden_frames = False
-        self.hidden_frames = []
         self._setup_streams(stdout=self.stdout)
 
     @property
@@ -1437,9 +1438,9 @@ except for when using the function decorator.
             if self._sticky_last_frame and frame != self._sticky_last_frame:
                 self._sticky_handle_cls()
             stack_entry = self._get_formatted_stack_entry(
-                self.stack[self.curindex], "CUTOFF"
+                self.stack[self.curindex], "__CUTOFF_MARKER__"
             )
-            s = stack_entry.split("CUTOFF")[0]
+            s = stack_entry.split("__CUTOFF_MARKER__")[0]  # hack
             top_extra_lines = 0
             if self._sticky_messages:
                 for msg in self._sticky_messages:
@@ -1593,11 +1594,9 @@ except for when using the function decorator.
 
         # Format stack index (keeping same width across stack).
         frame_prefix = ("[%%%dd] " % frame_prefix_width) % frame_index
-
         marker_frameno = fmt.format(marker=marker, frame_prefix=frame_prefix)
-        ret = marker_frameno
-        ret += self.format_stack_entry(frame_lineno, lprefix)
-        return ret
+
+        return marker_frameno + self.format_stack_entry(frame_lineno, lprefix)
 
     def print_current_stack_entry(self):
         if self.sticky:
