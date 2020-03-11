@@ -2142,6 +2142,10 @@ def test_sticky_with_user_exception():
         set_trace()
         throws()
 
+    if sys.version_info < (3,):
+        py27_exc = "InnerTestException: InnerTestException()\n"
+    else:
+        py27_exc = ""
     check(fn, """
 [NUM] > .*fn()
 -> throws()
@@ -2165,8 +2169,7 @@ NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
 <CLEARSCREEN>
-.*.InnerTestException
-[NUM] > .*throws(), 5 frames hidden
+""" + py27_exc + """[NUM] > .*throws(), 5 frames hidden
 
 NUM             def throws():
 NUM  ->             raise InnerTestException()

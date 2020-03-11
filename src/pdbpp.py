@@ -1067,7 +1067,7 @@ except for when using the function decorator.
 
     do_ll = do_longlist
 
-    def _printlonglist(self, linerange=None, only_visible=False):
+    def _printlonglist(self, linerange=None, max_lines=None):
         try:
             if self.curframe.f_code.co_name == '<module>':
                 # inspect.getsourcelines is buggy in this case: if we just
@@ -1092,7 +1092,7 @@ except for when using the function decorator.
             end = min(end, lineno+len(lines))
             lines = lines[start-lineno:end-lineno]
             lineno = start
-        self._print_lines_pdbpp(lines, lineno, only_visible=only_visible)
+        self._print_lines_pdbpp(lines, lineno, max_lines=max_lines)
 
     @staticmethod
     def _truncate_to_visible_length(s, maxlength):
@@ -1129,7 +1129,7 @@ except for when using the function decorator.
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret
 
-    def _print_lines_pdbpp(self, lines, lineno, print_markers=True, only_visible=False):
+    def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
                  for line in lines]  # force tabs to 4 spaces
@@ -1156,15 +1156,10 @@ except for when using the function decorator.
                         lines = lines[:maxlines]
                         lines.append('...')
 
-        if only_visible:
-            # Arrange for prompt and 2 lines on top (location + newline).
-            # Keep an empty line at the end (after prompt), so that any output
-            # shows up at the top.
-            max_lines = height - 1 - 3
-            if len(lines) > max_lines:
-                cutoff = max_lines - len(lines)
-                lines = lines[0 - max_lines:]
-                lineno -= cutoff
+        if max_lines and len(lines) > max_lines:
+            cutoff = max_lines - len(lines)
+            lines = lines[0 - max_lines:]
+            lineno -= cutoff
 
         lineno_width = len(str(lineno + len(lines)))
         if print_markers:
@@ -1445,15 +1440,20 @@ except for when using the function decorator.
                 self.stack[self.curindex], "CUTOFF"
             )
             s = stack_entry.split("CUTOFF")[0]
+            top_extra_lines = 0
             if self._sticky_messages:
                 for msg in self._sticky_messages:
-                    if msg == "--Return--" and "__return__" in frame.f_locals:
+                    if msg == "--Return--" and (
+                        "__return__" in frame.f_locals
+                        or "__exception__" in frame.f_locals
+                    ):
                         # Handled below.
                         continue
                     if msg.startswith("--") and msg.endswith("--"):
                         s += ", {}".format(msg)
                     else:
                         print(msg, file=self.stdout)
+                        top_extra_lines += 1
                 self._sticky_messages = []
 
             if self.config.show_hidden_frames_count:
@@ -1463,13 +1463,18 @@ except for when using the function decorator.
                     s += ", %d frame%s hidden" % (n, plural)
             print(s, file=self.stdout)
             print(file=self.stdout)
-            sticky_range = self.sticky_ranges.get(self.curframe, None)
-            self._printlonglist(sticky_range, only_visible=True)
 
+            width, height = self.get_terminal_size()
+            len_visible = len(RE_COLOR_ESCAPES.sub("", s))
+            top_extra_lines += (len_visible - 1) // width + 2
+
+            sticky_range = self.sticky_ranges.get(self.curframe, None)
+
+            after_lines = []
             if '__exception__' in frame.f_locals:
                 s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
                 if s:
-                    print(s, file=self.stdout)
+                    after_lines.append(s)
 
             elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
@@ -1483,7 +1488,17 @@ except for when using the function decorator.
                 s = ' return ' + s
                 if self.config.highlight:
                     s = Color.set(self.config.line_number_color, s)
-                print(s, file=self.stdout)
+                after_lines.append(s)
+
+            # Arrange for prompt and extra lines on top (location + newline
+            # typically), and keep an empty line at the end (after prompt), so
+            # that any output shows up at the top.
+            max_lines = height - top_extra_lines - len(after_lines) - 2
+
+            self._printlonglist(sticky_range, max_lines=max_lines)
+
+            for line in after_lines:
+                print(line, file=self.stdout)
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
@@ -1901,6 +1916,9 @@ except for when using the function decorator.
 
     def message(self, msg):
         if self.sticky:
+            if sys._getframe().f_back.f_code.co_name == "user_exception":
+                # Exceptions are handled in sticky mode explicitly.
+                return
             self._sticky_messages.append(msg)
             return
         print(msg, file=self.stdout)
