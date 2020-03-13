@@ -1341,11 +1341,8 @@ do_shell_called: 'c'
 """)
 
 
-def test_parseline_with_rc_commands(tmpdir, monkeypatch):
+def test_parseline_with_rc_commands(tmpdir):
     """Test that parseline handles execution of rc lines during setup."""
-    monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("USERPROFILE", raising=False)
-
     with tmpdir.as_cwd():
         with open(".pdbrc", "w") as f:
             f.writelines([
