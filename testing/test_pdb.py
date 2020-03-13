@@ -239,6 +239,8 @@ shortcuts = [
     ('<COLORLNUM>', r'\^\[\[36;01m'),
     ('<COLORRESET>', r'\^\[\[00m'),
     ('NUM', ' *[0-9]+'),
+    # Optional message with Python 2.7 (e.g. "--Return--"), not using Pdb.message.
+    ('<PY27_MSG>', '\n.*' if sys.version_info < (3,) else ''),
 ]
 
 
@@ -259,6 +261,16 @@ def run_func(func, expected):
     expected = [re.split(r'\s+###', line)[0] for line in expected]
     commands = extract_commands(expected)
     expected = list(map(cook_regexp, expected))
+
+    # Explode newlines from pattern replacements (PY27_MSG).
+    flattened = []
+    for line in expected:
+        if line == "":
+            flattened.append("")
+        else:
+            flattened.extend(line.splitlines())
+    expected = flattened
+
     return expected, runpdb(func, commands)
 
 
@@ -1341,11 +1353,8 @@ do_shell_called: 'c'
 """)
 
 
-def test_parseline_with_rc_commands(tmpdir, monkeypatch):
+def test_parseline_with_rc_commands(tmpdir):
     """Test that parseline handles execution of rc lines during setup."""
-    monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("USERPROFILE", raising=False)
-
     with tmpdir.as_cwd():
         with open(".pdbrc", "w") as f:
             f.writelines([
@@ -1900,6 +1909,53 @@ NUM             return a
 """)
 
 
+def test_sticky_resets_cls():
+    def fn():
+        set_trace()
+        a = 1
+        print(a)
+        set_trace(cleanup=False)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM  ->         a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM             return a
+# c
+1
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM             a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM  ->         return a
+# n
+<CLEARSCREEN><PY27_MSG>
+[NUM] > .*fn()->1, 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM             a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM  ->         return a
+ return 1
+# c
+""")
+
+
 def test_sticky_range():
     def fn():
         set_trace()
@@ -2093,10 +2149,6 @@ def test_sticky_dunder_return():
         set_trace()
         returns()
 
-    if sys.version_info < (3,):
-        py27_return = "--Return--\n"
-    else:
-        py27_return = ""
     check(fn, """
 [NUM] > .*fn()
 -> returns()
@@ -2115,8 +2167,8 @@ NUM                 return 40 \\+ 2
 # retval
 \\*\\*\\* Not yet returned!
 # r
-<CLEARSCREEN>
-""" + py27_return + """[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
+<CLEARSCREEN><PY27_MSG>
+[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
 
 NUM             def returns():
 NUM  ->             return 40 \\+ 2
@@ -2137,10 +2189,6 @@ def test_sticky_with_user_exception():
         set_trace()
         throws()
 
-    if sys.version_info < (3,):
-        py27_exc = "InnerTestException: InnerTestException()\n"
-    else:
-        py27_exc = ""
     check(fn, """
 [NUM] > .*fn()
 -> throws()
@@ -2163,8 +2211,8 @@ NUM                 raise InnerTestException()
 NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
-<CLEARSCREEN>
-""" + py27_exc + """[NUM] > .*throws(), 5 frames hidden
+<CLEARSCREEN><PY27_MSG>
+[NUM] > .*throws(), 5 frames hidden
 
 NUM             def throws():
 NUM  ->             raise InnerTestException()
