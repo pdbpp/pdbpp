@@ -1900,6 +1900,53 @@ NUM             return a
 """)
 
 
+def test_sticky_resets_cls():
+    def fn():
+        set_trace()
+        a = 1
+        print(a)
+        set_trace(cleanup=False)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden .*
+# sticky
+<CLEARSCREEN>
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM  ->         a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM             return a
+# c
+1
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM             a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM  ->         return a
+# n
+<CLEARSCREEN>
+[NUM] > .*fn()->1, 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace()
+NUM             a = 1
+NUM             print(a)
+NUM             set_trace(cleanup=False)
+NUM  ->         return a
+ return 1
+# c
+""")
+
+
 def test_sticky_range():
     def fn():
         set_trace()

@@ -445,6 +445,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.stdout.write(CLEARSCREEN)
             self.stdout.flush()
             self._sticky_last_frame = None
+        self._sticky_skip_cls = False
 
     def postcmd(self, stop, line):
         """Handle clearing of the screen for sticky mode."""
