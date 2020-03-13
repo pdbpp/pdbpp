@@ -239,6 +239,8 @@ shortcuts = [
     ('<COLORLNUM>', r'\^\[\[36;01m'),
     ('<COLORRESET>', r'\^\[\[00m'),
     ('NUM', ' *[0-9]+'),
+    # Optional message with Python 2.7 (e.g. "--Return--"), not using Pdb.message.
+    ('<PY27_MSG>', '\n.*' if sys.version_info < (3,) else ''),
 ]
 
 
@@ -259,6 +261,16 @@ def run_func(func, expected):
     expected = [re.split(r'\s+###', line)[0] for line in expected]
     commands = extract_commands(expected)
     expected = list(map(cook_regexp, expected))
+
+    # Explode newlines from pattern replacements (PY27_MSG).
+    flattened = []
+    for line in expected:
+        if line == "":
+            flattened.append("")
+        else:
+            flattened.extend(line.splitlines())
+    expected = flattened
+
     return expected, runpdb(func, commands)
 
 
@@ -1930,7 +1942,7 @@ NUM             print(a)
 NUM             set_trace(cleanup=False)
 NUM  ->         return a
 # n
-<CLEARSCREEN>
+<CLEARSCREEN><PY27_MSG>
 [NUM] > .*fn()->1, 5 frames hidden
 
 NUM         def fn():
@@ -2137,10 +2149,6 @@ def test_sticky_dunder_return():
         set_trace()
         returns()
 
-    if sys.version_info < (3,):
-        py27_return = "--Return--\n"
-    else:
-        py27_return = ""
     check(fn, """
 [NUM] > .*fn()
 -> returns()
@@ -2159,8 +2167,8 @@ NUM                 return 40 \\+ 2
 # retval
 \\*\\*\\* Not yet returned!
 # r
-<CLEARSCREEN>
-""" + py27_return + """[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
+<CLEARSCREEN><PY27_MSG>
+[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
 
 NUM             def returns():
 NUM  ->             return 40 \\+ 2
@@ -2181,10 +2189,6 @@ def test_sticky_with_user_exception():
         set_trace()
         throws()
 
-    if sys.version_info < (3,):
-        py27_exc = "InnerTestException: InnerTestException()\n"
-    else:
-        py27_exc = ""
     check(fn, """
 [NUM] > .*fn()
 -> throws()
@@ -2207,8 +2211,8 @@ NUM                 raise InnerTestException()
 NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
-<CLEARSCREEN>
-""" + py27_exc + """[NUM] > .*throws(), 5 frames hidden
+<CLEARSCREEN><PY27_MSG>
+[NUM] > .*throws(), 5 frames hidden
 
 NUM             def throws():
 NUM  ->             raise InnerTestException()
