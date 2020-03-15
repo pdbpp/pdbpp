@@ -408,19 +408,32 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # this hack does not work.
             pass
 
-    def interaction(self, frame, traceback):
-        import linecache
+    def _install_linecache_wrapper(self):
+        """Disable linecache.checkcache to not invalidate caches.
 
-        # Monkeypatch linecache.checkcache to not invalidate caches.
-        old_checkcache = linecache.checkcache
-        linecache.checkcache = lambda x=None: None
+        This gets installed permanently to also bypass e.g. pytest using
+        `inspect.getsource`, which would invalidate it outside of the
+        interaction them.
+        """
+        if not hasattr(self, "_orig_linecache_checkcache"):
+            import linecache
+
+            # Save it, although not used really (can be useful for debugging).
+            self._orig_linecache_checkcache = linecache.checkcache
+
+            def _linecache_checkcache(*args, **kwargs):
+                return
+
+            linecache.checkcache = _linecache_checkcache
+
+    def interaction(self, frame, traceback):
+        self._install_linecache_wrapper()
 
         self._in_interaction = True
         try:
             return self._interaction(frame, traceback)
         finally:
             self._in_interaction = False
-            linecache.checkcache = old_checkcache
 
     def _interaction(self, frame, traceback):
         # Restore the previous signal handler at the Pdb prompt.

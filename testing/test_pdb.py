@@ -1815,10 +1815,13 @@ class TestListWithChangedSource:
                 with open(__file__, "w") as f:
                     f.write("something completely different")
 
+            def after_settrace():
+                import linecache
+                linecache.checkcache()
+
             def fn():
-                a = 1
                 set_trace()
-                a = 2
+                after_settrace()
                 set_trace()
                 a = 3
             """)
@@ -1830,17 +1833,17 @@ class TestListWithChangedSource:
 
         check(fn, r"""
     [NUM] > .*fn()
-    -> a = 2
+    -> after_settrace()
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) l
-      5  \t        f.write("something completely different")
-      6  \t$
-      7  \tdef fn():
-      8  \t    a = 1
-      9  \t    set_trace()
-     10  ->\t    a = 2
-     11  \t    set_trace()
-     12  \t    a = 3
+    NUM  \t    import linecache$
+    NUM  \t    linecache.checkcache()$
+    NUM  \t$
+    NUM  \tdef fn():
+    NUM  \t    set_trace()
+    NUM  ->\t    after_settrace()
+    NUM  \t    set_trace()
+    NUM  \t    a = 3
     [EOF]
     (Pdb++) rewrite_file()
     (Pdb++) c
@@ -1848,12 +1851,12 @@ class TestListWithChangedSource:
     -> a = 3
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) l
-      7  \tdef fn():
-      8  \t    a = 1
-      9  \t    set_trace()
-     10  \t    a = 2
-     11  \t    set_trace()
-     12  ->\t    a = 3
+    NUM  \t
+    NUM  \tdef fn():
+    NUM  \t    set_trace()
+    NUM  \t    after_settrace()
+    NUM  \t    set_trace()
+    NUM  ->\t    a = 3
     [EOF]
     (Pdb++) c
     """)
@@ -1863,27 +1866,25 @@ class TestListWithChangedSource:
 
         check(fn, r"""
     [NUM] > .*fn()
-    -> a = 2
+    -> after_settrace()
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) ll
-     7     def fn():
-     8         a = 1
-     9         set_trace()
-    10  ->     a = 2
-    11         set_trace()
-    12         a = 3
+    NUM     def fn():
+    NUM         set_trace()
+    NUM  ->     after_settrace()
+    NUM         set_trace()
+    NUM         a = 3
     (Pdb++) rewrite_file()
     (Pdb++) c
     [NUM] > .*fn()
     -> a = 3
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) ll
-     7     def fn():
-     8         a = 1
-     9         set_trace()
-    10         a = 2
-    11         set_trace()
-    12  ->     a = 3
+    NUM     def fn():
+    NUM         set_trace()
+    NUM         after_settrace()
+    NUM         set_trace()
+    NUM  ->     a = 3
     (Pdb++) c
     """)
 
