@@ -8,6 +8,7 @@ import os
 import os.path
 import re
 import sys
+import textwrap
 import traceback
 from io import BytesIO
 
@@ -218,7 +219,7 @@ def runpdb(func, input):
 
 def extract_commands(lines):
     cmds = []
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) '}
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
     for line in lines:
         for prompt in prompts:
             if line.startswith(prompt):
@@ -233,6 +234,7 @@ shortcuts = [
     ('(', '\\('),
     (')', '\\)'),
     ('^', '\\^'),
+    (r'\(Pdb++\) ', r'\(Pdb\+\+\) '),
     ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
     ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
     ('<COLORFNAME>', r'\^\[\[33;01m'),
@@ -256,7 +258,7 @@ def run_func(func, expected):
     It does not make any assertions. To compare func's output with expected
     lines, use `check` function.
     """
-    expected = expected.strip().splitlines()
+    expected = textwrap.dedent(expected).strip().splitlines()
     # Remove comments.
     expected = [re.split(r'\s+###', line)[0] for line in expected]
     commands = extract_commands(expected)
@@ -298,7 +300,10 @@ def check(func, expected):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            ok = re.match(pattern, string)
+            try:
+                ok = re.match(pattern, string)
+            except re.error as exc:
+                raise ValueError("re.match failed for {!r}: {!r}".format(pattern, exc))
         else:
             ok = False
             if pattern is None:
@@ -1795,6 +1800,92 @@ NUM             set_trace()
 NUM  ->         return a
 # c
 """)
+
+
+class TestListWithChangedSource:
+    """Uses the cached (current) code."""
+
+    @pytest.fixture(autouse=True)
+    def setup_myfile(self, testdir):
+        testdir.makepyfile(
+            myfile="""
+            from pdbpp import set_trace
+
+            def rewrite_file():
+                with open(__file__, "w") as f:
+                    f.write("something completely different")
+
+            def fn():
+                a = 1
+                set_trace()
+                a = 2
+                set_trace()
+                a = 3
+            """)
+        testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+        testdir.syspathinsert()
+
+    def test_list_with_changed_source(self):
+        from myfile import fn
+
+        check(fn, r"""
+    [NUM] > .*fn()
+    -> a = 2
+       5 frames hidden (try 'help hidden_frames')
+    (Pdb++) l
+      5  \t        f.write("something completely different")
+      6  \t$
+      7  \tdef fn():
+      8  \t    a = 1
+      9  \t    set_trace()
+     10  ->\t    a = 2
+     11  \t    set_trace()
+     12  \t    a = 3
+    [EOF]
+    (Pdb++) rewrite_file()
+    (Pdb++) c
+    [NUM] > .*fn()
+    -> a = 3
+       5 frames hidden (try 'help hidden_frames')
+    (Pdb++) l
+      7  \tdef fn():
+      8  \t    a = 1
+      9  \t    set_trace()
+     10  \t    a = 2
+     11  \t    set_trace()
+     12  ->\t    a = 3
+    [EOF]
+    (Pdb++) c
+    """)
+
+    def test_longlist_with_changed_source(self):
+        from myfile import fn
+
+        check(fn, r"""
+    [NUM] > .*fn()
+    -> a = 2
+       5 frames hidden (try 'help hidden_frames')
+    (Pdb++) ll
+     7     def fn():
+     8         a = 1
+     9         set_trace()
+    10  ->     a = 2
+    11         set_trace()
+    12         a = 3
+    (Pdb++) rewrite_file()
+    (Pdb++) c
+    [NUM] > .*fn()
+    -> a = 3
+       5 frames hidden (try 'help hidden_frames')
+    (Pdb++) ll
+     7     def fn():
+     8         a = 1
+     9         set_trace()
+    10         a = 2
+    11         set_trace()
+    12  ->     a = 3
+    (Pdb++) c
+    """)
 
 
 def test_longlist_with_highlight():
@@ -3660,7 +3751,6 @@ def test_python_m_pdb_usage():
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     import subprocess
-    import textwrap
     from sysconfig import get_path
 
     if PDBPP_HIJACK_PDB:
