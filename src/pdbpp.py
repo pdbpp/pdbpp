@@ -336,8 +336,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.ConfigFactory = kwds.pop('Config', None)
         self.start_lineno = kwds.pop('start_lineno', None)
         self.start_filename = kwds.pop('start_filename', None)
+
         self.config = self.get_config(self.ConfigFactory)
         self.config.setup(self)
+
+        if "PDBPP_COLORS" in os.environ:
+            use_colors = bool(int(os.environ["PDBPP_COLORS"]))
+            self.config.highlight = self.config.use_pygments = use_colors
+
         if self.config.disable_pytest_capturing:
             self._disable_pytest_capture_maybe()
         kwargs = self.config.default_pdb_kwargs.copy()
@@ -403,11 +409,18 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             pass
 
     def interaction(self, frame, traceback):
+        import linecache
+
+        # Monkeypatch linecache.checkcache to not invalidate caches.
+        old_checkcache = linecache.checkcache
+        linecache.checkcache = lambda x=None: None
+
         self._in_interaction = True
         try:
             return self._interaction(frame, traceback)
         finally:
             self._in_interaction = False
+            linecache.checkcache = old_checkcache
 
     def _interaction(self, frame, traceback):
         # Restore the previous signal handler at the Pdb prompt.
@@ -573,6 +586,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.curindex = len(self.stack)-1
             self.curframe = self.stack[-1][0]
             self.print_current_stack_entry()
+
+    def reset(self):
+        """Set values of attributes as ready to start debugging.
+
+        This overrides Bdb.reset to not clear the linecache (bpo-39967)."""
+        self.botframe = None
+        self._set_stopinfo(None, None)
+        self.forget()
 
     def forget(self):
         if not getattr(local, "_pdbpp_completing", False):
