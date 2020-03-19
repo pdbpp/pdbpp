@@ -5234,7 +5234,7 @@ def test_keeps_reset_escape_sequence_with_source_highlight():
 <COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 <COLORNUM>             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
 <COLORNUM>     $
-<COLORCURLINE>  ->         a ^[[38;5;241;44m=^[[39;44m ^[[38;5;124;44m"^[[39;44m^[[38;5;124;44maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^[[39;44m^[[38;5;124;44m^[[39;00;44m^[[00m
+<COLORCURLINE>  ->         a ^[[38;5;241;44m=^[[39;44m ^[[38;5;124;44m"^[[39;44m^[[38;5;124;44maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^[[39;44m^[[38;5;124;44m^[[39.*?m^[[00m
 <COLORNUM>             b ^[[38;5;241m=^[[39m ^[[38;5;124m"^[[39m^[[38;5;124mbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb^[[39m^[[38;5;124m^[[39;00m
 <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m a, b
 # c
