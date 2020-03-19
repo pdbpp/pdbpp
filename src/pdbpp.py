@@ -1154,7 +1154,7 @@ except for when using the function decorator.
                 else:
                     ret += add_visible[:-overflow]
                 ret += s[m_start:m_end]
-                return ret
+                break
             total_visible_len += len_visible
             ret += add_visible
             ret += s[m_start:m_end]
@@ -1163,6 +1163,14 @@ except for when using the function decorator.
             assert maxlength - total_visible_len > 0
             rest = s[m_end:]
             ret += rest[:maxlength - total_visible_len]
+
+        # Keep reset sequence (in last match).
+        if len(ret) != len(s):
+            last_m_start, last_m_end = matches[-1].span()
+            if last_m_end == len(s):
+                reset_seq = s[last_m_start:last_m_end]
+                if not ret.endswith(reset_seq):
+                    ret += reset_seq
 
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret

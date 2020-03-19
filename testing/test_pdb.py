@@ -5217,6 +5217,30 @@ def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdbpp.Pdb._truncate_to_visible_length(s, maxlength) == expected
 
 
+def test_keeps_reset_escape_sequence_with_source_highlight():
+    class MyConfig(ConfigWithPygmentsAndHighlight):
+        sticky_by_default = True
+
+    def fn():
+        set_trace(Config=MyConfig)
+
+        a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"  # noqa: E501
+        b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbX"  # noqa: E501
+        return a, b
+
+    check(fn, """
+[NUM] > .*fn()
+
+<COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+<COLORNUM>             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
+<COLORNUM>     $
+<COLORCURLINE>  ->         a ^[[38;5;241;44m=^[[39;44m ^[[38;5;124;44m"^[[39;44m^[[38;5;124;44maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^[[39;44m^[[38;5;124;44m^[[39;00;44m^[[00m
+<COLORNUM>             b ^[[38;5;241m=^[[39m ^[[38;5;124m"^[[39m^[[38;5;124mbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb^[[39m^[[38;5;124m^[[39;00m
+<COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m a, b
+# c
+""")  # noqa: E501
+
+
 @pytest.mark.parametrize("pass_stdout", (True, False))
 def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
