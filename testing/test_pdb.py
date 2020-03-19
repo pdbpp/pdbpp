@@ -240,6 +240,7 @@ shortcuts = [
     ('<COLORFNAME>', r'\^\[\[33;01m'),
     ('<COLORLNUM>', r'\^\[\[36;01m'),
     ('<COLORRESET>', r'\^\[\[00m'),
+    ('<PYGMENTSRESET>', r'\^\[\[39[^m]*m'),
     ('NUM', ' *[0-9]+'),
     # Optional message with Python 2.7 (e.g. "--Return--"), not using Pdb.message.
     ('<PY27_MSG>', '\n.*' if sys.version_info < (3,) else ''),
@@ -1673,11 +1674,11 @@ def test_truncated_source_with_pygments_and_highlight():
 [NUM] > .*fn(), 5 frames hidden
 
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
+<COLORNUM> +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines<PYGMENTSRESET>
 <COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +$
-<COLORCURLINE> +->         ^[[38;5;28;01;44mreturn^[[39;00;44m a                                                       ^[[00m
+<COLORCURLINE> +->         ^[[38;5;28;01;44mreturn<PYGMENTSRESET> a                                                       ^[[00m
 # c
 """.format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
 
@@ -5234,8 +5235,8 @@ def test_keeps_reset_escape_sequence_with_source_highlight():
 <COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 <COLORNUM>             set_trace(Config^[[38;5;241m=^[[39mMyConfig)
 <COLORNUM>     $
-<COLORCURLINE>  ->         a ^[[38;5;241;44m=^[[39;44m ^[[38;5;124;44m"^[[39;44m^[[38;5;124;44maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^[[39;44m^[[38;5;124;44m^[[39.*?m^[[00m
-<COLORNUM>             b ^[[38;5;241m=^[[39m ^[[38;5;124m"^[[39m^[[38;5;124mbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb^[[39m^[[38;5;124m^[[39;00m
+<COLORCURLINE>  ->         a ^[[38;5;241;44m=^[[39;44m ^[[38;5;124;44m"^[[39;44m^[[38;5;124;44maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^[[39;44m^[[38;5;124;44m<PYGMENTSRESET><COLORRESET>
+<COLORNUM>             b ^[[38;5;241m=^[[39m ^[[38;5;124m"^[[39m^[[38;5;124mbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb^[[39m^[[38;5;124m<PYGMENTSRESET>
 <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m a, b
 # c
 """)  # noqa: E501
