@@ -3756,7 +3756,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     from sysconfig import get_path
 
     if PDBPP_HIJACK_PDB:
-        pth = os.path.join(get_path("purelib"), "_pdbpp_path_hack")
+        pth = os.path.join(get_path("purelib"), "pdbpp_hijack_pdb.pth")
         if not os.path.exists(pth):
             pytest.skip("Missing pth file ({}), editable install?".format(pth))
 
