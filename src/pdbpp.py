@@ -1118,7 +1118,7 @@ except for when using the function decorator.
         installed, the source code is colorized.
         """
         self.lastcmd = 'longlist'
-        self._printlonglist()
+        self._printlonglist(max_lines=False)
 
     do_ll = do_longlist
 
@@ -1207,25 +1207,19 @@ except for when using the function decorator.
             lines = [self._truncate_to_visible_length(line, maxlength)
                      for line in lines]
 
+        lineno_width = len(str(lineno + len(lines)))
         if print_markers:
             exc_lineno = self.tb_lineno.get(self.curframe, None)
-            if height >= 6:
+            if max_lines is not False:
                 last_marker_line = max(
                     self.curframe.f_lineno,
                     exc_lineno if exc_lineno else 0) - lineno
-                if last_marker_line >= 0:
-                    maxlines = last_marker_line + height * 2 // 3
-                    if len(lines) > maxlines:
-                        lines = lines[:maxlines]
-                        lines.append('...')
+                if last_marker_line >= 0 and len(lines) > max_lines:
+                    maxlines = last_marker_line + max_lines
+                    lines = lines[last_marker_line:maxlines - 1]
+                    lines.append('...')
+                    lineno += last_marker_line
 
-        if max_lines and len(lines) > max_lines:
-            cutoff = max_lines - len(lines)
-            lines = lines[0 - max_lines:]
-            lineno -= cutoff
-
-        lineno_width = len(str(lineno + len(lines)))
-        if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
             for i, line in enumerate(lines):
                 if lineno == self.curframe.f_lineno:

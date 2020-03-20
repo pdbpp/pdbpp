@@ -158,7 +158,7 @@ def xpm():
     pdbpp.xpm(PdbTest)
 
 
-def runpdb(func, input):
+def runpdb(func, input, terminal_size=None):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
@@ -189,7 +189,9 @@ def runpdb(func, input):
             ).replace(chr(27), "^[")
 
     # Use a predictable terminal size.
-    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
+    if terminal_size is None:
+        terminal_size = (80, 24)
+    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: terminal_size)
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
@@ -254,7 +256,7 @@ def cook_regexp(s):
     return s
 
 
-def run_func(func, expected):
+def run_func(func, expected, terminal_size=None):
     """Runs given function and returns its output along with expected patterns.
 
     It does not make any assertions. To compare func's output with expected
@@ -275,7 +277,7 @@ def run_func(func, expected):
             flattened.extend(line.splitlines())
     expected = flattened
 
-    return expected, runpdb(func, commands)
+    return expected, runpdb(func, commands, terminal_size)
 
 
 def count_frames():
@@ -292,8 +294,8 @@ class InnerTestException(Exception):
     pass
 
 
-def check(func, expected):
-    expected, lines = run_func(func, expected)
+def check(func, expected, terminal_size=None):
+    expected, lines = run_func(func, expected, terminal_size)
     if expected:
         maxlen = max(map(len, expected))
     else:
@@ -1804,6 +1806,43 @@ NUM  ->         return a
 """)
 
 
+def test_longlist_displays_whole_function():
+    """`ll` displays the whole function (no cutoff)."""
+    def fn():
+        set_trace()
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden (try 'help hidden_frames')
+# ll
+NUM         def fn():
+NUM             set_trace()
+NUM  ->         a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             return a
+# c
+
+""", terminal_size=(80, 10))
+
+
 class TestListWithChangedSource:
     """Uses the cached (current) code."""
 
@@ -2339,6 +2378,39 @@ def test_sticky_dunder_return_with_highlight():
         if x.startswith('^[[44m^[[36;01;44m') and '->' in x
     ]
     assert len(colored_cur_lines) == 2
+
+
+def test_sticky_cutoff_with_extra_toplines():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+NUM             # 3
+NUM             # 4
+NUM     ...
+# c
+1
+""", terminal_size=(80, 10))
 
 
 def test_exception_lineno():
