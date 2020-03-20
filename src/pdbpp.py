@@ -1192,6 +1192,65 @@ except for when using the function decorator.
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret
 
+    def _cut_lines(self, lines, lineno, max_lines):
+        if not max_lines or len(lines) <= max_lines:
+            for i, line in enumerate(lines, lineno):
+                yield i, line
+            return
+
+        cutoff = len(lines) - max_lines
+
+        # Keep certain top lines.
+        COLOR_OR_SPACE = r'(?:\x1b.*?m|\s)'
+        keep_pat = re.compile(
+            r'(?:^{col}*(?:def{col}|async{col}+def{col}|@))'
+            r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
+        )
+        keep_head = 0
+        while keep_pat.match(lines[keep_head]):
+            keep_head += 1
+
+        if keep_head > 3:
+            yield lineno, lines[0]
+            yield None, '...'
+            yield lineno + keep_head, lines[keep_head-1]
+            cutoff -= keep_head - 3
+        else:
+            for i, line in enumerate(lines[:keep_head]):
+                yield lineno + i, line
+            # cutoff -= keep_head
+
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
+        last_marker_line = max(
+            self.curframe.f_lineno,
+            exc_lineno if exc_lineno else 0) - lineno
+
+        cut_before = max(
+            min(
+                min(last_marker_line - 3, int(round(last_marker_line / 3 * 2))), cutoff,
+            ),
+            0,
+        )
+        cut_after = cutoff - cut_before
+
+        # Adjust for '...' lines.
+        cut_after = cut_after + 1 if cut_after > 0 else 0
+        if cut_before:
+            cut_before += 1
+
+        for i, line in enumerate(lines[keep_head:], keep_head):
+            if cut_before:
+                cut_before -= 1
+                if cut_before == 0:
+                    yield None, '...'
+                else:
+                    assert cut_before > 0, cut_before
+                continue
+            elif cut_after and i >= len(lines) - cut_after:
+                yield None, '...'
+                break
+            yield lineno + i, line
+
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
@@ -1208,20 +1267,16 @@ except for when using the function decorator.
                      for line in lines]
 
         lineno_width = len(str(lineno + len(lines)))
-        if print_markers:
-            exc_lineno = self.tb_lineno.get(self.curframe, None)
-            if max_lines is not False:
-                last_marker_line = max(
-                    self.curframe.f_lineno,
-                    exc_lineno if exc_lineno else 0) - lineno
-                if last_marker_line >= 0 and len(lines) > max_lines:
-                    maxlines = last_marker_line + max_lines
-                    lines = lines[last_marker_line:maxlines - 1]
-                    lines.append('...')
-                    lineno += last_marker_line
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
 
+        new_lines = []
+        if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
-            for i, line in enumerate(lines):
+            for lineno, line in self._cut_lines(lines, lineno, max_lines):
+                if lineno is None:
+                    new_lines.append(line)
+                    continue
+
                 if lineno == self.curframe.f_lineno:
                     marker = '->'
                 elif lineno == exc_lineno:
@@ -1234,14 +1289,12 @@ except for when using the function decorator.
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
                     line = line + " " * (width - len_visible)
                     line = setbgcolor(line, self.config.current_line_color)
-
-                lines[i] = line
-                lineno += 1
+                new_lines.append(line)
         else:
             for i, line in enumerate(lines):
-                lines[i] = self._format_line(lineno, '', line, lineno_width)
+                new_lines.append(self._format_line(lineno, '', line, lineno_width))
                 lineno += 1
-        print('\n'.join(lines), file=self.stdout)
+        print('\n'.join(new_lines), file=self.stdout)
 
     def _format_source_lines(self, lines):
         if not lines:

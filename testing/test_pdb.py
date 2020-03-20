@@ -2380,11 +2380,104 @@ def test_sticky_dunder_return_with_highlight():
     assert len(colored_cur_lines) == 2
 
 
-def test_sticky_cutoff_with_extra_toplines():
+def test_sticky_cutoff_with_tail():
     class MyConfig(ConfigTest):
         sticky_by_default = True
 
     def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(80, 10))
+
+
+def test_sticky_cutoff_with_head():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+...
+NUM             # 5
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(80, 10))
+
+
+def test_sticky_cutoff_with_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+...
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+...
+# c
+1
+""", terminal_size=(80, 10))
+
+
+def test_sticky_cutoff_with_long_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
         set_trace(Config=MyConfig)
         print(1)
         # 1
@@ -2397,17 +2490,131 @@ def test_sticky_cutoff_with_extra_toplines():
         # 8
         # 9
         # 10
+        # 11
+        # 12
+        # 13
+        # 14
+        # 15
         return
 
     check(fn, """
 [NUM] > .*fn(), 5 frames hidden
 
+NUM         def fn():
+...
+NUM             # 10
+NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
 NUM             # 1
 NUM             # 2
 NUM             # 3
 NUM             # 4
-NUM     ...
+NUM             # 5
+...
+# c
+1
+""", terminal_size=(80, 15))
+
+
+def test_sticky_cutoff_with_decorator():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+NUM         def fn():
+...
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(80, 10))
+
+
+def test_sticky_cutoff_with_many_decorators():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM         def fn():
+...
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(80, 10))
+
+
+def test_sticky_cutoff_with_decorator_colored():
+    class MyConfig(ConfigWithPygmentsAndHighlight):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+<COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
+...
+<COLORCURLINE>  ->         ^[[38;5;28;44mprint^[[39;44m(^[[38;5;241;44m1^[[39;44m)                                                       ^[[00m
+<COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
 # c
 1
 """, terminal_size=(80, 10))
