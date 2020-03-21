@@ -1204,7 +1204,7 @@ except for when using the function decorator.
         # Keeps decorators, but not functions, which are displayed at the top
         # already (stack information).
         # TODO: check behavior with lambdas.
-        COLOR_OR_SPACE = r'(?:\x1b.*?m|\s)'
+        COLOR_OR_SPACE = r'(?:\x1b[^m]+m|\s)'
         keep_pat = re.compile(
             r'(?:^{col}*@)'
             r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
