@@ -1201,9 +1201,12 @@ except for when using the function decorator.
         cutoff = len(lines) - max_lines
 
         # Keep certain top lines.
+        # Keeps decorators, but not functions, which are displayed at the top
+        # already (stack information).
+        # TODO: check behavior with lambdas.
         COLOR_OR_SPACE = r'(?:\x1b.*?m|\s)'
         keep_pat = re.compile(
-            r'(?:^{col}*(?:def{col}|async{col}+def{col}|@))'
+            r'(?:^{col}*@)'
             r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
         )
         keep_head = 0

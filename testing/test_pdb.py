@@ -2423,8 +2423,8 @@ def test_sticky_cutoff_with_head():
     check(fn, """
 [NUM] > .*fn(), 5 frames hidden
 
-NUM         def fn():
 ...
+NUM             # 4
 NUM             # 5
 NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
@@ -2452,8 +2452,8 @@ def test_sticky_cutoff_with_head_and_tail():
     check(fn, """
 [NUM] > .*fn(), 5 frames hidden
 
-NUM         def fn():
 ...
+NUM             # 3
 NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
 NUM             # 1
@@ -2500,8 +2500,8 @@ def test_sticky_cutoff_with_long_head_and_tail():
     check(fn, """
 [NUM] > .*fn(), 5 frames hidden
 
-NUM         def fn():
 ...
+NUM             # 9
 NUM             # 10
 NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
@@ -2538,8 +2538,8 @@ def test_sticky_cutoff_with_decorator():
 [NUM] > .*fn(), 5 frames hidden
 
 NUM         @deco
-NUM         def fn():
 ...
+NUM             # 5
 NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
 NUM             return
@@ -2578,7 +2578,7 @@ def test_sticky_cutoff_with_many_decorators():
 
 NUM         @deco
 ...
-NUM         def fn():
+NUM         @deco
 ...
 NUM  ->         print(1)
 NUM             return
@@ -2611,13 +2611,13 @@ def test_sticky_cutoff_with_decorator_colored():
 
 <COLORNUM>         ^[[38;5;129m@deco^[[39m
 <COLORNUM>         ^[[38;5;129m@deco^[[39m
-<COLORNUM>         ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 ...
-<COLORCURLINE>  ->         ^[[38;5;28;44mprint^[[39;44m(^[[38;5;241;44m1^[[39;44m)                                                       ^[[00m
+<COLORNUM>             set_trace.*
+<COLORCURLINE>  ->         ^[[38;5;28;44mprint^[[39;44m(^[[38;5;241;44m1^[[39;44m) +^[[00m
 <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(80, 10))  # noqa: E501
 
 
 def test_exception_lineno():
