@@ -54,7 +54,7 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
+RE_COLOR_ESCAPES = re.compile("(\x1b[^m]+m)+")
 RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
 
 if sys.version_info < (3, ):
