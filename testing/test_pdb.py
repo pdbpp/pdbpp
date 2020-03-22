@@ -5356,7 +5356,7 @@ is_skipped_module\? testing.test_pdb
 """)
 
 
-def test_exception_info_main(testdir):
+def test_exception_info_main(testdir, LineMatcher):
     """Test that interaction adds __exception__ similar to user_exception."""
     p1 = testdir.makepyfile(
         """
@@ -5368,30 +5368,22 @@ def test_exception_info_main(testdir):
     )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
     result = testdir.run(
-        sys.executable, "-m", "pdb", "-c", "sticky", "-c", "cont", str(p1)
+        sys.executable, "-m", "pdb", str(p1),
+        stdin=b"sticky\ncont\n",
     )
     result.stdout.fnmatch_lines(
         [
+            '(Pdb++) *[[]2[]] > *test_exception_info_main.py(1)<module>()',
             "1  -> def f():",
             '2         raise ValueError("foo")',
             '3     ',
             '4     f()',
-            'Uncaught exception. Entering post mortem debugging',
+            '(Pdb++) Uncaught exception. Entering post mortem debugging',
             "Running 'cont' or 'step' will restart the program",
-            "[[]5[]] > *test_exception_info_main.py(2)f()",
+            "*[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
             '2  ->     raise ValueError("foo")',
             "ValueError: foo",
-            "(Pdb++) Post mortem debugger finished."
-            " The *test_exception_info_main.py will be restarted",
-            "",
-            "[[]2[]] > *test_exception_info_main.py(1)<module>()",
-            "",
-            '1  -> def f():',
-            '2         raise ValueError("foo")',
-            '3     ',
-            '4     f()',
-            '(Pdb++) ',
         ]
     )
