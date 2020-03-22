@@ -5369,17 +5369,11 @@ def test_exception_info_main(testdir, LineMatcher):
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
     result = testdir.run(
         sys.executable, "-m", "pdb", str(p1),
-        stdin=b"sticky\ncont\n",
+        stdin=b"cont\nsticky\n",
     )
     result.stdout.fnmatch_lines(
         [
-            '(Pdb++) *[[]2[]] > *test_exception_info_main.py(1)<module>()',
-            "1  -> def f():",
-            '2         raise ValueError("foo")',
-            '3     ',
-            '4     f()',
-            '(Pdb++) Uncaught exception. Entering post mortem debugging',
-            "Running 'cont' or 'step' will restart the program",
+            '*Uncaught exception. Entering post mortem debugging',
             "*[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
