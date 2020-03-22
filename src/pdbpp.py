@@ -1925,7 +1925,8 @@ except for when using the function decorator.
                 if not self._stopped_for_set_trace:
                     self._stopped_for_set_trace = True
                     return True
-        return super(Pdb, self).stop_here(frame)
+        if Pdb is not None:
+            return super(Pdb, self).stop_here(frame)
 
     def set_trace(self, frame=None):
         """Remember starting frame.
