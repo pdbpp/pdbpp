@@ -2453,10 +2453,10 @@ def test_sticky_cutoff_with_head_and_tail():
 [NUM] > .*fn(), 5 frames hidden
 
 ...
-NUM             # 3
 NUM             set_trace(Config=MyConfig)
 NUM  ->         print(1)
 NUM             # 1
+NUM             # 2
 ...
 # c
 1
@@ -2501,6 +2501,7 @@ def test_sticky_cutoff_with_long_head_and_tail():
 [NUM] > .*fn(), 5 frames hidden
 
 ...
+NUM             # 8
 NUM             # 9
 NUM             # 10
 NUM             set_trace(Config=MyConfig)
@@ -2509,7 +2510,6 @@ NUM             # 1
 NUM             # 2
 NUM             # 3
 NUM             # 4
-NUM             # 5
 ...
 # c
 1

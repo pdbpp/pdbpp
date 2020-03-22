@@ -1228,17 +1228,16 @@ except for when using the function decorator.
             self.curframe.f_lineno,
             exc_lineno if exc_lineno else 0) - lineno
 
-        cut_before = max(
-            min(
-                min(last_marker_line - 3, int(round(last_marker_line / 3 * 2))), cutoff,
-            ),
-            0,
+        # Place marker / current line in first third of available lines.
+        cut_before = min(
+            cutoff, max(0, last_marker_line - max_lines + max_lines // 3 * 2)
         )
         cut_after = cutoff - cut_before
 
         # Adjust for '...' lines.
         cut_after = cut_after + 1 if cut_after > 0 else 0
         if cut_before:
+            # Adjust for '...' line.
             cut_before += 1
 
         for i, line in enumerate(lines[keep_head:], keep_head):
