@@ -453,7 +453,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
 
-        # Handle post mortem via main: add exception similar to user_exception..
+        # Handle post mortem via main: add exception similar to user_exception.
         if frame is None and traceback:
             self.curframe.f_locals['__exception__'] = sys.exc_info()[:2]
 
