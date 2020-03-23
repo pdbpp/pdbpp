@@ -452,6 +452,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
+
+        # Handle post mortem via main: add exception similar to user_exception.
+        if frame is None and traceback:
+            self.curframe.f_locals['__exception__'] = sys.exc_info()[:2]
+
         if not self.sticky:
             self.print_stack_entry(self.stack[self.curindex])
             self.print_hidden_frames_count()

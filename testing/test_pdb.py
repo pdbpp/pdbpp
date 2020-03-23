@@ -5354,3 +5354,30 @@ is_skipped_module\? testing.test_pdb
    5 frames hidden (try 'help hidden_frames')
 # c
 """)
+
+
+def test_exception_info_main(testdir, LineMatcher):
+    """Test that interaction adds __exception__ similar to user_exception."""
+    p1 = testdir.makepyfile(
+        """
+        def f():
+            raise ValueError("foo")
+
+        f()
+        """
+    )
+    testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+    result = testdir.run(
+        sys.executable, "-m", "pdb", str(p1),
+        stdin=b"cont\nsticky\n",
+    )
+    result.stdout.fnmatch_lines(
+        [
+            '*Uncaught exception. Entering post mortem debugging',
+            "*[[]5[]] > *test_exception_info_main.py(2)f()",
+            "",
+            "1     def f():",
+            '2  ->     raise ValueError("foo")',
+            "ValueError: foo",
+        ]
+    )
