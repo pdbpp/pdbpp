@@ -1545,6 +1545,8 @@ except for when using the function decorator.
 
     def _print_if_sticky(self):
         if self.sticky:
+            width, height = self.get_terminal_size()
+
             frame, lineno = self.stack[self.curindex]
             if self._sticky_last_frame and frame != self._sticky_last_frame:
                 self._sticky_handle_cls()
@@ -1552,7 +1554,7 @@ except for when using the function decorator.
                 self.stack[self.curindex], "__CUTOFF_MARKER__"
             )
             s = stack_entry.split("__CUTOFF_MARKER__")[0]  # hack
-            top_extra_lines = 0
+            top_lines = []
             if self._sticky_messages:
                 for msg in self._sticky_messages:
                     if msg == "--Return--" and (
@@ -1564,8 +1566,7 @@ except for when using the function decorator.
                     if msg.startswith("--") and msg.endswith("--"):
                         s += ", {}".format(msg)
                     else:
-                        print(msg, file=self.stdout)
-                        top_extra_lines += 1
+                        top_lines.append(msg)
                 self._sticky_messages = []
 
             if self.config.show_hidden_frames_count:
@@ -1573,12 +1574,7 @@ except for when using the function decorator.
                 if n:
                     plural = n > 1 and "s" or ""
                     s += ", %d frame%s hidden" % (n, plural)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
-
-            width, height = self.get_terminal_size()
-            len_visible = len(RE_COLOR_ESCAPES.sub("", s))
-            top_extra_lines += (len_visible - 1) // width + 2
+            top_lines.append(s)
 
             sticky_range = self.sticky_ranges.get(self.curframe, None)
 
@@ -1601,6 +1597,13 @@ except for when using the function decorator.
                 if self.config.highlight:
                     s = Color.set(self.config.line_number_color, s)
                 after_lines.append(s)
+
+            top_extra_lines = 0
+            for line in top_lines:
+                print(line, file=self.stdout)
+                len_visible = len(RE_COLOR_ESCAPES.sub("", line))
+                top_extra_lines += (len_visible - 1) // width + 2
+            print(file=self.stdout)
 
             # Arrange for prompt and extra lines on top (location + newline
             # typically), and keep an empty line at the end (after prompt), so
