@@ -4396,6 +4396,40 @@ before_interaction_hook
 """)
 
 
+def test_compute_stack_keeps_frame():
+    """With only hidden frames the last one is kept."""
+    def fn():
+        def raises():
+            raise Exception("foo")
+
+        try:
+            raises()
+        except Exception:
+            tb = sys.exc_info()[2]
+            tb_ = tb
+            while tb_:
+                tb_.tb_frame.f_locals["__tracebackhide__"] = True
+                tb_ = tb_.tb_next
+            pdbpp.post_mortem(tb, Pdb=PdbTest)
+        return 1
+
+    check(fn, """
+[0] > .*raises()
+-> raise Exception("foo")
+   1 frame hidden (try 'help hidden_frames')
+# bt
+> [0] .*raises()
+      raise Exception("foo")
+# hf_unhide
+# bt
+  [0] .*fn()
+      raises()
+> [1] .*raises()
+      raise Exception("foo")
+# q
+""")
+
+
 def test_rawinput_with_debug():
     """Test backport of fix for bpo-31078."""
     def fn():
