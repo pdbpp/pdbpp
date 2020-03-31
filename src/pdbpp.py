@@ -587,6 +587,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
+        if not newstack:
+            newstack.append(self.hidden_frames.pop())
         newidx = idx - len(self.hidden_frames)
         return newstack, newidx
 
