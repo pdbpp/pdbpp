@@ -4284,6 +4284,53 @@ ok_end
 """)
 
 
+def test_nested_completer(testdir):
+    import subprocess
+
+    p1 = testdir.makepyfile(
+        """
+        import sys
+
+        frames = []
+
+        def inner():
+            completeme_inner = 1
+            frames.append(sys._getframe())
+
+        inner()
+
+        def outer():
+            completeme_outer = 2
+            __import__('pdb').set_trace()
+
+        outer()
+        """
+    )
+    with open(".fancycompleterrc.py", "w") as f:
+        f.write(textwrap.dedent("""
+            from fancycompleter import DefaultConfig
+
+            class Config(DefaultConfig):
+                use_colors = False
+                prefer_pyrepl = False
+            """))
+    testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+    child = testdir.spawn("{} {}".format(quote(sys.executable), str(p1)))
+    child.send("completeme\t")
+    child.expect_exact("\r\n(Pdb++) completeme_outer")
+    child.send("\nimport pdbpp; _p = pdbpp.Pdb(); _p.reset()")
+    child.send("\n_p.interaction(frames[0], None)\n")
+    child.expect_exact("\r\n-> frames.append(sys._getframe())\r\n(Pdb++) ")
+    child.send("completeme\t")
+    child.expect_exact("completeme_inner")
+    child.send("\nq\n")
+    child.send("completeme\t")
+    child.expect_exact("completeme_outer")
+    child.send("\n")
+    child.sendeof()
+    child.read()
+
+
 def test_ensure_file_can_write_unicode():
     out = io.BytesIO(b"")
     stdout = io.TextIOWrapper(out, encoding="latin1")
