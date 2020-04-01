@@ -7,6 +7,7 @@ import io
 import os
 import os.path
 import re
+import subprocess
 import sys
 import textwrap
 import traceback
@@ -3737,8 +3738,6 @@ after_set_trace
 
 
 def test_python_m_pdb_usage():
-    import subprocess
-
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -3752,7 +3751,6 @@ def test_python_m_pdb_usage():
 
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
-    import subprocess
     from sysconfig import get_path
 
     if PDBPP_HIJACK_PDB:
@@ -4285,8 +4283,6 @@ ok_end
 
 
 def test_nested_completer(testdir):
-    import subprocess
-
     p1 = testdir.makepyfile(
         """
         import sys
