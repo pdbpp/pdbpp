@@ -247,12 +247,12 @@ class PdbMeta(type):
                     if frame is None:
                         frame = sys._getframe().f_back
                     super(OrigPdb, self).set_trace(frame)
-            obj = OrigPdb.__new__(OrigPdb)
+            orig_pdb = OrigPdb.__new__(OrigPdb)
             # Remove any pdb++ only kwargs.
             kwargs.pop("Config", None)
-            obj.__init__(*args, **kwargs)
+            orig_pdb.__init__(*args, **kwargs)
             local._pdbpp_in_init = False
-            return obj
+            return orig_pdb
         local._pdbpp_in_init = True
 
         global_pdb = getattr(local, "GLOBAL_PDB", None)
@@ -1415,7 +1415,7 @@ except for when using the function decorator.
 
     def _select_frame(self, number):
         """Same as pdb.Pdb, but uses print_current_stack_entry (for sticky)."""
-        assert 0 <= number < len(self.stack)
+        assert 0 <= number < len(self.stack), (number, len(self.stack))
         self.curindex = number
         self.curframe = self.stack[self.curindex][0]
         self.curframe_locals = self.curframe.f_locals
