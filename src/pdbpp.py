@@ -1193,10 +1193,7 @@ except for when using the function decorator.
         return ret
 
     def _cut_lines(self, lines, lineno, max_lines):
-        if not max_lines:
-            max_lines = len(lines)
-        elif max_lines < 6:
-            max_lines = 6
+        max_lines = max(6, len(lines) if not max_lines else max_lines)
         if len(lines) <= max_lines:
             for i, line in enumerate(lines, lineno):
                 yield i, line
