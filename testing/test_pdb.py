@@ -4781,6 +4781,13 @@ def test_compute_stack_keeps_frame():
 """)
 
 
+def test_compute_stack_without_stack():
+    pdb_ = PdbTest()
+    assert pdb_.compute_stack([], idx=None) == ([], 0)
+    assert pdb_.compute_stack([], idx=0) == ([], 0)
+    assert pdb_.compute_stack([], idx=10) == ([], 10)
+
+
 def test_rawinput_with_debug():
     """Test backport of fix for bpo-31078."""
     def fn():
