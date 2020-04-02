@@ -1474,7 +1474,7 @@ def lineno():
     return inspect.currentframe().f_back.f_lineno
 
 
-@pytest.mark.parametrize("command,expected_regex", [
+help_params = [
     ("", r"Documented commands \(type help <topic>\):"),
     ("EOF", "Handles the receipt of EOF as a command."),
     ("a", "Print the argument"),
@@ -1535,7 +1535,7 @@ def lineno():
     ("w", "Print a stack trace"),
     ("whatis", "Prints? the type of the argument."),
     ("where", "Print a stack trace"),
-    ("hidden_frames", "Some frames might be marked as \"hidden\""),
+    ("hidden_frames", 'Some frames might be marked as "hidden"'),
     ("exec", r"Execute the \(one-line\) statement"),
 
     ("hf_list", r"\*\*\* No help"),
@@ -1546,6 +1546,12 @@ def lineno():
     ("source", r"\*\*\* No help"),
     ("unknown_command", r"\*\*\* No help"),
     ("help", "print the list of available commands."),
+]
+
+
+@pytest.mark.parametrize("command,expected_regex", [
+    pytest.param(command, match, id=command)
+    for command, match in help_params
 ])
 def test_help(command, expected_regex):
     instance = PdbTest()
