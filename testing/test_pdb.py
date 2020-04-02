@@ -1474,100 +1474,100 @@ def lineno():
     return inspect.currentframe().f_back.f_lineno
 
 
-help_params = [
-    ("", r"Documented commands \(type help <topic>\):"),
-    ("EOF", "Handles the receipt of EOF as a command."),
-    ("a", "Print the argument"),
-    ("alias", "an alias"),
-    ("args", "Print the argument"),
-    ("b", "set a break"),
-    ("break", "set a break"),
-    ("bt", "Print a stack trace"),
-    ("c", "Continue execution, only stop when a breakpoint"),
-    ("cl", "clear all breaks"),
-    ("clear", "clear all breaks"),
-    ("commands", "Specify a list of commands for breakpoint"),
-    ("condition", "must evaluate to true"),
-    ("cont", "Continue execution, only stop when a breakpoint"),
-    ("continue", "Continue execution, only stop when a breakpoint"),
-    ("d", "Move the current frame .* down"),
-    ("debug", "Enter a recursive debugger"),
-    ("disable", "Disables the breakpoints"),
-    ("display", "Add expression to the display list"),
-    ("down", "Move the current frame .* down"),
-    ("ed", "Open an editor"),
-    ("edit", "Open an editor"),
-    ("enable", "Enables the breakpoints"),
-    ("exit", "Quit from the debugger."),
-    ("h", "h(elp)"),
-    ("help", "h(elp)"),
-    ("hf_hide", "hide hidden frames"),
-    ("hf_unhide", "unhide hidden frames"),
-    ("ignore", "ignore count for the given breakpoint"),
-    ("interact", "Start an interative interpreter"),
-    ("j", "Set the next line that will be executed."),
-    ("jump", "Set the next line that will be executed."),
-    ("l", "List source code for the current file."),
-    ("list", "List source code for the current file."),
-    ("ll", "List source code for the current function."),
-    ("longlist", "List source code for the current function."),
-    ("n", "Continue execution until the next line"),
-    ("next", "Continue execution until the next line"),
-    ("p", "Print the value of the expression"),
-    ("pp", "Pretty-print the value of the expression."),
-    ("q", "Quit from the debugger."),
-    ("quit", "Quit from the debugger."),
-    ("r", "Continue execution until the current function returns."),
-    ("restart", "Restart the debugged python program."),
-    ("return", "Continue execution until the current function returns."),
-    ("run", "Restart the debugged python program"),
-    ("s", "Execute the current line, stop at the first possible occasion"),
-    ("step", "Execute the current line, stop at the first possible occasion"),
-    ("sticky", "Toggle sticky mode"),
-    ("tbreak", "arguments as break"),
-    ("track", "track expression"),
-    ("u", "Move the current frame .* up"),
-    ("unalias", "specified alias."),
-    ("undisplay", "Remove expression from the display list"),
-    ("unt", "until the line"),
-    ("until", "until the line"),
-    ("up", "Move the current frame .* up"),
-    ("w", "Print a stack trace"),
-    ("whatis", "Prints? the type of the argument."),
-    ("where", "Print a stack trace"),
-    ("hidden_frames", 'Some frames might be marked as "hidden"'),
-    ("exec", r"Execute the \(one-line\) statement"),
-
-    ("hf_list", r"\*\*\* No help"),
-    ("paste", r"\*\*\* No help"),
-    ("put", r"\*\*\* No help"),
-    ("retval", r"\*\*\* No help|return value"),
-    ("rv", r"\*\*\* No help|return value"),
-    ("source", r"\*\*\* No help"),
-    ("unknown_command", r"\*\*\* No help"),
-    ("help", "print the list of available commands."),
-]
-
-
-@pytest.mark.parametrize("command,expected_regex", [
-    pytest.param(command, match, id=command)
-    for command, match in help_params
-])
-def test_help(command, expected_regex):
+def test_help():
     instance = PdbTest()
     instance.stdout = StringIO()
+
+    help_params = [
+        ("", r"Documented commands \(type help <topic>\):"),
+        ("EOF", "Handles the receipt of EOF as a command."),
+        ("a", "Print the argument"),
+        ("alias", "an alias"),
+        ("args", "Print the argument"),
+        ("b", "set a break"),
+        ("break", "set a break"),
+        ("bt", "Print a stack trace"),
+        ("c", "Continue execution, only stop when a breakpoint"),
+        ("cl", "clear all breaks"),
+        ("clear", "clear all breaks"),
+        ("commands", "Specify a list of commands for breakpoint"),
+        ("condition", "must evaluate to true"),
+        ("cont", "Continue execution, only stop when a breakpoint"),
+        ("continue", "Continue execution, only stop when a breakpoint"),
+        ("d", "Move the current frame .* down"),
+        ("debug", "Enter a recursive debugger"),
+        ("disable", "Disables the breakpoints"),
+        ("display", "Add expression to the display list"),
+        ("down", "Move the current frame .* down"),
+        ("ed", "Open an editor"),
+        ("edit", "Open an editor"),
+        ("enable", "Enables the breakpoints"),
+        ("exit", "Quit from the debugger."),
+        ("h", "h(elp)"),
+        ("help", "h(elp)"),
+        ("hf_hide", "hide hidden frames"),
+        ("hf_unhide", "unhide hidden frames"),
+        ("ignore", "ignore count for the given breakpoint"),
+        ("interact", "Start an interative interpreter"),
+        ("j", "Set the next line that will be executed."),
+        ("jump", "Set the next line that will be executed."),
+        ("l", "List source code for the current file."),
+        ("list", "List source code for the current file."),
+        ("ll", "List source code for the current function."),
+        ("longlist", "List source code for the current function."),
+        ("n", "Continue execution until the next line"),
+        ("next", "Continue execution until the next line"),
+        ("p", "Print the value of the expression"),
+        ("pp", "Pretty-print the value of the expression."),
+        ("q", "Quit from the debugger."),
+        ("quit", "Quit from the debugger."),
+        ("r", "Continue execution until the current function returns."),
+        ("restart", "Restart the debugged python program."),
+        ("return", "Continue execution until the current function returns."),
+        ("run", "Restart the debugged python program"),
+        ("s", "Execute the current line, stop at the first possible occasion"),
+        ("step", "Execute the current line, stop at the first possible occasion"),
+        ("sticky", "Toggle sticky mode"),
+        ("tbreak", "arguments as break"),
+        ("track", "track expression"),
+        ("u", "Move the current frame .* up"),
+        ("unalias", "specified alias."),
+        ("undisplay", "Remove expression from the display list"),
+        ("unt", "until the line"),
+        ("until", "until the line"),
+        ("up", "Move the current frame .* up"),
+        ("w", "Print a stack trace"),
+        ("whatis", "Prints? the type of the argument."),
+        ("where", "Print a stack trace"),
+        ("hidden_frames", 'Some frames might be marked as "hidden"'),
+        ("exec", r"Execute the \(one-line\) statement"),
+
+        ("hf_list", r"\*\*\* No help"),
+        ("paste", r"\*\*\* No help"),
+        ("put", r"\*\*\* No help"),
+        ("retval", r"\*\*\* No help|return value"),
+        ("rv", r"\*\*\* No help|return value"),
+        ("source", r"\*\*\* No help"),
+        ("unknown_command", r"\*\*\* No help"),
+        ("help", "print the list of available commands."),
+    ]
 
     # Redirect sys.stdout because Python 2 pdb.py has `print >>self.stdout` for
     # some functions and plain ol' `print` for others.
     oldstdout = sys.stdout
     sys.stdout = instance.stdout
+    errors = []
     try:
-        instance.do_help(command)
+        for command, expected_regex in help_params:
+            instance.do_help(command)
+            output = instance.stdout.getvalue()
+            if not re.search(expected_regex, output):
+                errors.append(command)
     finally:
         sys.stdout = oldstdout
 
-    output = instance.stdout.getvalue()
-    assert re.search(expected_regex, output)
+    if errors:
+        pytest.fail("unexpected help for: {}".format(", ".join(errors)))
 
 
 def test_shortlist():
