@@ -2513,7 +2513,7 @@ NUM             # 4
 ...
 # c
 1
-""", terminal_size=(80, 15))
+""", terminal_size=(200, 15))
 
 
 def test_sticky_cutoff_with_decorator():
