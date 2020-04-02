@@ -2613,11 +2613,11 @@ def test_sticky_cutoff_with_decorator_colored():
 <COLORNUM>         ^[[38;5;129m@deco^[[39m
 ...
 <COLORNUM>             set_trace.*
-<COLORCURLINE>  ->         ^[[38;5;28;44mprint^[[39;44m(^[[38;5;241;44m1^[[39;44m) +^[[00m
+<COLORCURLINE>  ->         ^[[38;5;28.*;44mprint.*
 <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
 # c
 1
-""", terminal_size=(80, 10))  # noqa: E501
+""", terminal_size=(80, 10))
 
 
 def test_sticky_cutoff_with_minimal_lines():
