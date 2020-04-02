@@ -504,19 +504,29 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._sticky_skip_cls = True
         super(Pdb, self).set_quit()
 
+    def _setup_fancycompleter(self):
+        """Similar to fancycompleter.setup(), but returning the old completer."""
+        if not self.fancycompleter:
+            self.fancycompleter = Completer(namespace={})
+        completer = self.fancycompleter
+        readline = completer.config.readline
+        old_completer = readline.get_completer()
+        if fancycompleter.has_leopard_libedit(completer.config):
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind('tab: complete')
+        readline.set_completer(self.complete)
+        return old_completer
+
     @contextlib.contextmanager
     def _custom_completer(self):
-        if not self.fancycompleter:
-            self.fancycompleter = fancycompleter.setup()
+        old_completer = self._setup_fancycompleter()
 
-        readline_ = self.fancycompleter.config.readline
-        old_completer = readline_.get_completer()
-        readline_.set_completer(self.complete)
         self._lastcompstate = [None, 0]
         try:
             yield
         finally:
-            readline_.set_completer(old_completer)
+            self.fancycompleter.config.readline.set_completer(old_completer)
 
     def print_hidden_frames_count(self):
         n = len(self.hidden_frames)
