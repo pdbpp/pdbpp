@@ -4324,7 +4324,6 @@ def test_nested_completer(testdir):
     child.expect_exact("completeme_outer")
     child.send("\n")
     child.sendeof()
-    child.read()
 
 
 def test_ensure_file_can_write_unicode():
