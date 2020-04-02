@@ -4622,6 +4622,45 @@ Traceback (most recent call last):
 """)
 
 
+@pytest.mark.parametrize("show", (True, False))
+def test_complete_displays_errors(show, monkeypatch, LineMatcher):
+    class Config(ConfigTest):
+        show_traceback_on_error = show
+
+    def raises(*args):
+        raise ValueError("err_complete")
+
+    monkeypatch.setattr("pdbpp.Pdb._get_all_completions", raises)
+
+    def fn():
+        set_trace(Config=Config)
+
+    out = runpdb(fn, ["get_completions('test')", "c"])
+    lm = LineMatcher(out)
+    if show:
+        lm.fnmatch_lines([
+            "--Return--",
+            "[[]*[]] > *fn()->None",
+            "-> set_trace(Config=Config)",
+            "   5 frames hidden (try 'help hidden_frames')",
+            "# get_completions('test')",
+            "*** error during completion: err_complete",
+            "ValueError: err_complete",
+            "[[][]]",
+            "# c",
+        ])
+    else:
+        lm.fnmatch_lines([
+            "[[]*[]] > *fn()->None",
+            "-> set_trace(Config=Config)",
+            "   5 frames hidden (try 'help hidden_frames')",
+            "# get_completions('test')",
+            "*** error during completion: err_complete",
+            "??",
+            "# c",
+        ])
+
+
 def test_next_with_exception_in_call():
     """Ensure that "next" works correctly with exception (in try/except).
 
@@ -5432,7 +5471,7 @@ is_skipped_module\? testing.test_pdb
 """)
 
 
-def test_exception_info_main(testdir, LineMatcher):
+def test_exception_info_main(testdir):
     """Test that interaction adds __exception__ similar to user_exception."""
     p1 = testdir.makepyfile(
         """

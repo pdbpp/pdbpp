@@ -659,6 +659,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             sys.modules["readline"] = orig_readline
 
     def complete(self, text, state):
+        try:
+            return self._complete(text, state)
+        except Exception as exc:
+            self.error("error during completion: {}".format(exc))
+            if self.config.show_traceback_on_error:
+                __import__("traceback").print_exc(file=self.stdout)
+
+    def _complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
             local._pdbpp_completing = True
