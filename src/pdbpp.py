@@ -1193,7 +1193,11 @@ except for when using the function decorator.
         return ret
 
     def _cut_lines(self, lines, lineno, max_lines):
-        if not max_lines or len(lines) <= max_lines:
+        if not max_lines:
+            max_lines = len(lines)
+        elif max_lines < 6:
+            max_lines = 6
+        if len(lines) <= max_lines:
             for i, line in enumerate(lines, lineno):
                 yield i, line
             return
@@ -1221,7 +1225,6 @@ except for when using the function decorator.
         else:
             for i, line in enumerate(lines[:keep_head]):
                 yield lineno + i, line
-            # cutoff -= keep_head
 
         exc_lineno = self.tb_lineno.get(self.curframe, None)
         last_marker_line = max(

@@ -2620,6 +2620,36 @@ def test_sticky_cutoff_with_decorator_colored():
 """, terminal_size=(80, 10))  # noqa: E501
 
 
+def test_sticky_cutoff_with_minimal_lines():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(80, 3))
+
+
 def test_exception_lineno():
     def bar():
         assert False
