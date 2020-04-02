@@ -5805,3 +5805,33 @@ def test_exception_info_main(testdir):
             "ValueError: foo",
         ]
     )
+
+
+def test_interaction_no_exception():
+    """Check that it does not display `None`."""
+    def outer():
+        try:
+            raise ValueError()
+        except ValueError:
+            return sys.exc_info()[2]
+
+    def fn():
+        tb = outer()
+        pdb_ = PdbTest()
+        pdb_.reset()
+        pdb_.interaction(None, tb)
+
+    check(fn, """
+[NUM] > .*outer()
+-> raise ValueError()
+# sticky
+<CLEARSCREEN>
+[0] > .*outer()
+
+NUM         def outer():
+NUM             try:
+NUM  >>             raise ValueError()
+NUM             except ValueError:
+NUM  ->             return sys.exc_info()[2]
+# q
+""")
