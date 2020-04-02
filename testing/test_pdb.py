@@ -158,7 +158,7 @@ def xpm():
     pdbpp.xpm(PdbTest)
 
 
-def runpdb(func, input):
+def runpdb(func, input, terminal_size=None):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
@@ -189,7 +189,9 @@ def runpdb(func, input):
             ).replace(chr(27), "^[")
 
     # Use a predictable terminal size.
-    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
+    if terminal_size is None:
+        terminal_size = (80, 24)
+    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: terminal_size)
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
@@ -254,7 +256,7 @@ def cook_regexp(s):
     return s
 
 
-def run_func(func, expected):
+def run_func(func, expected, terminal_size=None):
     """Runs given function and returns its output along with expected patterns.
 
     It does not make any assertions. To compare func's output with expected
@@ -275,7 +277,7 @@ def run_func(func, expected):
             flattened.extend(line.splitlines())
     expected = flattened
 
-    return expected, runpdb(func, commands)
+    return expected, runpdb(func, commands, terminal_size)
 
 
 def count_frames():
@@ -292,8 +294,8 @@ class InnerTestException(Exception):
     pass
 
 
-def check(func, expected):
-    expected, lines = run_func(func, expected)
+def check(func, expected, terminal_size=None):
+    expected, lines = run_func(func, expected, terminal_size)
     if expected:
         maxlen = max(map(len, expected))
     else:
@@ -1804,6 +1806,43 @@ NUM  ->         return a
 """)
 
 
+def test_longlist_displays_whole_function():
+    """`ll` displays the whole function (no cutoff)."""
+    def fn():
+        set_trace()
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden (try 'help hidden_frames')
+# ll
+NUM         def fn():
+NUM             set_trace()
+NUM  ->         a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             return a
+# c
+
+""", terminal_size=(len(__file__) + 50, 10))
+
+
 class TestListWithChangedSource:
     """Uses the cached (current) code."""
 
@@ -2339,6 +2378,276 @@ def test_sticky_dunder_return_with_highlight():
         if x.startswith('^[[44m^[[36;01;44m') and '->' in x
     ]
     assert len(colored_cur_lines) == 2
+
+
+def test_sticky_cutoff_with_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_head():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             # 4
+NUM             # 5
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_long_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
+        # 11
+        # 12
+        # 13
+        # 14
+        # 15
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             # 8
+NUM             # 9
+NUM             # 10
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+NUM             # 3
+NUM             # 4
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 15))
+
+
+def test_sticky_cutoff_with_decorator():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM             # 5
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_many_decorators():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM         @deco
+...
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_decorator_colored():
+    class MyConfig(ConfigWithPygmentsAndHighlight):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+...
+<COLORNUM>             set_trace.*
+<COLORCURLINE>  ->         ^[[38;5;28.*;44mprint.*
+<COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_minimal_lines():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 3))
 
 
 def test_exception_lineno():

@@ -54,7 +54,7 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
+RE_COLOR_ESCAPES = re.compile("(\x1b[^m]+m)+")
 RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
 
 if sys.version_info < (3, ):
@@ -1126,7 +1126,7 @@ except for when using the function decorator.
         installed, the source code is colorized.
         """
         self.lastcmd = 'longlist'
-        self._printlonglist()
+        self._printlonglist(max_lines=False)
 
     do_ll = do_longlist
 
@@ -1200,6 +1200,67 @@ except for when using the function decorator.
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret
 
+    def _cut_lines(self, lines, lineno, max_lines):
+        max_lines = max(6, len(lines) if not max_lines else max_lines)
+        if len(lines) <= max_lines:
+            for i, line in enumerate(lines, lineno):
+                yield i, line
+            return
+
+        cutoff = len(lines) - max_lines
+
+        # Keep certain top lines.
+        # Keeps decorators, but not functions, which are displayed at the top
+        # already (stack information).
+        # TODO: check behavior with lambdas.
+        COLOR_OR_SPACE = r'(?:\x1b[^m]+m|\s)'
+        keep_pat = re.compile(
+            r'(?:^{col}*@)'
+            r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
+        )
+        keep_head = 0
+        while keep_pat.match(lines[keep_head]):
+            keep_head += 1
+
+        if keep_head > 3:
+            yield lineno, lines[0]
+            yield None, '...'
+            yield lineno + keep_head, lines[keep_head-1]
+            cutoff -= keep_head - 3
+        else:
+            for i, line in enumerate(lines[:keep_head]):
+                yield lineno + i, line
+
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
+        last_marker_line = max(
+            self.curframe.f_lineno,
+            exc_lineno if exc_lineno else 0) - lineno
+
+        # Place marker / current line in first third of available lines.
+        cut_before = min(
+            cutoff, max(0, last_marker_line - max_lines + max_lines // 3 * 2)
+        )
+        cut_after = cutoff - cut_before
+
+        # Adjust for '...' lines.
+        cut_after = cut_after + 1 if cut_after > 0 else 0
+        if cut_before:
+            # Adjust for '...' line.
+            cut_before += 1
+
+        for i, line in enumerate(lines[keep_head:], keep_head):
+            if cut_before:
+                cut_before -= 1
+                if cut_before == 0:
+                    yield None, '...'
+                else:
+                    assert cut_before > 0, cut_before
+                continue
+            elif cut_after and i >= len(lines) - cut_after:
+                yield None, '...'
+                break
+            yield lineno + i, line
+
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
@@ -1215,27 +1276,17 @@ except for when using the function decorator.
             lines = [self._truncate_to_visible_length(line, maxlength)
                      for line in lines]
 
-        if print_markers:
-            exc_lineno = self.tb_lineno.get(self.curframe, None)
-            if height >= 6:
-                last_marker_line = max(
-                    self.curframe.f_lineno,
-                    exc_lineno if exc_lineno else 0) - lineno
-                if last_marker_line >= 0:
-                    maxlines = last_marker_line + height * 2 // 3
-                    if len(lines) > maxlines:
-                        lines = lines[:maxlines]
-                        lines.append('...')
-
-        if max_lines and len(lines) > max_lines:
-            cutoff = max_lines - len(lines)
-            lines = lines[0 - max_lines:]
-            lineno -= cutoff
-
         lineno_width = len(str(lineno + len(lines)))
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
+
+        new_lines = []
         if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
-            for i, line in enumerate(lines):
+            for lineno, line in self._cut_lines(lines, lineno, max_lines):
+                if lineno is None:
+                    new_lines.append(line)
+                    continue
+
                 if lineno == self.curframe.f_lineno:
                     marker = '->'
                 elif lineno == exc_lineno:
@@ -1248,14 +1299,12 @@ except for when using the function decorator.
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
                     line = line + " " * (width - len_visible)
                     line = setbgcolor(line, self.config.current_line_color)
-
-                lines[i] = line
-                lineno += 1
+                new_lines.append(line)
         else:
             for i, line in enumerate(lines):
-                lines[i] = self._format_line(lineno, '', line, lineno_width)
+                new_lines.append(self._format_line(lineno, '', line, lineno_width))
                 lineno += 1
-        print('\n'.join(lines), file=self.stdout)
+        print('\n'.join(new_lines), file=self.stdout)
 
     def _format_source_lines(self, lines):
         if not lines:
@@ -1504,6 +1553,8 @@ except for when using the function decorator.
 
     def _print_if_sticky(self):
         if self.sticky:
+            width, height = self.get_terminal_size()
+
             frame, lineno = self.stack[self.curindex]
             if self._sticky_last_frame and frame != self._sticky_last_frame:
                 self._sticky_handle_cls()
@@ -1511,7 +1562,7 @@ except for when using the function decorator.
                 self.stack[self.curindex], "__CUTOFF_MARKER__"
             )
             s = stack_entry.split("__CUTOFF_MARKER__")[0]  # hack
-            top_extra_lines = 0
+            top_lines = []
             if self._sticky_messages:
                 for msg in self._sticky_messages:
                     if msg == "--Return--" and (
@@ -1523,8 +1574,7 @@ except for when using the function decorator.
                     if msg.startswith("--") and msg.endswith("--"):
                         s += ", {}".format(msg)
                     else:
-                        print(msg, file=self.stdout)
-                        top_extra_lines += 1
+                        top_lines.append(msg)
                 self._sticky_messages = []
 
             if self.config.show_hidden_frames_count:
@@ -1532,12 +1582,7 @@ except for when using the function decorator.
                 if n:
                     plural = n > 1 and "s" or ""
                     s += ", %d frame%s hidden" % (n, plural)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
-
-            width, height = self.get_terminal_size()
-            len_visible = len(RE_COLOR_ESCAPES.sub("", s))
-            top_extra_lines += (len_visible - 1) // width + 2
+            top_lines.append(s)
 
             sticky_range = self.sticky_ranges.get(self.curframe, None)
 
@@ -1560,6 +1605,13 @@ except for when using the function decorator.
                 if self.config.highlight:
                     s = Color.set(self.config.line_number_color, s)
                 after_lines.append(s)
+
+            top_extra_lines = 0
+            for line in top_lines:
+                print(line, file=self.stdout)
+                len_visible = len(RE_COLOR_ESCAPES.sub("", line))
+                top_extra_lines += (len_visible - 1) // width + 2
+            print(file=self.stdout)
 
             # Arrange for prompt and extra lines on top (location + newline
             # typically), and keep an empty line at the end (after prompt), so
