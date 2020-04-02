@@ -73,7 +73,7 @@ def __getattr__(name):
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
         return local.GLOBAL_PDB
-    raise AttributeError
+    raise AttributeError("module '{}' has no attribute '{}'".format(__name__, name))
 
 
 def import_from_stdlib(name):
