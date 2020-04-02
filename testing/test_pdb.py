@@ -1840,7 +1840,7 @@ NUM             a = 1
 NUM             return a
 # c
 
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 class TestListWithChangedSource:
@@ -2403,7 +2403,7 @@ NUM             # 2
 ...
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_head():
@@ -2431,7 +2431,7 @@ NUM  ->         print(1)
 NUM             return
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_head_and_tail():
@@ -2460,7 +2460,7 @@ NUM             # 2
 ...
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_long_head_and_tail():
@@ -2513,7 +2513,7 @@ NUM             # 4
 ...
 # c
 1
-""", terminal_size=(200, 15))
+""", terminal_size=(len(__file__) + 50, 15))
 
 
 def test_sticky_cutoff_with_decorator():
@@ -2545,7 +2545,7 @@ NUM  ->         print(1)
 NUM             return
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_many_decorators():
@@ -2584,7 +2584,7 @@ NUM  ->         print(1)
 NUM             return
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_decorator_colored():
@@ -2617,7 +2617,7 @@ def test_sticky_cutoff_with_decorator_colored():
 <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
 # c
 1
-""", terminal_size=(80, 10))
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 def test_sticky_cutoff_with_minimal_lines():
@@ -2647,7 +2647,7 @@ NUM             # 2
 ...
 # c
 1
-""", terminal_size=(80, 3))
+""", terminal_size=(len(__file__) + 50, 3))
 
 
 def test_exception_lineno():
