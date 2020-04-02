@@ -455,7 +455,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         # Handle post mortem via main: add exception similar to user_exception.
         if frame is None and traceback:
-            self.curframe.f_locals['__exception__'] = sys.exc_info()[:2]
+            exc = sys.exc_info()[:2]
+            if exc != (None, None):
+                self.curframe.f_locals['__exception__'] = exc
 
         if not self.sticky:
             self.print_stack_entry(self.stack[self.curindex])
