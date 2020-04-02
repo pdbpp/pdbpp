@@ -294,10 +294,31 @@ class InnerTestException(Exception):
     pass
 
 
+trans_trn_dict = {"\n": r"\n", "\r": r"\r", "\t": r"\t"}
+if sys.version_info >= (3,):
+    trans_trn_table = str.maketrans(trans_trn_dict)
+
+    def trans_trn(string):
+        return string.translate(trans_trn_table)
+
+
+else:
+
+    def trans_trn(string):
+        for k, v in trans_trn_dict.items():
+            string = string.replace(k, v)
+        return string
+
+
 def check(func, expected, terminal_size=None):
     expected, lines = run_func(func, expected, terminal_size)
     if expected:
         maxlen = max(map(len, expected))
+        if sys.version_info < (3,):
+            # Ensure same type for comparison.
+            expected = [
+                x.decode("utf8") if isinstance(x, bytes) else x for x in expected
+            ]
     else:
         maxlen = 0
     all_ok = True
@@ -319,8 +340,8 @@ def check(func, expected, terminal_size=None):
             string += '$'
         if re.search(r'\s+$', pattern):
             pattern += '$'
-        pattern = pattern.replace("\t", "\\t")
-        string = string.replace("\t", "\\t")
+        pattern = trans_trn(pattern)
+        string = trans_trn(string)
         print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
@@ -2352,6 +2373,55 @@ NUM  ->             raise InnerTestException()
 InnerTestException:
 # c
 """)
+
+
+def test_sticky_last_value():
+    """sys.last_value is displayed in sticky mode."""
+    def outer():
+        try:
+            raise ValueError("very long excmsg\n" * 10)
+        except ValueError:
+            sys.last_value, sys.last_traceback = sys.exc_info()[1:]
+
+    def fn():
+        outer()
+        set_trace()
+
+        __exception__ = "foo"  # noqa: F841
+        set_trace(cleanup=False)
+
+    expected = r"""
+[NUM] > .*fn()
+-> __exception__ = "foo"
+   5 frames hidden (try 'help hidden_frames')
+# sticky
+<CLEARSCREEN>
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             outer()
+NUM             set_trace()
+NUM
+NUM  ->         __exception__ = "foo"  # noqa: F841
+NUM             set_trace(cleanup=False)
+ValueError: very long excmsg\\nvery long excmsg\\nvery long e…
+# c
+<PY27_MSG>[NUM] > .*fn()->None, 5 frames hidden
+
+NUM         def fn():
+NUM             outer()
+NUM             set_trace()
+NUM
+NUM             __exception__ = "foo"  # noqa: F841
+NUM  ->         set_trace(cleanup=False)
+pdbpp: got unexpected __exception__: 'foo'
+# c
+"""
+    saved = sys.exc_info()[1:]
+    try:
+        check(fn, expected, terminal_size=(60, 20))
+    finally:
+        sys.last_value, sys.last_traceback = saved
 
 
 def test_sticky_dunder_return_with_highlight():

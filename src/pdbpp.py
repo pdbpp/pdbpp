@@ -1596,6 +1596,11 @@ except for when using the function decorator.
                 if s:
                     after_lines.append(s)
 
+            elif getattr(sys, "last_value", None):
+                s = self._format_exc_for_sticky((type(sys.last_value), sys.last_value))
+                if s:
+                    after_lines.append(s)
+
             elif '__return__' in frame.f_locals:
                 rv = frame.f_locals['__return__']
                 try:
@@ -1648,6 +1653,12 @@ except for when using the function decorator.
                 s += '(unprintable exception: %r)' % (exc,)
             except:
                 s += '(unprintable exception)'
+        else:
+            # Use first line only, limited to terminal width.
+            s = s.replace("\r", r"\r").replace("\n", r"\n")
+            width, _ = self.get_terminal_size()
+            if len(s) > width:
+                s = s[:width - 1] + "…"
 
         if self.config.highlight:
             s = Color.set(self.config.line_number_color, s)
