@@ -587,6 +587,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return self.compute_stack(fullstack, idx)
 
     def compute_stack(self, fullstack, idx=None):
+        if not fullstack:
+            return fullstack, idx if idx is not None else 0
         if idx is None:
             idx = len(fullstack) - 1
         if self.show_hidden_frames:
