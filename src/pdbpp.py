@@ -44,9 +44,27 @@ except ImportError:
 try:
     from functools import lru_cache
 except ImportError:
-    def lru_cache(*_, **__):
-        def dec(fn):
-            return fn
+    from functools import wraps
+
+    def lru_cache(maxsize):
+        """Simple cache (with no maxsize basically) for py27 compatibility.
+
+        Given that pdb there uses linecache.getline for each line with
+        do_list a cache makes a big differene."""
+
+        def dec(fn, *args):
+            cache = {}
+
+            @wraps(fn)
+            def wrapper(*args):
+                key = args
+                try:
+                    ret = cache[key]
+                except KeyError:
+                    ret = cache[key] = fn(*args)
+                return ret
+
+            return wrapper
 
         return dec
 
@@ -786,6 +804,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 pass
         return s
 
+    def try_to_encode(self, s):
+        for encoding in self.config.encodings:
+            try:
+                return s.encode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                pass
+        return s
+
     def _get_source_highlight_function(self):
         try:
             import pygments
@@ -865,11 +891,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.config.use_pygments = False
                 return src
 
-        src = self.try_to_decode(src)
-        return self._highlight(src)
+        return self._highlight_cached(src)
 
     @lru_cache(maxsize=64)
     def _highlight_cached(self, src):
+        src = self.try_to_decode(src)
         return self._highlight(src)
 
     def _format_line(self, lineno, marker, line, lineno_width):
@@ -1310,7 +1336,7 @@ except for when using the function decorator.
                 lineno += 1
         print('\n'.join(new_lines), file=self.stdout)
 
-    def _format_source_lines(self, lines):
+    def _format_color_prefixes(self, lines):
         if not lines:
             return lines
 
@@ -1325,9 +1351,6 @@ except for when using the function decorator.
             prefix, _, src = x.partition('\t')
             prefixes.append(prefix)
             src_lines.append(src)
-        formatted_src_lines = self.format_source(
-            "\n".join(src_lines) + "\n"
-        ).splitlines()
 
         RE_LNUM_PREFIX = re.compile(r"^\d+")
         if self.config.highlight:
@@ -1341,36 +1364,41 @@ except for when using the function decorator.
 
         return [
             "%s\t%s" % (prefix, src)
-            for (prefix, src) in zip(prefixes, formatted_src_lines)
+            for (prefix, src) in zip(prefixes, src_lines)
         ]
 
-    if sys.version_info >= (3, 2):
-        def _print_lines(self, lines, *args, **kwargs):
-            """Enhance original _print_lines with highlighting.
+    @contextlib.contextmanager
+    def _patch_linecache_for_source_highlight(self):
+        orig = pdb.linecache.getlines
 
-            Used via do_list currently only, do_source and do_longlist are
-            overridden.
-            """
-            if not lines or not (
-                    self.config.use_pygments is not False
-                    or self.config.highlight):
-                return super(Pdb, self)._print_lines(lines, *args, **kwargs)
+        def wrapped_getlines(filename, globals):
+            """Wrap linecache.getlines to highlight source (for do_list)."""
+            old_cache = pdb.linecache.cache.pop(filename, None)
+            try:
+                lines = orig(filename, globals)
+            finally:
+                if old_cache:
+                    pdb.linecache.cache[filename] = old_cache
+            source = self.format_source("".join(lines))
 
-            oldstdout = self.stdout
-            self.stdout = StringIO()
-            ret = super(Pdb, self)._print_lines(lines, *args, **kwargs)
-            orig_pdb_lines = self.stdout.getvalue().splitlines()
-            self.stdout = oldstdout
+            if sys.version_info < (3,):
+                source = self.try_to_encode(source)
 
-            for line in self._format_source_lines(orig_pdb_lines):
-                print(line, file=self.stdout)
-            return ret
-    else:
-        # Only for Python 2.7, where _print_lines is not used/available.
-        def do_list(self, arg):
-            if not (self.config.use_pygments is not False
-                    or self.config.highlight):
-                return super(Pdb, self).do_list(arg)
+            return source.splitlines(True)
+
+        pdb.linecache.getlines = wrapped_getlines
+
+        try:
+            yield
+        finally:
+            pdb.linecache.getlines = orig
+
+    def do_list(self, arg):
+        """Enhance original do_list with highlighting."""
+        if not (self.config.use_pygments is not False or self.config.highlight):
+            return super(Pdb, self).do_list(arg)
+
+        with self._patch_linecache_for_source_highlight():
 
             oldstdout = self.stdout
             self.stdout = StringIO()
@@ -1378,12 +1406,12 @@ except for when using the function decorator.
             orig_pdb_lines = self.stdout.getvalue().splitlines()
             self.stdout = oldstdout
 
-            for line in self._format_source_lines(orig_pdb_lines):
-                print(line, file=self.stdout)
-            return ret
+        for line in self._format_color_prefixes(orig_pdb_lines):
+            print(line, file=self.stdout)
+        return ret
 
-        do_list.__doc__ = pdb.Pdb.do_list.__doc__
-        do_l = do_list
+    do_list.__doc__ = pdb.Pdb.do_list.__doc__
+    do_l = do_list
 
     def _select_frame(self, number):
         """Same as pdb.Pdb, but uses print_current_stack_entry (for sticky)."""
