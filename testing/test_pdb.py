@@ -1622,13 +1622,27 @@ def test_shortlist_with_highlight_and_EOF():
 
 
 @pytest.mark.parametrize('config', [ConfigWithPygments, ConfigWithPygmentsNone])
-def test_shortlist_with_pygments(config):
+def test_shortlist_with_pygments(config, monkeypatch):
 
     def fn():
         a = 1
         set_trace(Config=config)
 
         return a
+
+    calls = []
+    orig_get_func = pdbpp.Pdb._get_source_highlight_function
+
+    def check_calls(self):
+        orig_highlight = orig_get_func(self)
+        calls.append(["get", self])
+
+        def new_highlight(src):
+            calls.append(["highlight", src])
+            return orig_highlight(src)
+        return new_highlight
+
+    monkeypatch.setattr(pdbpp.Pdb, "_get_source_highlight_function", check_calls)
 
     check(fn, """
 [NUM] > .*fn()
@@ -1643,6 +1657,39 @@ NUM +\t$
 NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
 """.format(line_num=fn.__code__.co_firstlineno - 1))
+    assert len(calls) == 3, calls
+
+
+def test_shortlist_with_partial_code():
+    """Highlights the whole file, to handle partial docstring etc."""
+    def fn():
+        """
+        1
+        2
+        3
+        """
+        a = 1
+        set_trace(Config=ConfigWithPygments)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m a
+   5 frames hidden .*
+# l
+NUM \t^[[38;5;124.*m        2^[[39.*m
+NUM \t^[[38;5;124.*m        3^[[39.*m
+NUM \t^[[38;5;124.*m        \"\"\"^[[39.*m
+NUM \t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM \t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM ->\t        ^[[38;5;28;01mreturn^[[39;00m a
+NUM \t$
+NUM \t    check(fn, ^[[38;5;124m\"\"\"^[[39m
+NUM \t^[[38;5;124m.* > .*fn()^[[39m
+NUM \t^[[38;5;124m-> ^[[38;5;28;01mreturn^[[39;00m a^[[39m
+NUM \t^[[38;5;124m   5 frames hidden .*^[[39m
+# c
+""")
 
 
 def test_truncated_source_with_pygments():
