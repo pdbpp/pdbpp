@@ -5805,16 +5805,16 @@ do_help
 
 
 @pytest.mark.parametrize('s,maxlength,expected', [
-    ('foo', 3, 'foo'),
-    ('foo', 1, 'f'),
+    pytest.param('foo', 3, 'foo', id='id1'),
+    pytest.param('foo', 1, 'f', id='id2'),
 
     # Keeps trailing escape sequences (for reset at least).
-    ("\x1b[39m1\x1b[39m23", 1, "\x1b[39m1\x1b[39m"),
-    ("\x1b[39m1\x1b[39m23", 2, "\x1b[39m1\x1b[39m2"),
-    ("\x1b[39m1\x1b[39m23", 3, "\x1b[39m1\x1b[39m23"),
-    ("\x1b[39m1\x1b[39m23", 100, "\x1b[39m1\x1b[39m23"),
+    pytest.param("\x1b[39m1\x1b[39m23", 1, "\x1b[39m1\x1b[39m", id="id3"),
+    pytest.param("\x1b[39m1\x1b[39m23", 2, "\x1b[39m1\x1b[39m2", id="id4"),
+    pytest.param("\x1b[39m1\x1b[39m23", 3, "\x1b[39m1\x1b[39m23", id="id5"),
+    pytest.param("\x1b[39m1\x1b[39m23", 100, "\x1b[39m1\x1b[39m23", id="id5"),
 
-    ("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m"),
+    pytest.param("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m", id="id5"),
 ])
 def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdbpp.Pdb._truncate_to_visible_length(s, maxlength) == expected
