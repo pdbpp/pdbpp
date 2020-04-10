@@ -379,7 +379,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.first_time_sticky = self.sticky
         self.sticky_ranges = {}  # frame --> (start, end)
         self._sticky_messages = []  # Message queue for sticky mode.
-        self._sticky_last_frame = None
+        self._sticky_need_cls = False
         self._sticky_skip_cls = False
 
         self._setup_streams(stdout=self.stdout)
@@ -495,10 +495,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self._sticky_skip_cls:
             self._sticky_skip_cls = False
             return
+        if not self._sticky_need_cls:
+            return
 
         self.stdout.write(CLEARSCREEN)
         self.stdout.flush()
-        self._sticky_last_frame = None
+        self._sticky_need_cls = False
 
     def postcmd(self, stop, line):
         """Handle clearing of the screen for sticky mode."""
@@ -1585,11 +1587,10 @@ except for when using the function decorator.
 
     def _print_if_sticky(self):
         if self.sticky:
+            self._sticky_handle_cls()
             width, height = self.get_terminal_size()
 
             frame, lineno = self.stack[self.curindex]
-            if self._sticky_last_frame and frame != self._sticky_last_frame:
-                self._sticky_handle_cls()
             stack_entry = self._get_formatted_stack_entry(
                 self.stack[self.curindex], "__CUTOFF_MARKER__"
             )
@@ -1659,6 +1660,7 @@ except for when using the function decorator.
 
             for line in after_lines:
                 print(line, file=self.stdout)
+            self._sticky_need_cls = True
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
@@ -1720,7 +1722,7 @@ except for when using the function decorator.
             self.sticky = not self.sticky
             self.sticky_range = None
         if not was_sticky and self.sticky:
-            self._sticky_handle_cls()
+            self._sticky_need_cls = True
         self._print_if_sticky()
 
     def print_stack_trace(self):

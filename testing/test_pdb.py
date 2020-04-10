@@ -2163,6 +2163,54 @@ NUM  ->         return a
 """)
 
 
+def test_sticky_with_same_frame():
+    def fn():
+        def inner(cleanup):
+            set_trace(cleanup=cleanup)
+            print(cleanup)
+
+        for cleanup in (True, False):
+            inner(cleanup)
+
+    check(fn, """
+[NUM] > .*inner()
+-> print(cleanup)
+   5 frames hidden (try 'help hidden_frames')
+# sticky
+<CLEARSCREEN>
+[NUM] > .*inner(), 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+# n
+<CLEARSCREEN>
+True<PY27_MSG>
+[NUM] > .*inner()->None, 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+ return None
+# c
+[NUM] > .*inner(), 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+# n
+<CLEARSCREEN>
+False<PY27_MSG>
+[NUM] > .*inner()->None, 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+ return None
+# c
+""")
+
+
 def test_sticky_range():
     def fn():
         set_trace()
