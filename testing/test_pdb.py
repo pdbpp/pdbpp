@@ -2185,7 +2185,7 @@ NUM                 set_trace(cleanup=cleanup)
 NUM  ->             print(cleanup)
 # n
 <CLEARSCREEN>
-True
+True<PY27_MSG>
 [NUM] > .*inner()->None, 5 frames hidden
 
 NUM             def inner(cleanup):
@@ -2200,7 +2200,7 @@ NUM                 set_trace(cleanup=cleanup)
 NUM  ->             print(cleanup)
 # n
 <CLEARSCREEN>
-False
+False<PY27_MSG>
 [NUM] > .*inner()->None, 5 frames hidden
 
 NUM             def inner(cleanup):
