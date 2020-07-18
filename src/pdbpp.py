@@ -15,6 +15,7 @@ import inspect
 import code
 import codecs
 import contextlib
+import distutils
 import types
 import traceback
 import subprocess
@@ -163,6 +164,7 @@ class DefaultConfig(object):
 
     show_traceback_on_error = True
     show_traceback_on_error_limit = None
+    just_my_code = False
 
     # Default keyword arguments passed to ``Pdb`` constructor.
     default_pdb_kwargs = {
@@ -2047,8 +2049,17 @@ except for when using the function decorator.
                 if not self._stopped_for_set_trace:
                     self._stopped_for_set_trace = True
                     return True
-        if Pdb is not None:
+
+        if Pdb is not None and not self.config.just_my_code:
             return super(Pdb, self).stop_here(frame)
+
+        filepath = os.path and os.path.abspath(frame.f_code.co_filename)
+        if not filepath:
+            return True
+        if not re.search('.pyi?$', filepath):
+            return False
+        python_paths = distutils.sys.path[1:] if distutils.sys.path else []
+        return not any(filepath.startswith(path) for path in python_paths if path)
 
     def set_trace(self, frame=None):
         """Remember starting frame.
