@@ -13,6 +13,7 @@ import textwrap
 import traceback
 from io import BytesIO
 
+import six
 import py
 import pytest
 
@@ -3954,6 +3955,25 @@ def test_stdout_encoding_None():
         instance.stdout = cStringIO.StringIO()
         instance.ensure_file_can_write_unicode(instance.stdout)
 
+def test_just_my_code():
+    class ConfigJustMyCode(ConfigTest):
+        just_my_code = True
+
+    def fn():
+        set_trace(Config=ConfigJustMyCode)
+        list(six.iterkeys({'foo': 'bar'}))
+
+    check(fn, """
+[NUM] > .*fn()
+-> list(six.iterkeys({'foo': 'bar'}))
+   5 frames hidden .*
+# s
+--Return--
+[NUM] > .*fn()
+-> list(six.iterkeys({'foo': 'bar'}))
+   5 frames hidden .*
+# c
+""")
 
 def test_frame_cmd_changes_locals():
     def a():
