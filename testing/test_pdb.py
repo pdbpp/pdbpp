@@ -3955,6 +3955,7 @@ def test_stdout_encoding_None():
         instance.stdout = cStringIO.StringIO()
         instance.ensure_file_can_write_unicode(instance.stdout)
 
+
 def test_just_my_code():
     class ConfigJustMyCode(ConfigTest):
         just_my_code = True
@@ -3974,6 +3975,7 @@ def test_just_my_code():
    5 frames hidden .*
 # c
 """)
+
 
 def test_frame_cmd_changes_locals():
     def a():
