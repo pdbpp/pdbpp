@@ -139,7 +139,7 @@ as one of the commands. E.g.::
     (Pdb) c
 
 In the example above, instead of printing 42 pdb interprets the input as the
-command ``continue``, and then you loose your prompt.  It's even worse than
+command ``continue``, and then you lose your prompt.  It's even worse than
 that, because it happens even if you type e.g. ``c.__class__``.
 
 pdb++ fixes this unfriendly (from the author's point of view, of course :-))
