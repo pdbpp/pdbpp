@@ -1804,7 +1804,7 @@ NUM \t    \"""Ensure that forget was called for lineno.\"""
 NUM \t-> return a
 NUM \t   5 frames hidden .*
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_heuristic():
