@@ -3024,9 +3024,9 @@ def test_bad_source():
 -> return 42
    5 frames hidden .*
 # source 42
-\*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
+\*\*\* could not get obj: .*module, class, method, .*, or code object.*
 # c
-""")  # noqa: E501
+""")
 
 
 def test_edit():
@@ -3082,6 +3082,35 @@ def test_edit_obj():
 RUN emacs \+%d %s
 # c
 """ % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
+
+
+def test_edit_fname_lineno():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# edit {fname}
+RUN emacs \+1 {fname_edit}
+# edit {fname}:5
+RUN emacs \+5 {fname_edit}
+# edit {fname}:meh
+\*\*\* could not parse filename/lineno
+# edit {fname}:-1
+\*\*\* could not parse filename/lineno
+# edit {fname} meh:-1
+\*\*\* could not parse filename/lineno
+# edit os.py
+RUN emacs \+1 {os_fname}
+# edit doesnotexist.py
+\*\*\* could not parse filename/lineno
+# c
+""".format(fname=__file__,
+           fname_edit=RE_THIS_FILE_QUOTED,
+           os_fname=re.escape(quote(os.__file__.rstrip("c")))))
 
 
 def test_edit_py_code_source():
