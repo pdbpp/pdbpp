@@ -218,14 +218,20 @@ def runpdb(func, input, terminal_size=None):
     return stdout.get_unicode_value().splitlines()
 
 
+def is_prompt(line):
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
+    for prompt in prompts:
+        if line.startswith(prompt):
+            return len(prompt)
+    return False
+
+
 def extract_commands(lines):
     cmds = []
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
     for line in lines:
-        for prompt in prompts:
-            if line.startswith(prompt):
-                cmds.append(line[len(prompt):])
-                continue
+        prompt_len = is_prompt(line)
+        if prompt_len:
+            cmds.append(line[prompt_len:])
     return cmds
 
 
@@ -323,10 +329,14 @@ def check(func, expected, terminal_size=None):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            try:
-                ok = re.match(pattern, string)
-            except re.error as exc:
-                raise ValueError("re.match failed for {!r}: {!r}".format(pattern, exc))
+            if is_prompt(pattern):
+                ok = True
+            else:
+                try:
+                    ok = re.match(pattern, string)
+                except re.error as exc:
+                    raise ValueError("re.match failed for {!r}: {!r}".format(
+                        pattern, exc))
         else:
             ok = False
             if pattern is None:
@@ -3024,9 +3034,9 @@ def test_bad_source():
 -> return 42
    5 frames hidden .*
 # source 42
-\*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
+\*\*\* could not get obj: .*module, class, method, .*, or code object.*
 # c
-""")  # noqa: E501
+""")
 
 
 def test_edit():
@@ -3082,6 +3092,35 @@ def test_edit_obj():
 RUN emacs \+%d %s
 # c
 """ % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
+
+
+def test_edit_fname_lineno():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# edit {fname}
+RUN emacs \+1 {fname_edit}
+# edit {fname}:5
+RUN emacs \+5 {fname_edit}
+# edit {fname}:meh
+\*\*\* could not parse filename/lineno
+# edit {fname}:-1
+\*\*\* could not parse filename/lineno
+# edit {fname} meh:-1
+\*\*\* could not parse filename/lineno
+# edit os.py
+RUN emacs \+1 {os_fname}
+# edit doesnotexist.py
+\*\*\* could not parse filename/lineno
+# c
+""".format(fname=__file__,
+           fname_edit=RE_THIS_FILE_QUOTED,
+           os_fname=re.escape(quote(os.__file__.rstrip("c")))))
 
 
 def test_edit_py_code_source():

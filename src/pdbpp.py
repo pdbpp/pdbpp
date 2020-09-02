@@ -1785,12 +1785,40 @@ except for when using the function decorator.
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
 
-    def _get_position_of_arg(self, arg):
+    def _get_position_of_arg(self, arg, quiet=False):
         try:
-            obj = self._getval(arg)
+            obj = eval(arg, self.curframe.f_globals, self.curframe_locals)
+        except:
+            if not quiet:
+                exc_info = sys.exc_info()[:2]
+                error = traceback.format_exception_only(*exc_info)[-1].strip()
+                self.error("failed to eval: {}".format(error))
+            return None, None, None
+        try:
+            return self._get_position_of_obj(obj, quiet=quiet)
         except:
             return None, None, None
-        return self._get_position_of_obj(obj)
+
+    def _get_fnamelineno_for_arg(self, arg):
+        filename, lineno, _ = self._get_position_of_arg(arg, quiet=True)
+        if filename is None:
+            if os.path.exists(arg):
+                filename = arg
+                lineno = 1
+            else:
+                m = re.match(r"^(.*):(\d+)$", arg)
+                if m:
+                    filename, lineno = m.group(1), int(m.group(2))
+                else:
+                    filename, lineno = arg, 1
+                if not os.path.exists(filename):
+                    # Like "do_break" does it.
+                    filename = self.lookupmodule(filename)
+                    if filename is None:
+                        lineno = None
+                    elif not os.path.exists(filename):
+                        filename, lineno = None, None
+        return filename, lineno
 
     def _get_position_of_obj(self, obj, quiet=False):
         if hasattr(inspect, "unwrap"):
@@ -1802,7 +1830,7 @@ except for when using the function decorator.
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
             if not quiet:
-                print('** Error: %s **' % e, file=self.stdout)
+                self.error('could not get obj: {}'.format(e))
             return None, None, None
         return filename, lineno, lines
 
@@ -1974,8 +2002,9 @@ except for when using the function decorator.
         if arg == '':
             filename, lineno = self._get_current_position()
         else:
-            filename, lineno, _ = self._get_position_of_arg(arg)
+            filename, lineno = self._get_fnamelineno_for_arg(arg)
             if filename is None:
+                self.error("could not parse filename/lineno")
                 return
         # this case handles code generated with py.code.Source()
         # filename is something like '<0-codegen foo.py:18>'
