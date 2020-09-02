@@ -218,14 +218,20 @@ def runpdb(func, input, terminal_size=None):
     return stdout.get_unicode_value().splitlines()
 
 
+def is_prompt(line):
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
+    for prompt in prompts:
+        if line.startswith(prompt):
+            return len(prompt)
+    return False
+
+
 def extract_commands(lines):
     cmds = []
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
     for line in lines:
-        for prompt in prompts:
-            if line.startswith(prompt):
-                cmds.append(line[len(prompt):])
-                continue
+        prompt_len = is_prompt(line)
+        if prompt_len:
+            cmds.append(line[prompt_len:])
     return cmds
 
 
@@ -323,10 +329,14 @@ def check(func, expected, terminal_size=None):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            try:
-                ok = re.match(pattern, string)
-            except re.error as exc:
-                raise ValueError("re.match failed for {!r}: {!r}".format(pattern, exc))
+            if is_prompt(pattern):
+                ok = True
+            else:
+                try:
+                    ok = re.match(pattern, string)
+                except re.error as exc:
+                    raise ValueError("re.match failed for {!r}: {!r}".format(
+                        pattern, exc))
         else:
             ok = False
             if pattern is None:
