@@ -3456,6 +3456,43 @@ def test_hidden_pytest_frames():
     """)
 
 
+def test_hidden_pytest_frames_f_local_nondict():
+    class M:
+        values = []
+
+        def __getitem__(self, name):
+            if name == 0:
+                # Handle 'if "__tracebackhide__" in frame.f_locals'.
+                raise IndexError()
+            return globals()[name]
+
+        def __setitem__(self, name, value):  # pdb assigns to f_locals itself.
+            self.values.append((name, value))
+
+    def fn():
+        set_trace()
+        exec("print(1)", {}, M())
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> exec("print(1)", {}, M())
+   5 frames hidden (try 'help hidden_frames')
+# s
+--Call--
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# n
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# n
+1
+--Return--
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# c
+    """)
+
+
 def test_hidden_unittest_frames():
 
     def s(set_trace=set_trace):

@@ -596,9 +596,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         if frame.f_globals.get('__unittest'):
             return True
-        if frame.f_locals.get('__tracebackhide__') \
-           or frame.f_globals.get('__tracebackhide__'):
-            return True
+
+        # `f_locals` might be a list (checked via PyMapping_Check).
+        if "__tracebackhide__" in frame.f_locals:
+            return bool(frame.f_locals["__tracebackhide__"])
+        if "__tracebackhide__" in frame.f_globals:
+            return bool(frame.f_globals["__tracebackhide__"])
+        return False
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
