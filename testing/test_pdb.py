@@ -329,7 +329,7 @@ def check(func, expected, terminal_size=None):
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            if is_prompt(pattern):
+            if is_prompt(pattern) and is_prompt(string):
                 ok = True
             else:
                 try:
