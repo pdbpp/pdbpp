@@ -74,6 +74,13 @@ jobs:
           distributions: 'sdist bdist_wheel'
           repo: pdbpp/pdbpp
 
+before_install:
+  - |
+    for v in /opt/python/*/bin; do
+      echo "Adding to PATH: $v"
+      PATH="$v:$PATH"
+    done
+
 install:
   - pyenv versions
   - python --version
