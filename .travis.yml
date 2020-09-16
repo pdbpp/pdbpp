@@ -76,14 +76,6 @@ jobs:
 
 before_install:
   - |
-    if [ -n "$INSTALL_PYTHON" ]; then
-      set -x
-      for v in $INSTALL_PYTHON; do
-        url="https://storage.googleapis.com/travis-ci-language-archives/python/binaries/ubuntu/16.04/x86_64/$v.tar.bz2"
-        curl -sSf --retry 5 ${url} | sudo tar xjf - --directory /
-      done
-      set +x
-    fi
     for v in /opt/python/*/bin; do
       echo "Adding to PATH: $v"
       PATH="$v:$PATH"
