@@ -3466,16 +3466,19 @@ def test_hidden_pytest_frames_f_local_nondict():
                 raise IndexError()
             return globals()[name]
 
-        def __setitem__(self, name, value):  # pdb assigns to f_locals itself.
+        def __setitem__(self, name, value):
+            # pdb assigns to f_locals itself.
             self.values.append((name, value))
 
     def fn():
+        m = M()
         set_trace()
-        exec("print(1)", {}, M())
+        exec("print(1)", {}, m)
+        assert m.values == [('__return__', None)]
 
     check(fn, r"""
 [NUM] > .*fn()
--> exec("print(1)", {}, M())
+-> exec("print(1)", {}, m)
    5 frames hidden (try 'help hidden_frames')
 # s
 --Call--
