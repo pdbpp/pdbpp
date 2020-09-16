@@ -105,6 +105,9 @@ before_script:
 script:
   - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@my-master;python_version>='3.5'"
 
+after_script:
+  - .ci/report-coverage.sh -n "$TOXENV-$TRAVIS_OS_NAME" -F Travis,Linux
+
 branches:
   only:
     - master

@@ -16,3 +16,6 @@ install:
 
 test_script:
   - python -m tox --force-dep="%PYTEST%"
+
+on_finish:
+  - bash .ci/report-coverage.sh -n "$TOXENV-Windows" -F AppVeyor,Windows
