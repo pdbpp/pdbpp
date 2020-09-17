@@ -3,6 +3,7 @@ import sys
 from contextlib import contextmanager
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 _orig_trace = None
 
@@ -15,8 +16,6 @@ def pytest_configure():
 @pytest.fixture(scope="session", autouse=True)
 def term():
     """Configure TERM for predictable output from Pygments."""
-    from _pytest.monkeypatch import MonkeyPatch
-
     m = MonkeyPatch()
     m.setenv("TERM", "xterm-256color")
     yield m
@@ -60,8 +59,6 @@ def _tmphome(tmpdir_factory):
     required also with linecache on py27, where it would read contents from
     ~/.pdbrc?!.
     """
-    from _pytest.monkeypatch import MonkeyPatch
-
     mp = MonkeyPatch()
 
     tmphome = tmpdir_factory.mktemp("tmphome")
@@ -84,15 +81,23 @@ def tmpdirhome(tmpdir, monkeypatch):
 
 @pytest.fixture(params=("pyrepl", "readline"), scope="session")
 def readline_param(request):
-    from _pytest.monkeypatch import MonkeyPatch
-
     m = MonkeyPatch()
 
     if request.param == "pyrepl":
+        old_stdin = sys.stdin
+
+        class fake_stdin:
+            """Missing fileno() to skip pyrepl.readline._setup.
+
+            This is required to make tests not hang without capturing (`-s`)."""
+
+        sys.stdin = fake_stdin()
         try:
             import pyrepl.readline  # noqa: F401
         except ImportError as exc:
             pytest.skip(msg="pyrepl not available: {}".format(exc))
+        finally:
+            sys.stdin = old_stdin
         m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", True)
     else:
         m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", False)
@@ -100,7 +105,7 @@ def readline_param(request):
 
 
 @pytest.fixture
-def monkeypatch_readline(request, monkeypatch, readline_param):
+def monkeypatch_readline(monkeypatch, readline_param):
     """Patch readline to return given results."""
     def inner(line, begidx, endidx):
         if readline_param == "pyrepl":
@@ -129,8 +134,9 @@ def monkeypatch_pdb_methods(monkeypatch):
 
 @pytest.fixture
 def patched_completions(monkeypatch):
-    from .test_pdb import PdbTest
     import fancycompleter
+
+    from .test_pdb import PdbTest
 
     def inner(text, fancy_comps, pdb_comps):
         _pdb = PdbTest()
@@ -159,8 +165,6 @@ def patched_completions(monkeypatch):
 
 @pytest.fixture(params=("color", "nocolor"), scope="session")
 def fancycompleter_color_param(request):
-    from _pytest.monkeypatch import MonkeyPatch
-
     m = MonkeyPatch()
 
     if request.param == "color":
