@@ -4107,39 +4107,6 @@ ENTERING RECURSIVE DEBUGGER
     pdbpp.local.GLOBAL_PDB.reset()
 
 
-def test_debug_rebind_globals(monkeypatch):
-    class PdbWithCustomDebug(pdbpp.pdb.Pdb):
-        def do_debug(self, arg):
-            if "PdbTest" not in globals():
-                # Do not use assert here, since it might fail with "NameError:
-                # name '@pytest_ar' is not defined" via pytest's assertion
-                # rewriting then.
-                import pytest
-                pytest.fail("PdbTest is not in globals.")
-            print("called_do_debug", Pdb, self)  # noqa: F821
-
-    monkeypatch.setattr(pdbpp.pdb, "Pdb", PdbWithCustomDebug)
-
-    class CustomPdbTest(PdbTest, PdbWithCustomDebug):
-        pass
-
-    def fn():
-        def inner():
-            pass
-
-        set_trace(Pdb=CustomPdbTest)
-
-    check(fn, """
---Return--
-[NUM] > .*fn()
--> set_trace(.*)
-   5 frames hidden .*
-# debug inner()
-called_do_debug.*
-# c
-""")
-
-
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_previous_sigint_handler"),
                     reason="_previous_sigint_handler is not available")
 def test_interaction_restores_previous_sigint_handler():
@@ -6024,5 +5991,29 @@ NUM             try:
 NUM  >>             raise ValueError()
 NUM             except ValueError:
 NUM  ->             return sys.exc_info()[2]
+# q
+""")
+
+
+def test_debug_in_post_mortem_does_not_trace_itself():
+    def fn():
+        try:
+            raise ValueError()
+        except:
+            pdbpp.post_mortem(Pdb=PdbTest)
+        a = 1
+        return a
+
+    check(fn, """
+[0] > .*fn()
+-> raise ValueError()
+# debug "".strip()
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) s
+--Return--
+[1] > <string>(1)<module>()->None
+(#) q
+LEAVING RECURSIVE DEBUGGER
 # q
 """)
