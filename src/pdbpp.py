@@ -1498,7 +1498,7 @@ except for when using the function decorator.
 
         prev_pdb = local.GLOBAL_PDB
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
-        p.prompt = "(%s) " % self.prompt.strip()
+        p._prompt = "({}) ".format(self._prompt.strip())
         self.message("ENTERING RECURSIVE DEBUGGER")
         try:
             with self._custom_completer():
