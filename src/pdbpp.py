@@ -1382,12 +1382,7 @@ except for when using the function decorator.
 
         def wrapped_getlines(filename, globals):
             """Wrap linecache.getlines to highlight source (for do_list)."""
-            old_cache = pdb.linecache.cache.pop(filename, None)
-            try:
-                lines = orig(filename, globals)
-            finally:
-                if old_cache:
-                    pdb.linecache.cache[filename] = old_cache
+            lines = orig(filename, globals)
             source = self.format_source("".join(lines))
 
             if sys.version_info < (3,):
