@@ -372,7 +372,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
         self.show_hidden_frames = False
-        self.hidden_frames = []
+        self.hidden_frame_list = []
 
         # Sticky mode.
         self.sticky = self.config.sticky_by_default
@@ -551,7 +551,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self.fancycompleter.config.readline.set_completer(old_completer)
 
     def print_hidden_frames_count(self):
-        n = len(self.hidden_frames)
+        n = len(self.hidden_frame_list)
         if n and self.config.show_hidden_frames_count:
             plural = n > 1 and "s" or ""
             print(
@@ -621,16 +621,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self.show_hidden_frames:
             return fullstack, idx
 
-        self.hidden_frames = []
+        self.hidden_frame_list = []
         newstack = []
         for frame, lineno in fullstack:
             if self._is_hidden(frame):
-                self.hidden_frames.append((frame, lineno))
+                self.hidden_frame_list.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
         if not newstack:
-            newstack.append(self.hidden_frames.pop())
-        newidx = idx - len(self.hidden_frames)
+            newstack.append(self.hidden_frame_list.pop())
+        newidx = idx - len(self.hidden_frame_list)
         return newstack, newidx
 
     def refresh_stack(self):
@@ -1147,7 +1147,7 @@ except for when using the function decorator.
         self.refresh_stack()
 
     def do_hf_list(self, arg):
-        for frame_lineno in self.hidden_frames:
+        for frame_lineno in self.hidden_frame_list:
             print(self.format_stack_entry(frame_lineno, pdb.line_prefix),
                   file=self.stdout)
 
@@ -1613,7 +1613,7 @@ except for when using the function decorator.
                 self._sticky_messages = []
 
             if self.config.show_hidden_frames_count:
-                n = len(self.hidden_frames)
+                n = len(self.hidden_frame_list)
                 if n:
                     plural = n > 1 and "s" or ""
                     s += ", %d frame%s hidden" % (n, plural)
