@@ -3805,14 +3805,6 @@ LEAVING RECURSIVE DEBUGGER
 
 
 def test_syntaxerror_in_command():
-    expected_debug_err = "ENTERING RECURSIVE DEBUGGER\n\\*\\*\\* SyntaxError: .*"
-
-    # Python 3.8.0a2+ handles the SyntaxError itself.
-    # Ref/followup: https://github.com/python/cpython/pull/12103
-    # https://github.com/python/cpython/commit/3e93643
-    if sys.version_info >= (3, 7, 3):
-        expected_debug_err += "\nLEAVING RECURSIVE DEBUGGER"
-
     def f():
         set_trace()
 
@@ -3824,9 +3816,11 @@ def test_syntaxerror_in_command():
 # print(
 \\*\\*\\* SyntaxError: .*
 # debug print(
-%s
+ENTERING RECURSIVE DEBUGGER
+\\*\\*\\* SyntaxError: .*
+LEAVING RECURSIVE DEBUGGER
 # c
-""" % expected_debug_err)
+""")
 
 
 def test_debug_with_overridden_continue():
@@ -4105,39 +4099,6 @@ ENTERING RECURSIVE DEBUGGER
     # Needed for PyPy (Python 2.7.13[pypy-7.1.0-final]) with coverage and
     # restoring trace function.
     pdbpp.local.GLOBAL_PDB.reset()
-
-
-def test_debug_rebind_globals(monkeypatch):
-    class PdbWithCustomDebug(pdbpp.pdb.Pdb):
-        def do_debug(self, arg):
-            if "PdbTest" not in globals():
-                # Do not use assert here, since it might fail with "NameError:
-                # name '@pytest_ar' is not defined" via pytest's assertion
-                # rewriting then.
-                import pytest
-                pytest.fail("PdbTest is not in globals.")
-            print("called_do_debug", Pdb, self)  # noqa: F821
-
-    monkeypatch.setattr(pdbpp.pdb, "Pdb", PdbWithCustomDebug)
-
-    class CustomPdbTest(PdbTest, PdbWithCustomDebug):
-        pass
-
-    def fn():
-        def inner():
-            pass
-
-        set_trace(Pdb=CustomPdbTest)
-
-    check(fn, """
---Return--
-[NUM] > .*fn()
--> set_trace(.*)
-   5 frames hidden .*
-# debug inner()
-called_do_debug.*
-# c
-""")
 
 
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_previous_sigint_handler"),
@@ -6024,5 +5985,29 @@ NUM             try:
 NUM  >>             raise ValueError()
 NUM             except ValueError:
 NUM  ->             return sys.exc_info()[2]
+# q
+""")
+
+
+def test_debug_in_post_mortem_does_not_trace_itself():
+    def fn():
+        try:
+            raise ValueError()
+        except:
+            pdbpp.post_mortem(Pdb=PdbTest)
+        a = 1
+        return a
+
+    check(fn, """
+[0] > .*fn()
+-> raise ValueError()
+# debug "".strip()
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) s
+--Return--
+[1] > <string>(1)<module>()->None
+(#) q
+LEAVING RECURSIVE DEBUGGER
 # q
 """)

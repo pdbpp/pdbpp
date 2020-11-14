@@ -1473,12 +1473,16 @@ except for when using the function decorator.
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
-        # this is a hack (as usual :-))
-        #
-        # inside the original do_debug, there is a call to the global "Pdb" to
-        # instantiate the recursive debugger: we want to intercept this call
-        # and instantiate *our* Pdb, passing our custom config. Therefore we
-        # dynamically rebind the globals.
+        """debug code
+        Enter a recursive debugger that steps through the code
+        argument (which is an arbitrary expression or statement to be
+        executed in the current environment).
+        """
+        orig_trace = sys.gettrace()
+        if orig_trace:
+            sys.settrace(None)
+        globals = self.curframe.f_globals
+        locals = self.curframe_locals
         Config = self.ConfigFactory
 
         class PdbppWithConfig(self.__class__):
@@ -1492,27 +1496,23 @@ except for when using the function decorator.
                 local.GLOBAL_PDB = self_withcfg
                 local.GLOBAL_PDB._use_global_pdb_for_class = self.__class__
 
-        if sys.version_info < (3, ):
-            do_debug_func = pdb.Pdb.do_debug.im_func
-        else:
-            do_debug_func = pdb.Pdb.do_debug
-
-        newglobals = do_debug_func.__globals__.copy()
-        newglobals['Pdb'] = PdbppWithConfig
-        new_do_debug = rebind_globals(do_debug_func, newglobals)
-
-        # Handle any exception, e.g. SyntaxErrors.
-        # This is about to be improved in Python itself (3.8, 3.7.3?).
         prev_pdb = local.GLOBAL_PDB
+        p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
+        p._prompt = "({}) ".format(self._prompt.strip())
+        self.message("ENTERING RECURSIVE DEBUGGER")
         try:
             with self._custom_completer():
-                return new_do_debug(self, arg)
+                sys.call_tracing(p.run, (arg, globals, locals))
         except Exception:
             exc_info = sys.exc_info()[:2]
-            msg = traceback.format_exception_only(*exc_info)[-1].strip()
-            self.error(msg)
+            self.error(traceback.format_exception_only(*exc_info)[-1].strip())
         finally:
             local.GLOBAL_PDB = prev_pdb
+        self.message("LEAVING RECURSIVE DEBUGGER")
+
+        if orig_trace:
+            sys.settrace(orig_trace)
+        self.lastcmd = p.lastcmd
 
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
