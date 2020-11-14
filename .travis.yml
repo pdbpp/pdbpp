@@ -4,7 +4,7 @@ cache: false
 
 env:
   global:
-    - PYTEST_ADDOPTS="-vv --cov-report=xml:coverage-travis.xml"
+    - PYTEST_ADDOPTS="-vv --cov-report=xml:coverage-ci.xml"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
     - CODECOV_FLAG=$TRAVIS_OS_NAME
 

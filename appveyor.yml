@@ -1,5 +1,5 @@
 environment:
-  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-travis.xml"
+  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   CODECOV_FLAG: "windows"
 
   matrix:
