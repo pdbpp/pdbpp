@@ -26,6 +26,9 @@ jobs:
         - python -V
         - test $(python -c 'import sys; print("%d%d" % sys.version_info[0:2])') = 37
 
+    - name: 'py310'
+      env: TOXENV=py310-coverage
+      python: '3.10-dev'
     - name: 'py39'
       env: TOXENV=py39-ipython-coverage
       python: 3.9
