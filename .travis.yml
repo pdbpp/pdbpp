@@ -72,9 +72,9 @@ jobs:
         user: "__token__"
         password:
           secure: "K7aCzKbiKqPhXhueB8OBl+6uu6Z7iQeKBircMmK6Et7oXhAkaQk28lboLBtpVhCEm0D2rWQnhoEVMUKsQ76FdX+kmBzGaQw4sU7v41gDo3IyD/oozoWeni26GRjWNbznulOd8SE9n2qjSXNihDAeWDFLELPNulvLWfmB/hCR8d8XHurZSmbV1Wu/553ULAMCmjowZLMskR5Y2HjdIkGdTzj3lCLcMdstWS3bxvq8YpJRM8KOGWs9I2D1dac2M5IrDDVmlG+0scvn9cqilB4vGEZm+HsWLHJvQBJ6J7GaQBVI2KcHiytu2fwcvXxSdJXB/Rx2WftwWnb0tAQQ0/I0CmgCBwn8y8cPmTAQ6QP1wlXl8LLYIzuzki1PSGYmWSo0Ztg6Zwls5EqOOiSspCAjVwtYZKsA7JLz60GA4FDuoUvT5aJhZ+QF/t5lEsm/QMWke5CxlayzRXU/Y9Yt6WynX+DSEAF8oHV9FIsdxODxp8q92QLMaNIQHMUgIh02Cu/RZ45ImRKUNDTh1h5UE0kla1htAt31V/w43uJGWRNj7lYrt56iR6uikFsgAYwwMOOIBmP95ilRttSAikX/O+AjGgdj1/J95hZtL9lCxCcy6iXlN9Wk/oj59r64wXYKgbU74PHorN2EEZQf3iLkfW7x1L3HZkg05tBkc+bzBluO0Dk="
+        distributions: "sdist bdist_wheel"
         on:
           tags: true
-          distributions: 'sdist bdist_wheel'
           repo: pdbpp/pdbpp
 
 before_install:
