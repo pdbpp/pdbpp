@@ -1,3 +1,4 @@
+image: Visual Studio 2019
 environment:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   CODECOV_FLAG: "windows"
@@ -11,16 +12,16 @@ environment:
 build: off
 
 install:
-  - python --version --version
-  - python -m pip --version
-  - python -m pip install -U pip
-  - python -m pip install --user git+https://github.com/blueyed/tox@master
-  - python -m pip freeze
-  - python -m pip freeze --user
-  - python -m tox -v --notest --force-dep="%PYTEST%"
+  - C:\Python39\python.exe --version --version
+  - C:\Python39\python.exe -m pip --version
+  - C:\Python39\python.exe -m pip install -U pip
+  - C:\Python39\python.exe -m pip install --user git+https://github.com/blueyed/tox@master
+  - C:\Python39\python.exe -m pip freeze
+  - C:\Python39\python.exe -m pip freeze --user
+  - C:\Python39\python.exe -m tox -v --notest --force-dep="%PYTEST%"
 
 test_script:
-  - python -m tox --force-dep="%PYTEST%"
+  - C:\Python39\python.exe -m tox --force-dep="%PYTEST%"
 
 on_finish:
   - bash .ci/report-coverage.sh -n "%TOXENV%-Windows" -F AppVeyor,Windows
