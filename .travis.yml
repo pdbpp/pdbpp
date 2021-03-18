@@ -91,7 +91,7 @@ install:
   - python -m pip install --user git+https://github.com/blueyed/tox@master
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - python -m pip install --user virtualenv==16.7.3
+  - python -m pip install --user virtualenv==20.4.3
 
 before_script:
   - python -m pip --version
