@@ -87,16 +87,15 @@ before_install:
 install:
   - pyenv versions
   - python --version
-  - python -m pip install --user -U pip
-  - python -m pip install --user git+https://github.com/blueyed/tox@master
+  - python -m pip install -U pip
+  - python -m pip install git+https://github.com/blueyed/tox@master
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
-  - python -m pip install --user virtualenv==20.4.3
+  - python -m pip install virtualenv==20.4.3
 
 before_script:
   - python -m pip --version
   - python -m pip freeze
-  - python -m pip freeze --user
 
 script:
   - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@my-master;python_version>='3.5'"
