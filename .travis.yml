@@ -7,6 +7,7 @@ env:
     - PYTEST_ADDOPTS="-vv --cov-report=xml:coverage-ci.xml"
     - PIP_DISABLE_PIP_VERSION_CHECK=true
     - CODECOV_FLAG=$TRAVIS_OS_NAME
+    - PYTEST="pytest @ git+https://github.com/blueyed/pytest@my-master"
 
 stages:
   - name: test
@@ -46,14 +47,18 @@ jobs:
       python: 3.4
 
     - name: 'py27'
-      env: TOXENV=py27-coverage
+      env:
+        - TOXENV=py27-coverage
+        - PYTEST="pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
       python: 2.7
 
     - name: 'pypy3'
       env: TOXENV=pypy3-coverage
       python: pypy3
     - name: 'pypy'
-      env: TOXENV=pypy-coverage
+      env:
+        - TOXENV=pypy-coverage
+        - PYTEST="pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
       python: pypy
 
     - name: 'checkqa'
@@ -92,13 +97,14 @@ install:
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
   - python -m pip install virtualenv==20.4.3
+  - python -m tox -v --notest --force-dep="$PYTEST"
 
 before_script:
   - python -m pip --version
   - python -m pip freeze
 
 script:
-  - python -m tox --force-dep="pytest @ git+https://github.com/blueyed/pytest.git@my-master;python_version>='3.5'"
+  - python -m tox --force-dep="$PYTEST"
 
 after_script:
   - .ci/report-coverage.sh -n "$TOXENV-$TRAVIS_OS_NAME" -F Travis,Linux
