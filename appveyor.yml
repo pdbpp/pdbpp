@@ -11,7 +11,12 @@ environment:
 build: off
 
 install:
+  - python --version --version
+  - python -m pip --version
+  - python -m pip install -U pip
   - python -m pip install --user git+https://github.com/blueyed/tox@master
+  - python -m pip freeze
+  - python -m pip freeze --user
   - python -m tox -v --notest --force-dep="%PYTEST%"
 
 test_script:
