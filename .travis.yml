@@ -81,7 +81,7 @@ before_install:
   - |
     for v in /opt/python/*/bin; do
       echo "Adding to PATH: $v"
-      PATH="$v:$PATH"
+      PATH="$PATH:$v"
     done
 
 install:
