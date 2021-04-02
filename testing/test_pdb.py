@@ -3095,6 +3095,8 @@ RUN emacs \+%d %s
 
 
 def test_edit_fname_lineno():
+    os_file = os.__file__
+
     def fn():
         set_trace()
 
@@ -3120,7 +3122,7 @@ RUN emacs \+1 {os_fname}
 # c
 """.format(fname=__file__,
            fname_edit=RE_THIS_FILE_QUOTED,
-           os_fname=re.escape(quote(os.__file__.rstrip("c")))))
+           os_fname=re.escape(quote(os_file))))
 
 
 def test_edit_py_code_source():
