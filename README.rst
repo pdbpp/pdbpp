@@ -238,6 +238,16 @@ Configuration and customization
 To customize pdb++, you can put a file named ``.pdbrc.py`` in your home
 directory.  The file must contain a class named ``Config`` inheriting from
 ``pdb.DefaultConfig`` and override the desired values.
+Do not forget to ``import pdb`` at the top of the configuration file.
+
+An example configuration file, which activates ``sticky mode`` by default,
+could would look like the following::
+
+    import pdb
+
+    class Config(pdb.DefaultConfig):
+        sticky_by_default = True
+
 
 The following is a list of the options you can customize, together with their
 default value:
