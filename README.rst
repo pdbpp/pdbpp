@@ -324,7 +324,7 @@ Options relevant for source code highlighting (using Pygments)
 
   You can configure the Pygments formatter to use via the
   ``pygments_formatter_class`` config setting as a string (dotted path).
-  This should should be one of the following typically:
+  This should be one of the following typically:
   ``"pygments.formatters.Terminal256Formatter"``,
   ``"pygments.formatters.TerminalTrueColorFormatter"``, or
   ``"pygments.formatters.TerminalFormatter"``.
