@@ -14,7 +14,6 @@ build: off
 install:
   - C:\Python39\python.exe --version --version
   - C:\Python39\python.exe -m pip --version
-  - C:\Python39\python.exe -m pip install -U pip
   - C:\Python39\python.exe -m pip install --user git+https://github.com/blueyed/tox@master
   - C:\Python39\python.exe -m pip freeze
   - C:\Python39\python.exe -m pip freeze --user
