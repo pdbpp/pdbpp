@@ -8,6 +8,7 @@ env:
     - PIP_DISABLE_PIP_VERSION_CHECK=true
     - CODECOV_FLAG=$TRAVIS_OS_NAME
     - PYTEST="pytest @ git+https://github.com/blueyed/pytest@my-master"
+    - TOX="tox @ git+https://github.com/blueyed/tox@master"
 
 stages:
   - name: test
@@ -43,7 +44,9 @@ jobs:
       env: TOXENV=py35-coverage
       python: 3.5
     - name: 'py34'
-      env: TOXENV=py34-coverage
+      env:
+        - TOXENV=py34-coverage
+        - TOX=tox==3.14.0  # tox 3.14.1 dropped support for py34.
       python: 3.4
 
     - name: 'py27'
@@ -93,7 +96,7 @@ install:
   - pyenv versions
   - python --version
   - python -m pip install -U pip
-  - python -m pip install git+https://github.com/blueyed/tox@master
+  - python -m pip install "$TOX"
   # NOTE: need to upgrade virtualenv to allow "Direct url requirement" with
   # installation in tox.
   - python -m pip install virtualenv==20.4.3
