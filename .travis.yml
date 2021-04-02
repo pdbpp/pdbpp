@@ -47,6 +47,7 @@ jobs:
       env:
         - TOXENV=py34-coverage
         - TOX=tox==3.14.0  # tox 3.14.1 dropped support for py34.
+        - PYTEST="pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
       python: 3.4
 
     - name: 'py27'
