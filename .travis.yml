@@ -58,7 +58,7 @@ jobs:
 
     - name: 'pypy3'
       env: TOXENV=pypy3-coverage
-      python: pypy3
+      python: pypy3.6-7.3.3
     - name: 'pypy'
       env:
         - TOXENV=pypy-coverage
