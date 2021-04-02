@@ -3956,7 +3956,13 @@ Deleted breakpoint NUM
 # 6998: character maps to <undefined>.
 # So we XFail this test on Windows.
 @pytest.mark.xfail(
-    sys.platform == "win32",
+    (
+        sys.platform == "win32" and (
+            # bpo-41894: fixed in 3.10, backported to 3.9.1 and 3.8.7.
+            sys.version_info < (3, 8, 7) or
+            (sys.version_info[:2] == (3, 9) and sys.version_info < (3, 9, 1))
+        )
+    ),
     raises=UnicodeDecodeError,
     strict=True,
     reason=(
