@@ -3097,6 +3097,14 @@ RUN emacs \+%d %s
 def test_edit_fname_lineno():
     os_file = os.__file__
 
+    if sys.version_info < (3,):
+        # Change .pyc => .py on Python 2.
+        os_file = os_file.rstrip("c")
+
+        if hasattr(sys, "pypy_version_info"):
+            # Might be a symlink with pypy2.
+            os_file = os.path.realpath(os_file)
+
     def fn():
         set_trace()
 
