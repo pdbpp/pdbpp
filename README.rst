@@ -241,7 +241,7 @@ directory.  The file must contain a class named ``Config`` inheriting from
 Do not forget to ``import pdb`` at the top of the configuration file.
 
 An example configuration file, which activates ``sticky mode`` by default,
-could would look like the following::
+would look like the following::
 
     import pdb
 
