@@ -143,7 +143,7 @@ command ``continue``, and then you lose your prompt.  It's even worse than
 that, because it happens even if you type e.g. ``c.__class__``.
 
 pdb++ fixes this unfriendly (from the author's point of view, of course :-))
-behavior by always preferring variable in scope, if it exists.  If you really
+behavior by always preferring the variable in scope, if it exists.  If you really
 want to execute the corresponding command, you can prefix it with ``!!``.
 Thus, the example above becomes::
 
