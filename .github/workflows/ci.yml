@@ -73,6 +73,7 @@ jobs:
           - tox_env: "py27-coverage"
             python: "2.7"
             os: windows-2016
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # Generic
           - tox_env: "checkqa"
