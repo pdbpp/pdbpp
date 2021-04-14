@@ -100,6 +100,9 @@ jobs:
     - name: Install tox / version information
       run: |
         python -m pip --version
+        # For py34 at least, which has 7.1.2, failing to install tox properly.
+        # (https://github.com/blueyed/pdbpp/runs/2347676211?check_suite_focus=true)
+        python -m pip install -U pip
         python -m pip install git+https://github.com/blueyed/tox@master
         python -m pip list
 
