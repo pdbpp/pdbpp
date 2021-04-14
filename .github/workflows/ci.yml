@@ -1,0 +1,60 @@
+name: Continuous integration
+
+on: [push, pull_request]
+
+env:
+  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
+  PIP_DISABLE_PIP_VERSION_CHECK: true
+  PYTEST: "pytest @ git+https://github.com/blueyed/pytest@my-master"
+  TOX: "tox @ git+https://github.com/blueyed/tox@master"
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: "py39-ipython-coverage"
+            python: "3.9"
+            os: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2000
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+
+    # Caching.
+    - name: set PY_CACHE_KEY
+      run: echo "PY_CACHE_KEY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
+    - name: Cache .tox
+      uses: actions/cache@v1
+      with:
+        path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
+        key: "tox|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
+
+    - name: Install tox / version information
+      run: |
+        python -m pip --version
+        python -m pip install git+https://github.com/blueyed/tox@master
+        python -m pip list
+
+    - name: Setup tox environment
+      run: python -m tox --notest -v --durations --force-dep="$PYTEST" -e ${{ matrix.tox_env }}
+
+    - name: Test
+      env:
+        COLUMNS: "120"
+        # UTF-8 mode for Windows (https://docs.python.org/3/using/windows.html#utf-8-mode).
+        PYTHONUTF8: "1"
+        TOX_TESTENV_PASSENV: "PYTHONUTF8"
+      run: "${{ matrix.script_prefix }} tox -e ${{ matrix.tox_env }}"
+
+    - name: Report coverage
+      if: always() && (contains(matrix.tox_env, '-coverage'))
+      run: "bash .ci/report-coverage.sh -n '${{ matrix.tox_name }}' -F 'GHA,${{ runner.os }}'"
