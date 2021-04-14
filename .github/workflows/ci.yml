@@ -42,9 +42,6 @@ jobs:
           - tox_env: "py35-coverage"
             python: "3.5"
             os: ubuntu-20.04
-          - tox_env: "py34-coverage"
-            python: "3.4"
-            os: ubuntu-16.04
 
           - tox_env: "py27-coverage"
             python: "2.7"
@@ -65,6 +62,11 @@ jobs:
           # Windows
           - tox_env: "py38-coverage"
             python: "3.8"
+            os: windows-2019
+          # py34: only on Windows?
+          # (https://github.com/actions/setup-python/issues/157#issuecomment-724152312)
+          - tox_env: "py34-coverage"
+            python: "3.4"
             os: windows-2019
           - tox_env: "py27-coverage"
             python: "2.7"
