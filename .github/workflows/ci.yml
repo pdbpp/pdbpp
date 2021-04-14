@@ -1,6 +1,16 @@
 name: Continuous integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "master"
+      - "release-[0-9]+.[0-9]+"
+
+  pull_request:
+    branches:
+      - "master"
+      - "ci-gha"  # TODO: remove
+      - "release-[0-9]+.[0-9]+"
 
 env:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
