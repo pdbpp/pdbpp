@@ -66,9 +66,10 @@ setup(
         ],
     },
     setup_requires=[
-        "setuptools_scm",
-        # Help pip 19.1.1 (latest on py34) to not use setuptools_scm>=6.
-        "setuptools_scm<6;python_version<'3.6'",
+        # "setuptools_scm",
+        # # Help pip 19.1.1 (latest on py34) to not use setuptools_scm>=6.
+        # "setuptools_scm<6;python_version<'3.6'",
+        "setuptools_scm<6",
     ],
     data_files=[
         (
