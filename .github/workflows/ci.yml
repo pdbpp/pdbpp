@@ -109,6 +109,7 @@ jobs:
         fi
         python -m pip install git+https://github.com/blueyed/tox@master
         python -m pip list
+      shell: bash
 
     - name: Setup tox environment
       env:
