@@ -125,7 +125,7 @@ jobs:
         # UTF-8 mode for Windows (https://docs.python.org/3/using/windows.html#utf-8-mode).
         PYTHONUTF8: "1"
         TOX_TESTENV_PASSENV: "PYTHONUTF8"
-      run: python -m tox -v --durations -e ${{ matrix.tox_env }}
+      run: python -m tox -v --durations -e ${{ matrix.tox_env }} --force-dep="$PYTEST"
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage'))
