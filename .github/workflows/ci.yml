@@ -44,7 +44,7 @@ jobs:
             os: ubuntu-20.04
           - tox_env: "py34-coverage"
             python: "3.4"
-            os: ubuntu-20.04
+            os: ubuntu-16.04
 
           - tox_env: "py27-coverage"
             python: "2.7"
