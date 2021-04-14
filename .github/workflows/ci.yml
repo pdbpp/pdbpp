@@ -51,7 +51,7 @@ jobs:
             os: ubuntu-20.04
 
           - tox_env: "pypy3-coverage"
-            python: "pypy3"
+            python: "pypy-3.7"
             os: ubuntu-20.04
           - tox_env: "pypy-coverage"
             python: "pypy"
