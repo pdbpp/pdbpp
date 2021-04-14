@@ -30,6 +30,14 @@ jobs:
             python: "3.9"
             os: ubuntu-latest
 
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: windows-latest
+
+          - tox_env: "checkqa"
+            python: "3.9"
+            os: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
       with:
