@@ -30,6 +30,32 @@ jobs:
           - tox_env: "py39-ipython-coverage"
             python: "3.9"
             os: ubuntu-20.04
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: ubuntu-20.04
+          - tox_env: "py37-coverage"
+            python: "3.7"
+            os: ubuntu-20.04
+          - tox_env: "py36-coverage"
+            python: "3.6"
+            os: ubuntu-20.04
+          - tox_env: "py35-coverage"
+            python: "3.5"
+            os: ubuntu-20.04
+          - tox_env: "py34-coverage"
+            python: "3.4"
+            os: ubuntu-20.04
+
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: ubuntu-20.04
+
+          - tox_env: "pypy3-coverage"
+            python: "pypy3"
+            os: ubuntu-20.04
+          - tox_env: "pypy-coverage"
+            python: "pypy"
+            os: ubuntu-20.04
 
           # macOS
           - tox_env: "py37-coverage"
@@ -40,6 +66,9 @@ jobs:
           - tox_env: "py38-coverage"
             python: "3.8"
             os: windows-2019
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: windows-2016
 
           # Generic
           - tox_env: "checkqa"
