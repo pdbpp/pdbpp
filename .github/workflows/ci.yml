@@ -15,7 +15,6 @@ on:
 env:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   PIP_DISABLE_PIP_VERSION_CHECK: true
-  PYTEST: "pytest @ git+https://github.com/blueyed/pytest@my-master"
   TOX: "tox @ git+https://github.com/blueyed/tox@master"
 
 jobs:
@@ -46,6 +45,7 @@ jobs:
           - tox_env: "py27-coverage"
             python: "2.7"
             os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           - tox_env: "pypy3-coverage"
             python: "pypy-3.7"
@@ -53,6 +53,7 @@ jobs:
           - tox_env: "pypy-coverage"
             python: "pypy-2.7"
             os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # macOS
           - tox_env: "py37-coverage"
@@ -68,6 +69,7 @@ jobs:
           - tox_env: "py34-coverage"
             python: "3.4"
             os: windows-2019
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
           - tox_env: "py27-coverage"
             python: "2.7"
             os: windows-2016
@@ -102,6 +104,8 @@ jobs:
         python -m pip list
 
     - name: Setup tox environment
+      env:
+        PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
       # TODO: --force-dep="$PYTEST" (fixed for Windows: single quotes / use bash?)
       #       Failed build: https://github.com/blueyed/pdbpp/pull/1/checks?check_run_id=2347344798#step:7:1
       run: python -m tox --notest -v --durations -e ${{ matrix.tox_env }} --force-dep="$PYTEST"
