@@ -34,7 +34,7 @@ jobs:
           # macOS
           - tox_env: "py37-coverage"
             python: "3.7"
-            os: macos-11.0
+            os: macos-10.15
 
           # Windows
           - tox_env: "py38-coverage"
