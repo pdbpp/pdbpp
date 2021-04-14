@@ -15,7 +15,6 @@ on:
 env:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   PIP_DISABLE_PIP_VERSION_CHECK: true
-  TOX: "tox @ git+https://github.com/blueyed/tox@master"
 
 defaults:
   run:
@@ -74,6 +73,7 @@ jobs:
             python: "3.4"
             os: windows-2019
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+            tox: tox==3.14.0  # tox 3.14.1 dropped support for py34.
           - tox_env: "py27-coverage"
             python: "2.7"
             os: windows-2016
@@ -111,7 +111,7 @@ jobs:
           # new pip without version constraint.  19.1.1 is the latest currently.
           python -m pip install -U "pip<19.2"
         fi
-        python -m pip install git+https://github.com/blueyed/tox@master
+        python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
         python -m pip list
 
     - name: Setup tox environment
