@@ -105,7 +105,7 @@ jobs:
           # Install latest available pip.
           # 7.1.2 (installed) fails to install tox, and tries to install too
           # new pip without version constraint.  19.1.1 is the latest currently.
-          pip install -U "pip<19.2"
+          python -m pip install -U "pip<19.2"
         fi
         python -m pip install git+https://github.com/blueyed/tox@master
         python -m pip list
