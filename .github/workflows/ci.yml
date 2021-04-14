@@ -54,7 +54,7 @@ jobs:
             python: "pypy-3.7"
             os: ubuntu-20.04
           - tox_env: "pypy-coverage"
-            python: "pypy"
+            python: "pypy-2.7"
             os: ubuntu-20.04
 
           # macOS
