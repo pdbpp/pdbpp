@@ -62,7 +62,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
-        key: "tox|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
+        key: "tox|${{ matrix.os }}|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
 
     - name: Install tox / version information
       run: |
