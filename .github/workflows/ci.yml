@@ -110,6 +110,9 @@ jobs:
           # 7.1.2 (installed) fails to install tox, and tries to install too
           # new pip without version constraint.  19.1.1 is the latest currently.
           python -m pip install -U "pip<19.2"
+        elif [[ "${{ matrix.python }}" == "3.5" ]]; then
+          # TEST
+          python -m pip install -U "pip<19.2"
         fi
         python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
         python -m pip list
