@@ -17,10 +17,6 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: true
   TOX: "tox @ git+https://github.com/blueyed/tox@master"
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
@@ -113,6 +109,7 @@ jobs:
         fi
         python -m pip install git+https://github.com/blueyed/tox@master
         python -m pip list
+      shell: bash
 
     - name: Setup tox environment
       env:
@@ -120,6 +117,7 @@ jobs:
       # TODO: --force-dep="$PYTEST" (fixed for Windows: single quotes / use bash?)
       #       Failed build: https://github.com/blueyed/pdbpp/pull/1/checks?check_run_id=2347344798#step:7:1
       run: python -m tox --notest -v --durations -e ${{ matrix.tox_env }} --force-dep="$PYTEST"
+      shell: bash
 
     - name: Test
       env:
