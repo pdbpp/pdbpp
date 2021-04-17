@@ -113,9 +113,9 @@ jobs:
           python -m pip install -U "pip<19.2"
           # TEST: install latest (with updated pip)
           python -m pip install -U pip
-        elif [[ "${{ matrix.python }}" == "3.5" ]]; then
-          # TEST
-          python -m pip install -U "pip<19.2"
+        # elif [[ "${{ matrix.python }}" == "3.5" ]]; then
+        #   # TEST
+        #   python -m pip install -U "pip<19.2"
         fi
         python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
         python -m pip list
