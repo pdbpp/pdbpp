@@ -38,7 +38,7 @@ jobs:
       with:
         fetch-depth: 2000
     - run: git fetch --tags origin
-    - run: git describe --tags
+    - run: git describe --tags --always
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
