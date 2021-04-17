@@ -113,6 +113,7 @@ jobs:
           python -m pip install -U "pip<19.2"
           # TEST: install latest (with updated pip)
           python -m pip install -U pip
+          python -m pip install -U virtualenv
         # elif [[ "${{ matrix.python }}" == "3.5" ]]; then
         #   # TEST
         #   python -m pip install -U "pip<19.2"
