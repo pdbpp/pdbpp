@@ -75,6 +75,7 @@ jobs:
         #   python -m pip install -U "pip<19.2"
         fi
         python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
+        python -m pip install -U setuptools
         python -m pip list
 
     - name: Setup tox environment
