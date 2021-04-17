@@ -4312,7 +4312,10 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     if PDBPP_HIJACK_PDB:
         assert "(Pdb)" not in out
         assert "(Pdb++)" in out
-        assert out.endswith("\n(Pdb++) " + os.linesep)
+        if sys.platform == 'win32' and sys.version_info < (3,):  # XXX ???
+            assert out.endswith("\n(Pdb++) " + os.linesep)
+        else:
+            assert out.endswith("\n(Pdb++) \n")
     else:
         assert "(Pdb)" in out
         assert "(Pdb++)" not in out
