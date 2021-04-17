@@ -121,7 +121,7 @@ jobs:
     - name: Setup tox environment
       env:
         PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
-        TOX_ARGS: ${{ matrix.tox_args || '--durations -e ' + ${{ matrix.tox_env }} }}
+        TOX_ARGS: "${{ matrix.tox_args || join(['--durations -e ', matrix.tox_env], ' ') }}"
       # TODO: --force-dep="$PYTEST" (fixed for Windows: single quotes / use bash?)
       #       Failed build: https://github.com/blueyed/pdbpp/pull/1/checks?check_run_id=2347344798#step:7:1
       run: python -m tox --notest -v $TOX_ARGS --force-dep="$PYTEST"
