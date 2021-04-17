@@ -16,7 +16,6 @@ long_description = readme + '\n\n' + changelog
 
 setup(
     name='pdbpp',
-    use_scm_version=True,
     author='Antonio Cuni',
     author_email='anto.cuni@gmail.com',
     py_modules=['pdbpp', '_pdbpp_path_hack.pdb'],
