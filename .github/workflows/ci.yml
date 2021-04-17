@@ -36,7 +36,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 2000
+        fetch-depth: 0
     - run: git fetch --tags origin
     - run: git describe --tags --always
     - name: Set up Python ${{ matrix.python }}
