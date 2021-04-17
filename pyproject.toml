@@ -1,7 +1,2 @@
 [build-system]
-requires = [
-  "setuptools>=42",
-  "wheel",
-  "setuptools_scm[toml]>=3.4",
-  "setuptools_scm[toml]<6;python_version<'3.6'",
-]
+requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
