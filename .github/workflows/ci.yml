@@ -103,19 +103,24 @@ jobs:
         path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
         key: "tox|${{ matrix.os }}|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
 
-    - name: Install tox / version information
+    - name: (Initial) version information/pinning
       run: |
         python -m pip --version
         python -m pip list
         if [[ "${{ matrix.python }}" == "3.4" ]]; then
           # Install latest available pip.
-          # 7.1.2 (installed) fails to install tox, and tries to install too
-          # new pip without version constraint.  19.1.1 is the latest currently.
+          # 7.1.2 (installed) is too old to not install too new packages.
           python -m pip install -U pip==19.1.1
         fi
-        python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
         python -m pip install -U setuptools==42.0.2
         python -m pip install -U virtualenv==20.4.3
+
+    - name: Install tox
+      run: |
+        python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
+
+    - name: Version information
+      run: |
         python -m pip list
 
     - name: Setup tox environment
