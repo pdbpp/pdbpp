@@ -32,6 +32,58 @@ jobs:
           - tox_env: "py39-ipython-coverage"
             python: "3.9"
             os: ubuntu-20.04
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: ubuntu-20.04
+          - tox_env: "py37-coverage"
+            python: "3.7"
+            os: ubuntu-20.04
+          - tox_env: "py36-coverage"
+            python: "3.6"
+            os: ubuntu-20.04
+          - tox_env: "py35-coverage"
+            python: "3.5"
+            os: ubuntu-20.04
+
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          - tox_env: "pypy3-coverage"
+            python: "pypy-3.7"
+            os: ubuntu-20.04
+          - tox_env: "pypy-coverage"
+            python: "pypy-2.7"
+            os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          # macOS
+          - tox_env: "py37-coverage"
+            python: "3.7"
+            os: macos-10.15
+
+          # Windows
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: windows-2019
+          # py34: only on Windows?
+          # (https://github.com/actions/setup-python/issues/157#issuecomment-724152312)
+          - tox_env: "py34-coverage"
+            python: "3.4"
+            os: windows-2019  # Python 3.4 is only available on Windows.
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+            tox: tox==3.14.0  # tox 3.14.1 dropped support for py34.
+            tox_args: "-e py34-coverage"  # no '--durations'.
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: windows-2016
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          # Generic
+          - tox_env: "checkqa"
+            python: "3.9"
+            os: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
