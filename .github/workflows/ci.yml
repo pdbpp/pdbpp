@@ -54,6 +54,7 @@ jobs:
     - name: Install tox / version information
       run: |
         python -m pip --version
+        python -m pip list
         if [[ "${{ matrix.python }}" == "3.4" ]]; then
           # Install latest available pip.
           # 7.1.2 (installed) fails to install tox, and tries to install too
