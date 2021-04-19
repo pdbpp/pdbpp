@@ -140,4 +140,4 @@ jobs:
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage'))
-      run: "bash .ci/report-coverage.sh -n '${{ matrix.tox_name }}' -F 'GHA,${{ runner.os }}'"
+      run: "bash .ci/report-coverage.sh -n '${{ matrix.tox_env }}' -F 'GHA,${{ runner.os }}'"
