@@ -5,12 +5,12 @@ on:
     branches:
       - "master"
       - "release-*"
-
   pull_request:
     branches:
       - "master"
       - "ci-gha"  # TODO: remove
       - "release-*"
+  workflow_dispatch:
 
 env:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
