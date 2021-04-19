@@ -118,12 +118,10 @@ jobs:
         python -m pip install -U virtualenv==20.4.3
 
     - name: Install tox
-      run: |
-        python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
+      run: python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
 
     - name: Version information
-      run: |
-        python -m pip list
+      run: python -m pip list
 
     - name: Setup tox environment
       env:
