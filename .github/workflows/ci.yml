@@ -105,6 +105,7 @@ jobs:
 
     - name: (Initial) version information/pinning
       run: |
+        python -m site
         python -m pip --version
         python -m pip list
         if [[ "${{ matrix.python }}" == "3.4" ]]; then
