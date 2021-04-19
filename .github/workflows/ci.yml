@@ -110,7 +110,8 @@ jobs:
         python -m pip list
         if [[ "${{ matrix.python }}" == "3.4" ]]; then
           # Install latest available pip.
-          # 7.1.2 (installed) is too old to not install too new packages.
+          # 7.1.2 (installed) is too old to not install too new packages,
+          # including pip itself.  19.2 dropped support for Python 3.4.
           python -m pip install -U pip==19.1.1
         fi
         python -m pip install -U setuptools==42.0.2
