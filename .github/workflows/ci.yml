@@ -8,7 +8,6 @@ on:
   pull_request:
     branches:
       - "master"
-      - "ci-gha"  # TODO: remove
       - "release-*"
   workflow_dispatch:
 
