@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "master"
+      - "ci-gha"  # TODO: remove
       - "release-*"
   pull_request:
     branches:
