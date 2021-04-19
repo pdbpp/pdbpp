@@ -1,12 +1,24 @@
-name: Continuous integration
+name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "master"
+      - "release-*"
+  pull_request:
+    branches:
+      - "master"
+      - "ci-gha"  # TODO: remove
+      - "release-*"
+  workflow_dispatch:
 
 env:
   PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   PIP_DISABLE_PIP_VERSION_CHECK: true
-  PYTEST: "pytest @ git+https://github.com/blueyed/pytest@my-master"
-  TOX: "tox @ git+https://github.com/blueyed/tox@master"
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   tests:
@@ -16,9 +28,62 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Linux
           - tox_env: "py39-ipython-coverage"
             python: "3.9"
-            os: ubuntu-latest
+            os: ubuntu-20.04
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: ubuntu-20.04
+          - tox_env: "py37-coverage"
+            python: "3.7"
+            os: ubuntu-20.04
+          - tox_env: "py36-coverage"
+            python: "3.6"
+            os: ubuntu-20.04
+          - tox_env: "py35-coverage"
+            python: "3.5"
+            os: ubuntu-20.04
+
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          - tox_env: "pypy3-coverage"
+            python: "pypy-3.7"
+            os: ubuntu-20.04
+          - tox_env: "pypy-coverage"
+            python: "pypy-2.7"
+            os: ubuntu-20.04
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          # macOS
+          - tox_env: "py37-coverage"
+            python: "3.7"
+            os: macos-10.15
+
+          # Windows
+          - tox_env: "py38-coverage"
+            python: "3.8"
+            os: windows-2019
+          # py34: only on Windows?
+          # (https://github.com/actions/setup-python/issues/157#issuecomment-724152312)
+          - tox_env: "py34-coverage"
+            python: "3.4"
+            os: windows-2019  # Python 3.4 is only available on Windows.
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+            tox: tox==3.14.0  # tox 3.14.1 dropped support for py34.
+            tox_args: "-e py34-coverage"  # no '--durations'.
+          - tox_env: "py27-coverage"
+            python: "2.7"
+            os: windows-2016
+            pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
+
+          # Generic
+          - tox_env: "checkqa"
+            python: "3.9"
+            os: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
@@ -36,24 +101,43 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
-        key: "tox|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
+        key: "tox|${{ matrix.os }}|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
 
-    - name: Install tox / version information
+    - name: (Initial) version information/pinning
       run: |
+        python -m site
         python -m pip --version
-        python -m pip install git+https://github.com/blueyed/tox@master
         python -m pip list
+        if [[ "${{ matrix.python }}" == "3.4" ]]; then
+          # Install latest available pip.
+          # 7.1.2 (installed) is too old to not install too new packages,
+          # including pip itself.  19.2 dropped support for Python 3.4.
+          python -m pip install -U pip==19.1.1
+        fi
+        python -m pip install -U setuptools==42.0.2
+        python -m pip install -U virtualenv==20.4.3
+
+    - name: Install tox
+      run: python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
+
+    - name: Version information
+      run: python -m pip list
 
     - name: Setup tox environment
-      run: python -m tox --notest -v --durations --force-dep="$PYTEST" -e ${{ matrix.tox_env }}
+      env:
+        PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
+        TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
+      run: python -m tox --notest -v $TOX_ARGS --force-dep="$PYTEST"
 
     - name: Test
       env:
-        COLUMNS: "120"
+        PY_COLORS: "1"
+        PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
         # UTF-8 mode for Windows (https://docs.python.org/3/using/windows.html#utf-8-mode).
         PYTHONUTF8: "1"
+        TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
         TOX_TESTENV_PASSENV: "PYTHONUTF8"
-      run: "${{ matrix.script_prefix }} tox -e ${{ matrix.tox_env }}"
+      run: python -m tox -v $TOX_ARGS --force-dep="$PYTEST"
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage'))
