@@ -5063,10 +5063,6 @@ def test_error_with_traceback_limit():
     class ConfigWithLimit(ConfigTest):
         show_traceback_on_error_limit = 2
 
-    a = "a" * 5
-    b = a + "b"
-    assert a == b
-
     def fn():
         def f(i):
             i -= 1
