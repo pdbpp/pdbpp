@@ -140,4 +140,10 @@ jobs:
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage'))
-      run: "bash .ci/report-coverage.sh -n '${{ matrix.tox_env }}' -F 'GHA,${{ runner.os }}'"
+      uses: codecov/codecov-action@v1
+      with:
+        files: ./coverage-ci.xml
+        flags: ${{ runner.os }}
+        name: ${{ matrix.tox_env }}
+        fail_ci_if_error: true
+        verbose: true
