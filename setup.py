@@ -65,9 +65,7 @@ setup(
             'pytest',
         ],
     },
-    setup_requires=[
-        "setuptools_scm",
-    ],
+    setup_requires=['setuptools_scm'],
     data_files=[
         (
             os.path.relpath(get_path("purelib"), get_path("data")),
