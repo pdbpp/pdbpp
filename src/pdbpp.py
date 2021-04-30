@@ -1520,7 +1520,7 @@ except for when using the function decorator.
         """
         interact
 
-        Start an interative interpreter whose global namespace
+        Start an interactive interpreter whose global namespace
         contains all the names found in the current scope.
         """
         ns = self.curframe.f_globals.copy()

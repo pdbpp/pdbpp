@@ -1516,7 +1516,7 @@ def test_help():
         ("hf_hide", "hide hidden frames"),
         ("hf_unhide", "unhide hidden frames"),
         ("ignore", "ignore count for the given breakpoint"),
-        ("interact", "Start an interative interpreter"),
+        ("interact", "Start an interactive interpreter"),
         ("j", "Set the next line that will be executed."),
         ("jump", "Set the next line that will be executed."),
         ("l", "List source code for the current file."),
