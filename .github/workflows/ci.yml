@@ -147,4 +147,3 @@ jobs:
         flags: ${{ runner.os }}
         name: ${{ matrix.tox_env }}
         fail_ci_if_error: true
-        verbose: true
