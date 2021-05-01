@@ -389,7 +389,7 @@ Example configurations
 An example configuration file, which activates ``sticky mode`` by default,
 would look like the following::
 
-    import pdb
+    import pdbpp
 
     class Config(pdb.DefaultConfig):
         sticky_by_default = True
@@ -399,7 +399,7 @@ As seen in the sections above, you can also adjust the source code
 highlighting. In order to use true colors and the solarized-light theme, you
 have to create a configuration as follows::
 
-    import pdb
+    import pdbpp
 
     class Config(pdb.DefaultConfig):
         pygments_formatter_class = "pygments.formatters.TerminalTrueColorFormatter"
