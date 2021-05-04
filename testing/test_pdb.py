@@ -1241,7 +1241,7 @@ def test_edit():
 -> return 42
    5 frames hidden .*
 # edit
-RUN emacs \+%d %s
+RUN emacs \+%d '%s'
 # c
 """ % (return42_lineno, RE_THIS_FILE_QUOTED))
 
@@ -1253,7 +1253,7 @@ RUN emacs \+%d %s
 [NUM] > .*bar()
 -> fn()
 # edit
-RUN emacs \+%d %s
+RUN emacs \+%d '%s'
 # c
 """ % (call_fn_lineno, RE_THIS_FILE_QUOTED))
 
