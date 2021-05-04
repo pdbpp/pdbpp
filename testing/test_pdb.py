@@ -12,11 +12,6 @@ import py
 import pytest
 
 try:
-    from shlex import quote
-except ImportError:
-    from pipes import quote
-
-try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
@@ -24,25 +19,6 @@ except ImportError:
 # make sure that we are really importing our pdb
 sys.modules.pop('pdb', None)
 import pdb  # noqa: E402 isort:skip
-
-
-# Windows support
-# The basic idea is that paths on Windows are dumb because of backslashes.
-# Typically this would be resolved by using `pathlib`, but we need to maintain
-# support for pre-Py36 versions.
-# A lot of tests are regex checks and the back-slashed Windows paths end
-# up looking like they have escape characters in them (specifically the `\p`
-# in `...\pdbpp`). So we need to make sure to escape those strings.
-# In addtion, Windows is a case-insensitive file system. Most introspection
-# tools return the `normcase` version (eg: all lowercase), so we adjust the
-# canonical filename accordingly.
-# RE_THIS_FILE = re.escape(__file__)
-# THIS_FILE_CANONICAL = __file__
-# if sys.platform == 'win32':
-#     THIS_FILE_CANONICAL = __file__.lower()
-# RE_THIS_FILE_CANONICAL = re.escape(THIS_FILE_CANONICAL)
-# RE_THIS_FILE_CANONICAL_QUOTED = re.escape(quote(THIS_FILE_CANONICAL))
-RE_THIS_FILE_QUOTED = re.escape(quote(__file__))
 
 
 class FakeStdin:
@@ -1235,15 +1211,18 @@ def test_edit():
     _, lineno = inspect.getsourcelines(fn)
     return42_lineno = lineno + 2
     call_fn_lineno = lineno + 5
+    filename = os.path.abspath(__file__)
+    if filename.endswith('.pyc'):
+        filename = filename[:-1]
 
     check(fn, r"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
 # edit
-RUN emacs \+%d %s
+RUN emacs \+%d '%s'
 # c
-""" % (return42_lineno, RE_THIS_FILE_QUOTED))
+""" % (return42_lineno, filename))
 
     check(bar, r"""
 [NUM] > .*fn()
@@ -1253,9 +1232,9 @@ RUN emacs \+%d %s
 [NUM] > .*bar()
 -> fn()
 # edit
-RUN emacs \+%d %s
+RUN emacs \+%d '%s'
 # c
-""" % (call_fn_lineno, RE_THIS_FILE_QUOTED))
+""" % (call_fn_lineno, filename))
 
 
 def test_edit_obj():
