@@ -1252,24 +1252,29 @@ _HIDE_FRAME = object()
 
 def hideframe(func):
     c = func.__code__
-    if sys.version_info < (3, ):
+    new_co_consts = c.co_consts + (_HIDE_FRAME,)
+
+    if hasattr(c, "replace"):
+        # Python 3.8.
+        c = c.replace(co_consts=new_co_consts)
+    elif sys.version_info < (3, ):
         c = types.CodeType(
             c.co_argcount, c.co_nlocals, c.co_stacksize,
             c.co_flags, c.co_code,
-            c.co_consts + (_HIDE_FRAME,),
+            new_co_consts,
             c.co_names, c.co_varnames, c.co_filename,
             c.co_name, c.co_firstlineno, c.co_lnotab,
             c.co_freevars, c.co_cellvars)
     else:
-        # Python 3 takes an additional arg -- kwonlyargcount
-        # typically set to 0
+        # Python 3 takes an additional arg -- kwonlyargcount.
         c = types.CodeType(
-            c.co_argcount, 0, c.co_nlocals, c.co_stacksize,
+            c.co_argcount, c.co_kwonlyargcount, c.co_nlocals, c.co_stacksize,
             c.co_flags, c.co_code,
             c.co_consts + (_HIDE_FRAME,),
             c.co_names, c.co_varnames, c.co_filename,
             c.co_name, c.co_firstlineno, c.co_lnotab,
             c.co_freevars, c.co_cellvars)
+
     func.__code__ = c
     return func
 

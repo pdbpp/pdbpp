@@ -1,0 +1,4 @@
+[coverage:run]
+include = pdb.py, testing/*
+branch = 1
+parallel = 1

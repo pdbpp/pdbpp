@@ -467,7 +467,7 @@ def test_fstrings():
 # f"fstring"
 'fstring'
 # c
-""".format(frame_num_a=count_frames() + 2 - 5))
+""")
 
 
 def test_up_down_arg():
@@ -674,7 +674,7 @@ NUM  \t    \"""Ensure that forget was called for lineno.\"""
 NUM  \t-> return a
 NUM  \t   5 frames hidden .*
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_heuristic():
@@ -2247,10 +2247,11 @@ def test_pdbrc_continue(tmpdir):
         pytest.skip("Only with readrc support with pdb.Pdb")
 
     with tmpdir.as_cwd():
-        open(".pdbrc", "w").writelines([
-            "p 'from_pdbrc'\n",
-            "continue\n",
-        ])
+        with open(".pdbrc", "w") as f:
+            f.writelines([
+                "p 'from_pdbrc'\n",
+                "continue\n",
+            ])
 
         def fn():
             set_trace(readrc=True)
