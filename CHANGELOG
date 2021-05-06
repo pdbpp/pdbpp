@@ -1,6 +1,24 @@
 CHANGELOG
 =========
 
+Changes between 0.10.2 and 0.10.3
+=================================
+
+Minor bugfix release, moving Continuous Integration from Travis/AppVeyor to
+GitHub Actions, based on changes on master, but without the (more invasive)
+(test) fixes for Windows.
+
+- Fixes
+
+  - Fix hideframe decorator for Python 3.8+ (#263)
+
+- Misc
+
+  - ci: move to GitHub Actions (#444, #445)
+  - ci: use .coveragerc (#304)
+  - qa/flake8 fixes
+  - test fix for newer PyPy3
+
 Changes between 0.10.0 and 0.10.2
 =================================
 
