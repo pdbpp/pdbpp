@@ -10,7 +10,7 @@ of new features to make your debugging experience as nice as possible.
 
 .. image:: https://user-images.githubusercontent.com/412005/64484794-2f373380-d20f-11e9-9f04-e1dabf113c6f.png
 
-:program:`pdb++`'s features include:
+`pdb++`'s features include:
 
   - colorful TAB completion of Python expressions (through fancycompleter_)
 
@@ -26,7 +26,7 @@ of new features to make your debugging experience as nice as possible.
   - additional convenience functions in the ``pdb`` module, to be used from
     your program
 
-:program:`pdb++` is meant to be a drop-in replacement for ``pdb``. If you find some
+`pdb++` is meant to be a drop-in replacement for ``pdb``. If you find some
 unexpected behavior, please report it as a bug.
 
 .. _pdb: http://docs.python.org/library/pdb.html
@@ -40,7 +40,7 @@ Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
 
     $ pip install pdbpp
 
-:program:`pdb++` is also available via:
+`pdb++` is also available via:
 
   - `conda`_::
 
@@ -66,17 +66,17 @@ Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
 Usage
 -----
 
-:program:`pdb++` inserts itself as ``pdb`` into Python's ``sys.path``
+`pdb++` inserts itself as ``pdb`` into Python's ``sys.path``
 automatically (using a ``.pth`` file, see
 https://docs.python.org/3/library/site.html for details).
 
 Therefore :code:`__import__("pdb").set_trace()` will automatically use
-:program:`pdb++`.
+`pdb++`.
 
 The old ``pdb`` module is still available as ``pdb.pdb``, e.g. by using
 :code:`import pdb; pdb.pdb.set_trace()`.
 
-:program:`pdb++` can be used explicitly via :code:`__import__("pdbpp").set_trace()`.
+`pdb++` can be used explicitly via :code:`__import__("pdbpp").set_trace()`.
 
 .. envvar:: PDBPP_HIJACK_PDB
 
@@ -416,7 +416,7 @@ Constants are available via ``pdb.Color``, e.g. ``pdb.Color.red``
 Coding guidelines
 -----------------
 
-:program:`pdb++` is developed using Test Driven Development, and we try to keep test
+`pdb++` is developed using Test Driven Development, and we try to keep test
 coverage high.
 
 As a general rule, every commit should come with its own test. If it's a new
