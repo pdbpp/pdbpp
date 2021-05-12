@@ -16,7 +16,7 @@ def test_ipython(testdir):
     )
     child.sendline("%debug raise ValueError('my_value_error')")
     child.sendline("up")
-    child.expect_exact("\r\nipdb++> ")
+    child.expect_exact("\r\nipdb> ")
     child.sendline("c")
     child.expect_exact("\r\nValueError: my_value_error\r\n")
     child.expect_exact("\r\nIn [2]: ")
