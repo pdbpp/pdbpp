@@ -84,7 +84,7 @@ The old ``pdb`` module is still available as ``pdb.pdb``, e.g. by using
   control the hijacking of the ``pdb`` module, i.e. the following will
   skip it::
 
-    PDBPP_HIJACK_PDB=0
+    PDBPP_HIJACK_PDB=0 python -c '__import("pdb").set_trace()'
 
 New interactive commands
 ------------------------
