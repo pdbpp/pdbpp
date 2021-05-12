@@ -57,7 +57,7 @@ Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
     dependencies), and many improvements and fixes have been done in the Git
     master branch.
 
-    Therefore currently it is recommended to install the version from Git::
+    Therefore it is recommended currently to install the version from Git::
 
         $ pip install git+https://github.com/pdbpp/pdbpp
 
