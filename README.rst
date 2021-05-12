@@ -89,7 +89,7 @@ The old ``pdb`` module is still available as ``pdb.pdb``, e.g. by using
 New interactive commands
 ------------------------
 
-The following are new commands that you can use from the interative
+The following are new commands that you can use from the interactive
 ``(Pdb++)`` prompt.
 
 .. _`sticky mode`:
@@ -112,7 +112,7 @@ The following are new commands that you can use from the interative
 
 
 ``interact``
-  Start an interative interpreter whose global namespace contains all the
+  Start an interactive interpreter whose global namespace contains all the
   names found in the current scope.
 
 
@@ -166,11 +166,11 @@ as one of the commands. E.g.::
     (Pdb) c
 
 In the example above, instead of printing 42 pdb interprets the input as the
-command ``continue``, and then you loose your prompt.  It's even worse than
+command ``continue``, and then you lose your prompt.  It's even worse than
 that, because it happens even if you type e.g. ``c.__class__``.
 
 pdb++ fixes this unfriendly (from the author's point of view, of course :-))
-behavior by always prefering variable in scope, if it exists.  If you really
+behavior by always preferring the variable in scope, if it exists.  If you really
 want to execute the corresponding command, you can prefix it with ``!!``.
 Thus, the example above becomes::
 
@@ -351,7 +351,7 @@ Options relevant for source code highlighting (using Pygments)
 
   You can configure the Pygments formatter to use via the
   ``pygments_formatter_class`` config setting as a string (dotted path).
-  This should should be one of the following typically:
+  This should be one of the following typically:
   ``"pygments.formatters.Terminal256Formatter"``,
   ``"pygments.formatters.TerminalTrueColorFormatter"``, or
   ``"pygments.formatters.TerminalFormatter"``.
@@ -364,7 +364,7 @@ Options relevant for source code highlighting (using Pygments)
 
 ``pygments_formatter_kwargs = {}``
 
-  A dictionary of keyword arguments to pass to the formatter's contructor.
+  A dictionary of keyword arguments to pass to the formatter's constructor.
 
   The default arguments (updated with this setting) are::
 
@@ -420,7 +420,7 @@ Coding guidelines
 coverage high.
 
 As a general rule, every commit should come with its own test. If it's a new
-feature, it should come with one or many tests which excercise it. If it's a
+feature, it should come with one or many tests which exercise it. If it's a
 bug fix, the test should **fail before the fix**, and pass after.
 
 The goal is to make refactoring easier in the future: if you wonder why a
@@ -428,9 +428,9 @@ certain line of code does something, in principle it should be possible to
 comment it out and see which tests fail.
 
 In exceptional cases, the test might be too hard or impossible to write: in
-that cases it is fine to do a commmit without a test, but you should explain
+that cases it is fine to do a commit without a test, but you should explain
 very precisely in the commit message why it is hard to write a test and how to
-reproduce the buggy behaviour by hand.
+reproduce the buggy behavior by hand.
 
 It is fine NOT to write a test in the following cases:
 

@@ -44,9 +44,27 @@ except ImportError:
 try:
     from functools import lru_cache
 except ImportError:
-    def lru_cache(*_, **__):
-        def dec(fn):
-            return fn
+    from functools import wraps
+
+    def lru_cache(maxsize):
+        """Simple cache (with no maxsize basically) for py27 compatibility.
+
+        Given that pdb there uses linecache.getline for each line with
+        do_list a cache makes a big differene."""
+
+        def dec(fn, *args):
+            cache = {}
+
+            @wraps(fn)
+            def wrapper(*args):
+                key = args
+                try:
+                    ret = cache[key]
+                except KeyError:
+                    ret = cache[key] = fn(*args)
+                return ret
+
+            return wrapper
 
         return dec
 
@@ -54,7 +72,7 @@ except ImportError:
 # effects free.
 side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
 
-RE_COLOR_ESCAPES = re.compile("(\x1b.*?m)+")
+RE_COLOR_ESCAPES = re.compile("(\x1b[^m]+m)+")
 RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
 
 if sys.version_info < (3, ):
@@ -73,7 +91,7 @@ def __getattr__(name):
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
         return local.GLOBAL_PDB
-    raise AttributeError
+    raise AttributeError("module '{}' has no attribute '{}'".format(__name__, name))
 
 
 def import_from_stdlib(name):
@@ -229,12 +247,12 @@ class PdbMeta(type):
                     if frame is None:
                         frame = sys._getframe().f_back
                     super(OrigPdb, self).set_trace(frame)
-            obj = OrigPdb.__new__(OrigPdb)
+            orig_pdb = OrigPdb.__new__(OrigPdb)
             # Remove any pdb++ only kwargs.
             kwargs.pop("Config", None)
-            obj.__init__(*args, **kwargs)
+            orig_pdb.__init__(*args, **kwargs)
             local._pdbpp_in_init = False
-            return obj
+            return orig_pdb
         local._pdbpp_in_init = True
 
         global_pdb = getattr(local, "GLOBAL_PDB", None)
@@ -354,14 +372,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
         self.show_hidden_frames = False
-        self.hidden_frames = []
+        self._hidden_frames = []
 
         # Sticky mode.
         self.sticky = self.config.sticky_by_default
         self.first_time_sticky = self.sticky
         self.sticky_ranges = {}  # frame --> (start, end)
         self._sticky_messages = []  # Message queue for sticky mode.
-        self._sticky_last_frame = None
+        self._sticky_need_cls = False
         self._sticky_skip_cls = False
 
         self._setup_streams(stdout=self.stdout)
@@ -452,6 +470,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return
         if self.config.exec_if_unfocused:
             self.exec_if_unfocused()
+
+        # Handle post mortem via main: add exception similar to user_exception.
+        if frame is None and traceback:
+            exc = sys.exc_info()[:2]
+            if exc != (None, None):
+                self.curframe.f_locals['__exception__'] = exc
+
         if not self.sticky:
             self.print_stack_entry(self.stack[self.curindex])
             self.print_hidden_frames_count()
@@ -470,10 +495,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self._sticky_skip_cls:
             self._sticky_skip_cls = False
             return
+        if not self._sticky_need_cls:
+            return
 
         self.stdout.write(CLEARSCREEN)
         self.stdout.flush()
-        self._sticky_last_frame = None
+        self._sticky_need_cls = False
 
     def postcmd(self, stop, line):
         """Handle clearing of the screen for sticky mode."""
@@ -499,22 +526,32 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._sticky_skip_cls = True
         super(Pdb, self).set_quit()
 
+    def _setup_fancycompleter(self):
+        """Similar to fancycompleter.setup(), but returning the old completer."""
+        if not self.fancycompleter:
+            self.fancycompleter = Completer(namespace={})
+        completer = self.fancycompleter
+        readline = completer.config.readline
+        old_completer = readline.get_completer()
+        if fancycompleter.has_leopard_libedit(completer.config):
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind('tab: complete')
+        readline.set_completer(self.complete)
+        return old_completer
+
     @contextlib.contextmanager
     def _custom_completer(self):
-        if not self.fancycompleter:
-            self.fancycompleter = fancycompleter.setup()
+        old_completer = self._setup_fancycompleter()
 
-        readline_ = self.fancycompleter.config.readline
-        old_completer = readline_.get_completer()
-        readline_.set_completer(self.complete)
         self._lastcompstate = [None, 0]
         try:
             yield
         finally:
-            readline_.set_completer(old_completer)
+            self.fancycompleter.config.readline.set_completer(old_completer)
 
     def print_hidden_frames_count(self):
-        n = len(self.hidden_frames)
+        n = len(self._hidden_frames)
         if n and self.config.show_hidden_frames_count:
             plural = n > 1 and "s" or ""
             print(
@@ -559,9 +596,16 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         if frame.f_globals.get('__unittest'):
             return True
-        if frame.f_locals.get('__tracebackhide__') \
-           or frame.f_globals.get('__tracebackhide__'):
-            return True
+
+        # `f_locals` might be a list (checked via PyMapping_Check).
+        try:
+            tbh = frame.f_locals["__tracebackhide__"]
+        except (TypeError, KeyError):
+            try:
+                tbh = frame.f_globals["__tracebackhide__"]
+            except (TypeError, KeyError):
+                return False
+        return bool(tbh)
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
@@ -570,19 +614,23 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return self.compute_stack(fullstack, idx)
 
     def compute_stack(self, fullstack, idx=None):
+        if not fullstack:
+            return fullstack, idx if idx is not None else 0
         if idx is None:
             idx = len(fullstack) - 1
         if self.show_hidden_frames:
             return fullstack, idx
 
-        self.hidden_frames = []
+        self._hidden_frames = []
         newstack = []
         for frame, lineno in fullstack:
             if self._is_hidden(frame):
-                self.hidden_frames.append((frame, lineno))
+                self._hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
-        newidx = idx - len(self.hidden_frames)
+        if not newstack:
+            newstack.append(self._hidden_frames.pop())
+        newidx = idx - len(self._hidden_frames)
         return newstack, newidx
 
     def refresh_stack(self):
@@ -642,6 +690,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             sys.modules["readline"] = orig_readline
 
     def complete(self, text, state):
+        try:
+            return self._complete(text, state)
+        except Exception as exc:
+            self.error("error during completion: {}".format(exc))
+            if self.config.show_traceback_on_error:
+                __import__("traceback").print_exc(file=self.stdout)
+
+    def _complete(self, text, state):
         """Handle completions from fancycompleter and original pdb."""
         if state == 0:
             local._pdbpp_completing = True
@@ -757,6 +813,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 pass
         return s
 
+    def try_to_encode(self, s):
+        for encoding in self.config.encodings:
+            try:
+                return s.encode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                pass
+        return s
+
     def _get_source_highlight_function(self):
         try:
             import pygments
@@ -836,11 +900,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.config.use_pygments = False
                 return src
 
-        src = self.try_to_decode(src)
-        return self._highlight(src)
+        return self._highlight_cached(src)
 
     @lru_cache(maxsize=64)
     def _highlight_cached(self, src):
+        src = self.try_to_decode(src)
         return self._highlight(src)
 
     def _format_line(self, lineno, marker, line, lineno_width):
@@ -1083,7 +1147,7 @@ except for when using the function decorator.
         self.refresh_stack()
 
     def do_hf_list(self, arg):
-        for frame_lineno in self.hidden_frames:
+        for frame_lineno in self._hidden_frames:
             print(self.format_stack_entry(frame_lineno, pdb.line_prefix),
                   file=self.stdout)
 
@@ -1101,7 +1165,7 @@ except for when using the function decorator.
         installed, the source code is colorized.
         """
         self.lastcmd = 'longlist'
-        self._printlonglist()
+        self._printlonglist(max_lines=False)
 
     do_ll = do_longlist
 
@@ -1175,6 +1239,67 @@ except for when using the function decorator.
         assert len(RE_COLOR_ESCAPES.sub("", ret)) <= maxlength
         return ret
 
+    def _cut_lines(self, lines, lineno, max_lines):
+        max_lines = max(6, len(lines) if not max_lines else max_lines)
+        if len(lines) <= max_lines:
+            for i, line in enumerate(lines, lineno):
+                yield i, line
+            return
+
+        cutoff = len(lines) - max_lines
+
+        # Keep certain top lines.
+        # Keeps decorators, but not functions, which are displayed at the top
+        # already (stack information).
+        # TODO: check behavior with lambdas.
+        COLOR_OR_SPACE = r'(?:\x1b[^m]+m|\s)'
+        keep_pat = re.compile(
+            r'(?:^{col}*@)'
+            r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
+        )
+        keep_head = 0
+        while keep_pat.match(lines[keep_head]):
+            keep_head += 1
+
+        if keep_head > 3:
+            yield lineno, lines[0]
+            yield None, '...'
+            yield lineno + keep_head, lines[keep_head-1]
+            cutoff -= keep_head - 3
+        else:
+            for i, line in enumerate(lines[:keep_head]):
+                yield lineno + i, line
+
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
+        last_marker_line = max(
+            self.curframe.f_lineno,
+            exc_lineno if exc_lineno else 0) - lineno
+
+        # Place marker / current line in first third of available lines.
+        cut_before = min(
+            cutoff, max(0, last_marker_line - max_lines + max_lines // 3 * 2)
+        )
+        cut_after = cutoff - cut_before
+
+        # Adjust for '...' lines.
+        cut_after = cut_after + 1 if cut_after > 0 else 0
+        if cut_before:
+            # Adjust for '...' line.
+            cut_before += 1
+
+        for i, line in enumerate(lines[keep_head:], keep_head):
+            if cut_before:
+                cut_before -= 1
+                if cut_before == 0:
+                    yield None, '...'
+                else:
+                    assert cut_before > 0, cut_before
+                continue
+            elif cut_after and i >= len(lines) - cut_after:
+                yield None, '...'
+                break
+            yield lineno + i, line
+
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
         lines = [line.replace('\t', '    ')
@@ -1190,27 +1315,17 @@ except for when using the function decorator.
             lines = [self._truncate_to_visible_length(line, maxlength)
                      for line in lines]
 
-        if print_markers:
-            exc_lineno = self.tb_lineno.get(self.curframe, None)
-            if height >= 6:
-                last_marker_line = max(
-                    self.curframe.f_lineno,
-                    exc_lineno if exc_lineno else 0) - lineno
-                if last_marker_line >= 0:
-                    maxlines = last_marker_line + height * 2 // 3
-                    if len(lines) > maxlines:
-                        lines = lines[:maxlines]
-                        lines.append('...')
-
-        if max_lines and len(lines) > max_lines:
-            cutoff = max_lines - len(lines)
-            lines = lines[0 - max_lines:]
-            lineno -= cutoff
-
         lineno_width = len(str(lineno + len(lines)))
+        exc_lineno = self.tb_lineno.get(self.curframe, None)
+
+        new_lines = []
         if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
-            for i, line in enumerate(lines):
+            for lineno, line in self._cut_lines(lines, lineno, max_lines):
+                if lineno is None:
+                    new_lines.append(line)
+                    continue
+
                 if lineno == self.curframe.f_lineno:
                     marker = '->'
                 elif lineno == exc_lineno:
@@ -1223,16 +1338,14 @@ except for when using the function decorator.
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
                     line = line + " " * (width - len_visible)
                     line = setbgcolor(line, self.config.current_line_color)
-
-                lines[i] = line
-                lineno += 1
+                new_lines.append(line)
         else:
             for i, line in enumerate(lines):
-                lines[i] = self._format_line(lineno, '', line, lineno_width)
+                new_lines.append(self._format_line(lineno, '', line, lineno_width))
                 lineno += 1
-        print('\n'.join(lines), file=self.stdout)
+        print('\n'.join(new_lines), file=self.stdout)
 
-    def _format_source_lines(self, lines):
+    def _format_color_prefixes(self, lines):
         if not lines:
             return lines
 
@@ -1247,9 +1360,6 @@ except for when using the function decorator.
             prefix, _, src = x.partition('\t')
             prefixes.append(prefix)
             src_lines.append(src)
-        formatted_src_lines = self.format_source(
-            "\n".join(src_lines) + "\n"
-        ).splitlines()
 
         RE_LNUM_PREFIX = re.compile(r"^\d+")
         if self.config.highlight:
@@ -1263,36 +1373,36 @@ except for when using the function decorator.
 
         return [
             "%s\t%s" % (prefix, src)
-            for (prefix, src) in zip(prefixes, formatted_src_lines)
+            for (prefix, src) in zip(prefixes, src_lines)
         ]
 
-    if sys.version_info >= (3, 2):
-        def _print_lines(self, lines, *args, **kwargs):
-            """Enhance original _print_lines with highlighting.
+    @contextlib.contextmanager
+    def _patch_linecache_for_source_highlight(self):
+        orig = pdb.linecache.getlines
 
-            Used via do_list currently only, do_source and do_longlist are
-            overridden.
-            """
-            if not lines or not (
-                    self.config.use_pygments is not False
-                    or self.config.highlight):
-                return super(Pdb, self)._print_lines(lines, *args, **kwargs)
+        def wrapped_getlines(filename, globals):
+            """Wrap linecache.getlines to highlight source (for do_list)."""
+            lines = orig(filename, globals)
+            source = self.format_source("".join(lines))
 
-            oldstdout = self.stdout
-            self.stdout = StringIO()
-            ret = super(Pdb, self)._print_lines(lines, *args, **kwargs)
-            orig_pdb_lines = self.stdout.getvalue().splitlines()
-            self.stdout = oldstdout
+            if sys.version_info < (3,):
+                source = self.try_to_encode(source)
 
-            for line in self._format_source_lines(orig_pdb_lines):
-                print(line, file=self.stdout)
-            return ret
-    else:
-        # Only for Python 2.7, where _print_lines is not used/available.
-        def do_list(self, arg):
-            if not (self.config.use_pygments is not False
-                    or self.config.highlight):
-                return super(Pdb, self).do_list(arg)
+            return source.splitlines(True)
+
+        pdb.linecache.getlines = wrapped_getlines
+
+        try:
+            yield
+        finally:
+            pdb.linecache.getlines = orig
+
+    def do_list(self, arg):
+        """Enhance original do_list with highlighting."""
+        if not (self.config.use_pygments is not False or self.config.highlight):
+            return super(Pdb, self).do_list(arg)
+
+        with self._patch_linecache_for_source_highlight():
 
             oldstdout = self.stdout
             self.stdout = StringIO()
@@ -1300,16 +1410,16 @@ except for when using the function decorator.
             orig_pdb_lines = self.stdout.getvalue().splitlines()
             self.stdout = oldstdout
 
-            for line in self._format_source_lines(orig_pdb_lines):
-                print(line, file=self.stdout)
-            return ret
+        for line in self._format_color_prefixes(orig_pdb_lines):
+            print(line, file=self.stdout)
+        return ret
 
-        do_list.__doc__ = pdb.Pdb.do_list.__doc__
-        do_l = do_list
+    do_list.__doc__ = pdb.Pdb.do_list.__doc__
+    do_l = do_list
 
     def _select_frame(self, number):
         """Same as pdb.Pdb, but uses print_current_stack_entry (for sticky)."""
-        assert 0 <= number < len(self.stack)
+        assert 0 <= number < len(self.stack), (number, len(self.stack))
         self.curindex = number
         self.curframe = self.stack[self.curindex][0]
         self.curframe_locals = self.curframe.f_locals
@@ -1363,12 +1473,16 @@ except for when using the function decorator.
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
-        # this is a hack (as usual :-))
-        #
-        # inside the original do_debug, there is a call to the global "Pdb" to
-        # instantiate the recursive debugger: we want to intercept this call
-        # and instantiate *our* Pdb, passing our custom config. Therefore we
-        # dynamically rebind the globals.
+        """debug code
+        Enter a recursive debugger that steps through the code
+        argument (which is an arbitrary expression or statement to be
+        executed in the current environment).
+        """
+        orig_trace = sys.gettrace()
+        if orig_trace:
+            sys.settrace(None)
+        globals = self.curframe.f_globals
+        locals = self.curframe_locals
         Config = self.ConfigFactory
 
         class PdbppWithConfig(self.__class__):
@@ -1382,27 +1496,23 @@ except for when using the function decorator.
                 local.GLOBAL_PDB = self_withcfg
                 local.GLOBAL_PDB._use_global_pdb_for_class = self.__class__
 
-        if sys.version_info < (3, ):
-            do_debug_func = pdb.Pdb.do_debug.im_func
-        else:
-            do_debug_func = pdb.Pdb.do_debug
-
-        newglobals = do_debug_func.__globals__.copy()
-        newglobals['Pdb'] = PdbppWithConfig
-        new_do_debug = rebind_globals(do_debug_func, newglobals)
-
-        # Handle any exception, e.g. SyntaxErrors.
-        # This is about to be improved in Python itself (3.8, 3.7.3?).
         prev_pdb = local.GLOBAL_PDB
+        p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
+        p._prompt = "({}) ".format(self._prompt.strip())
+        self.message("ENTERING RECURSIVE DEBUGGER")
         try:
             with self._custom_completer():
-                return new_do_debug(self, arg)
+                sys.call_tracing(p.run, (arg, globals, locals))
         except Exception:
             exc_info = sys.exc_info()[:2]
-            msg = traceback.format_exception_only(*exc_info)[-1].strip()
-            self.error(msg)
+            self.error(traceback.format_exception_only(*exc_info)[-1].strip())
         finally:
             local.GLOBAL_PDB = prev_pdb
+        self.message("LEAVING RECURSIVE DEBUGGER")
+
+        if orig_trace:
+            sys.settrace(orig_trace)
+        self.lastcmd = p.lastcmd
 
     do_debug.__doc__ = pdb.Pdb.do_debug.__doc__
 
@@ -1410,7 +1520,7 @@ except for when using the function decorator.
         """
         interact
 
-        Start an interative interpreter whose global namespace
+        Start an interactive interpreter whose global namespace
         contains all the names found in the current scope.
         """
         ns = self.curframe.f_globals.copy()
@@ -1479,14 +1589,15 @@ except for when using the function decorator.
 
     def _print_if_sticky(self):
         if self.sticky:
+            self._sticky_handle_cls()
+            width, height = self.get_terminal_size()
+
             frame, lineno = self.stack[self.curindex]
-            if self._sticky_last_frame and frame != self._sticky_last_frame:
-                self._sticky_handle_cls()
             stack_entry = self._get_formatted_stack_entry(
                 self.stack[self.curindex], "__CUTOFF_MARKER__"
             )
             s = stack_entry.split("__CUTOFF_MARKER__")[0]  # hack
-            top_extra_lines = 0
+            top_lines = []
             if self._sticky_messages:
                 for msg in self._sticky_messages:
                     if msg == "--Return--" and (
@@ -1498,27 +1609,26 @@ except for when using the function decorator.
                     if msg.startswith("--") and msg.endswith("--"):
                         s += ", {}".format(msg)
                     else:
-                        print(msg, file=self.stdout)
-                        top_extra_lines += 1
+                        top_lines.append(msg)
                 self._sticky_messages = []
 
             if self.config.show_hidden_frames_count:
-                n = len(self.hidden_frames)
+                n = len(self._hidden_frames)
                 if n:
                     plural = n > 1 and "s" or ""
                     s += ", %d frame%s hidden" % (n, plural)
-            print(s, file=self.stdout)
-            print(file=self.stdout)
-
-            width, height = self.get_terminal_size()
-            len_visible = len(RE_COLOR_ESCAPES.sub("", s))
-            top_extra_lines += (len_visible - 1) // width + 2
+            top_lines.append(s)
 
             sticky_range = self.sticky_ranges.get(self.curframe, None)
 
             after_lines = []
             if '__exception__' in frame.f_locals:
                 s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
+                if s:
+                    after_lines.append(s)
+
+            elif getattr(sys, "last_value", None):
+                s = self._format_exc_for_sticky((type(sys.last_value), sys.last_value))
                 if s:
                     after_lines.append(s)
 
@@ -1536,6 +1646,13 @@ except for when using the function decorator.
                     s = Color.set(self.config.line_number_color, s)
                 after_lines.append(s)
 
+            top_extra_lines = 0
+            for line in top_lines:
+                print(line, file=self.stdout)
+                len_visible = len(RE_COLOR_ESCAPES.sub("", line))
+                top_extra_lines += (len_visible - 1) // width + 2
+            print(file=self.stdout)
+
             # Arrange for prompt and extra lines on top (location + newline
             # typically), and keep an empty line at the end (after prompt), so
             # that any output shows up at the top.
@@ -1545,6 +1662,7 @@ except for when using the function decorator.
 
             for line in after_lines:
                 print(line, file=self.stdout)
+            self._sticky_need_cls = True
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
@@ -1567,6 +1685,12 @@ except for when using the function decorator.
                 s += '(unprintable exception: %r)' % (exc,)
             except:
                 s += '(unprintable exception)'
+        else:
+            # Use first line only, limited to terminal width.
+            s = s.replace("\r", r"\r").replace("\n", r"\n")
+            width, _ = self.get_terminal_size()
+            if len(s) > width:
+                s = s[:width - 1] + "…"
 
         if self.config.highlight:
             s = Color.set(self.config.line_number_color, s)
@@ -1600,7 +1724,7 @@ except for when using the function decorator.
             self.sticky = not self.sticky
             self.sticky_range = None
         if not was_sticky and self.sticky:
-            self._sticky_handle_cls()
+            self._sticky_need_cls = True
         self._print_if_sticky()
 
     def print_stack_trace(self):
@@ -1663,12 +1787,40 @@ except for when using the function decorator.
                 print('%s: %r --> %r' % (expr, oldvalue, newvalue),
                       file=self.stdout)
 
-    def _get_position_of_arg(self, arg):
+    def _get_position_of_arg(self, arg, quiet=False):
         try:
-            obj = self._getval(arg)
+            obj = eval(arg, self.curframe.f_globals, self.curframe_locals)
+        except:
+            if not quiet:
+                exc_info = sys.exc_info()[:2]
+                error = traceback.format_exception_only(*exc_info)[-1].strip()
+                self.error("failed to eval: {}".format(error))
+            return None, None, None
+        try:
+            return self._get_position_of_obj(obj, quiet=quiet)
         except:
             return None, None, None
-        return self._get_position_of_obj(obj)
+
+    def _get_fnamelineno_for_arg(self, arg):
+        filename, lineno, _ = self._get_position_of_arg(arg, quiet=True)
+        if filename is None:
+            if os.path.exists(arg):
+                filename = arg
+                lineno = 1
+            else:
+                m = re.match(r"^(.*):(\d+)$", arg)
+                if m:
+                    filename, lineno = m.group(1), int(m.group(2))
+                else:
+                    filename, lineno = arg, 1
+                if not os.path.exists(filename):
+                    # Like "do_break" does it.
+                    filename = self.lookupmodule(filename)
+                    if filename is None:
+                        lineno = None
+                    elif not os.path.exists(filename):
+                        filename, lineno = None, None
+        return filename, lineno
 
     def _get_position_of_obj(self, obj, quiet=False):
         if hasattr(inspect, "unwrap"):
@@ -1680,7 +1832,7 @@ except for when using the function decorator.
             lines, lineno = inspect.getsourcelines(obj)
         except (IOError, TypeError) as e:
             if not quiet:
-                print('** Error: %s **' % e, file=self.stdout)
+                self.error('could not get obj: {}'.format(e))
             return None, None, None
         return filename, lineno, lines
 
@@ -1852,8 +2004,9 @@ except for when using the function decorator.
         if arg == '':
             filename, lineno = self._get_current_position()
         else:
-            filename, lineno, _ = self._get_position_of_arg(arg)
+            filename, lineno = self._get_fnamelineno_for_arg(arg)
             if filename is None:
+                self.error("could not parse filename/lineno")
                 return
         # this case handles code generated with py.code.Source()
         # filename is something like '<0-codegen foo.py:18>'
@@ -1925,7 +2078,8 @@ except for when using the function decorator.
                 if not self._stopped_for_set_trace:
                     self._stopped_for_set_trace = True
                     return True
-        return super(Pdb, self).stop_here(frame)
+        if Pdb is not None:
+            return super(Pdb, self).stop_here(frame)
 
     def set_trace(self, frame=None):
         """Remember starting frame.

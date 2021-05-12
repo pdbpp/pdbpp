@@ -7,6 +7,7 @@ import io
 import os
 import os.path
 import re
+import subprocess
 import sys
 import textwrap
 import traceback
@@ -28,8 +29,6 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-
-pytest_plugins = ["pytester"]
 
 # Windows support
 # The basic idea is that paths on Windows are dumb because of backslashes.
@@ -157,7 +156,7 @@ def xpm():
     pdbpp.xpm(PdbTest)
 
 
-def runpdb(func, input):
+def runpdb(func, input, terminal_size=None):
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
@@ -188,7 +187,9 @@ def runpdb(func, input):
             ).replace(chr(27), "^[")
 
     # Use a predictable terminal size.
-    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: (80, 24))
+    if terminal_size is None:
+        terminal_size = (80, 24)
+    pdbpp.Pdb.get_terminal_size = staticmethod(lambda: terminal_size)
     try:
         sys.stdin = FakeStdin(input)
         sys.stdout = stdout = MyBytesIO()
@@ -217,14 +218,20 @@ def runpdb(func, input):
     return stdout.get_unicode_value().splitlines()
 
 
+def is_prompt(line):
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
+    for prompt in prompts:
+        if line.startswith(prompt):
+            return len(prompt)
+    return False
+
+
 def extract_commands(lines):
     cmds = []
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
     for line in lines:
-        for prompt in prompts:
-            if line.startswith(prompt):
-                cmds.append(line[len(prompt):])
-                continue
+        prompt_len = is_prompt(line)
+        if prompt_len:
+            cmds.append(line[prompt_len:])
     return cmds
 
 
@@ -253,7 +260,7 @@ def cook_regexp(s):
     return s
 
 
-def run_func(func, expected):
+def run_func(func, expected, terminal_size=None):
     """Runs given function and returns its output along with expected patterns.
 
     It does not make any assertions. To compare func's output with expected
@@ -274,7 +281,7 @@ def run_func(func, expected):
             flattened.extend(line.splitlines())
     expected = flattened
 
-    return expected, runpdb(func, commands)
+    return expected, runpdb(func, commands, terminal_size)
 
 
 def count_frames():
@@ -291,20 +298,45 @@ class InnerTestException(Exception):
     pass
 
 
-def check(func, expected):
-    expected, lines = run_func(func, expected)
+trans_trn_dict = {"\n": r"\n", "\r": r"\r", "\t": r"\t"}
+if sys.version_info >= (3,):
+    trans_trn_table = str.maketrans(trans_trn_dict)
+
+    def trans_trn(string):
+        return string.translate(trans_trn_table)
+
+
+else:
+
+    def trans_trn(string):
+        for k, v in trans_trn_dict.items():
+            string = string.replace(k, v)
+        return string
+
+
+def check(func, expected, terminal_size=None):
+    expected, lines = run_func(func, expected, terminal_size)
     if expected:
         maxlen = max(map(len, expected))
+        if sys.version_info < (3,):
+            # Ensure same type for comparison.
+            expected = [
+                x.decode("utf8") if isinstance(x, bytes) else x for x in expected
+            ]
     else:
         maxlen = 0
     all_ok = True
     print()
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
-            try:
-                ok = re.match(pattern, string)
-            except re.error as exc:
-                raise ValueError("re.match failed for {!r}: {!r}".format(pattern, exc))
+            if is_prompt(pattern) and is_prompt(string):
+                ok = True
+            else:
+                try:
+                    ok = re.match(pattern, string)
+                except re.error as exc:
+                    raise ValueError("re.match failed for {!r}: {!r}".format(
+                        pattern, exc))
         else:
             ok = False
             if pattern is None:
@@ -316,8 +348,8 @@ def check(func, expected):
             string += '$'
         if re.search(r'\s+$', pattern):
             pattern += '$'
-        pattern = pattern.replace("\t", "\\t")
-        string = string.replace("\t", "\\t")
+        pattern = trans_trn(pattern)
+        string = trans_trn(string)
         print(pattern.ljust(maxlen+1), '| ', string, end='')
         if ok:
             print()
@@ -1450,94 +1482,100 @@ def lineno():
     return inspect.currentframe().f_back.f_lineno
 
 
-@pytest.mark.parametrize("command,expected_regex", [
-    ("", r"Documented commands \(type help <topic>\):"),
-    ("EOF", "Handles the receipt of EOF as a command."),
-    ("a", "Print the argument"),
-    ("alias", "an alias"),
-    ("args", "Print the argument"),
-    ("b", "set a break"),
-    ("break", "set a break"),
-    ("bt", "Print a stack trace"),
-    ("c", "Continue execution, only stop when a breakpoint"),
-    ("cl", "clear all breaks"),
-    ("clear", "clear all breaks"),
-    ("commands", "Specify a list of commands for breakpoint"),
-    ("condition", "must evaluate to true"),
-    ("cont", "Continue execution, only stop when a breakpoint"),
-    ("continue", "Continue execution, only stop when a breakpoint"),
-    ("d", "Move the current frame .* down"),
-    ("debug", "Enter a recursive debugger"),
-    ("disable", "Disables the breakpoints"),
-    ("display", "Add expression to the display list"),
-    ("down", "Move the current frame .* down"),
-    ("ed", "Open an editor"),
-    ("edit", "Open an editor"),
-    ("enable", "Enables the breakpoints"),
-    ("exit", "Quit from the debugger."),
-    ("h", "h(elp)"),
-    ("help", "h(elp)"),
-    ("hf_hide", "hide hidden frames"),
-    ("hf_unhide", "unhide hidden frames"),
-    ("ignore", "ignore count for the given breakpoint"),
-    ("interact", "Start an interative interpreter"),
-    ("j", "Set the next line that will be executed."),
-    ("jump", "Set the next line that will be executed."),
-    ("l", "List source code for the current file."),
-    ("list", "List source code for the current file."),
-    ("ll", "List source code for the current function."),
-    ("longlist", "List source code for the current function."),
-    ("n", "Continue execution until the next line"),
-    ("next", "Continue execution until the next line"),
-    ("p", "Print the value of the expression"),
-    ("pp", "Pretty-print the value of the expression."),
-    ("q", "Quit from the debugger."),
-    ("quit", "Quit from the debugger."),
-    ("r", "Continue execution until the current function returns."),
-    ("restart", "Restart the debugged python program."),
-    ("return", "Continue execution until the current function returns."),
-    ("run", "Restart the debugged python program"),
-    ("s", "Execute the current line, stop at the first possible occasion"),
-    ("step", "Execute the current line, stop at the first possible occasion"),
-    ("sticky", "Toggle sticky mode"),
-    ("tbreak", "arguments as break"),
-    ("track", "track expression"),
-    ("u", "Move the current frame .* up"),
-    ("unalias", "specified alias."),
-    ("undisplay", "Remove expression from the display list"),
-    ("unt", "until the line"),
-    ("until", "until the line"),
-    ("up", "Move the current frame .* up"),
-    ("w", "Print a stack trace"),
-    ("whatis", "Prints? the type of the argument."),
-    ("where", "Print a stack trace"),
-    ("hidden_frames", "Some frames might be marked as \"hidden\""),
-    ("exec", r"Execute the \(one-line\) statement"),
-
-    ("hf_list", r"\*\*\* No help"),
-    ("paste", r"\*\*\* No help"),
-    ("put", r"\*\*\* No help"),
-    ("retval", r"\*\*\* No help|return value"),
-    ("rv", r"\*\*\* No help|return value"),
-    ("source", r"\*\*\* No help"),
-    ("unknown_command", r"\*\*\* No help"),
-    ("help", "print the list of available commands."),
-])
-def test_help(command, expected_regex):
+def test_help():
     instance = PdbTest()
     instance.stdout = StringIO()
+
+    help_params = [
+        ("", r"Documented commands \(type help <topic>\):"),
+        ("EOF", "Handles the receipt of EOF as a command."),
+        ("a", "Print the argument"),
+        ("alias", "an alias"),
+        ("args", "Print the argument"),
+        ("b", "set a break"),
+        ("break", "set a break"),
+        ("bt", "Print a stack trace"),
+        ("c", "Continue execution, only stop when a breakpoint"),
+        ("cl", "clear all breaks"),
+        ("clear", "clear all breaks"),
+        ("commands", "Specify a list of commands for breakpoint"),
+        ("condition", "must evaluate to true"),
+        ("cont", "Continue execution, only stop when a breakpoint"),
+        ("continue", "Continue execution, only stop when a breakpoint"),
+        ("d", "Move the current frame .* down"),
+        ("debug", "Enter a recursive debugger"),
+        ("disable", "Disables the breakpoints"),
+        ("display", "Add expression to the display list"),
+        ("down", "Move the current frame .* down"),
+        ("ed", "Open an editor"),
+        ("edit", "Open an editor"),
+        ("enable", "Enables the breakpoints"),
+        ("exit", "Quit from the debugger."),
+        ("h", "h(elp)"),
+        ("help", "h(elp)"),
+        ("hf_hide", "hide hidden frames"),
+        ("hf_unhide", "unhide hidden frames"),
+        ("ignore", "ignore count for the given breakpoint"),
+        ("interact", "Start an interactive interpreter"),
+        ("j", "Set the next line that will be executed."),
+        ("jump", "Set the next line that will be executed."),
+        ("l", "List source code for the current file."),
+        ("list", "List source code for the current file."),
+        ("ll", "List source code for the current function."),
+        ("longlist", "List source code for the current function."),
+        ("n", "Continue execution until the next line"),
+        ("next", "Continue execution until the next line"),
+        ("p", "Print the value of the expression"),
+        ("pp", "Pretty-print the value of the expression."),
+        ("q", "Quit from the debugger."),
+        ("quit", "Quit from the debugger."),
+        ("r", "Continue execution until the current function returns."),
+        ("restart", "Restart the debugged python program."),
+        ("return", "Continue execution until the current function returns."),
+        ("run", "Restart the debugged python program"),
+        ("s", "Execute the current line, stop at the first possible occasion"),
+        ("step", "Execute the current line, stop at the first possible occasion"),
+        ("sticky", "Toggle sticky mode"),
+        ("tbreak", "arguments as break"),
+        ("track", "track expression"),
+        ("u", "Move the current frame .* up"),
+        ("unalias", "specified alias."),
+        ("undisplay", "Remove expression from the display list"),
+        ("unt", "until the line"),
+        ("until", "until the line"),
+        ("up", "Move the current frame .* up"),
+        ("w", "Print a stack trace"),
+        ("whatis", "Prints? the type of the argument."),
+        ("where", "Print a stack trace"),
+        ("hidden_frames", 'Some frames might be marked as "hidden"'),
+        ("exec", r"Execute the \(one-line\) statement"),
+
+        ("hf_list", r"\*\*\* No help"),
+        ("paste", r"\*\*\* No help"),
+        ("put", r"\*\*\* No help"),
+        ("retval", r"\*\*\* No help|return value"),
+        ("rv", r"\*\*\* No help|return value"),
+        ("source", r"\*\*\* No help"),
+        ("unknown_command", r"\*\*\* No help"),
+        ("help", "print the list of available commands."),
+    ]
 
     # Redirect sys.stdout because Python 2 pdb.py has `print >>self.stdout` for
     # some functions and plain ol' `print` for others.
     oldstdout = sys.stdout
     sys.stdout = instance.stdout
+    errors = []
     try:
-        instance.do_help(command)
+        for command, expected_regex in help_params:
+            instance.do_help(command)
+            output = instance.stdout.getvalue()
+            if not re.search(expected_regex, output):
+                errors.append(command)
     finally:
         sys.stdout = oldstdout
 
-    output = instance.stdout.getvalue()
-    assert re.search(expected_regex, output)
+    if errors:
+        pytest.fail("unexpected help for: {}".format(", ".join(errors)))
 
 
 def test_shortlist():
@@ -1592,13 +1630,27 @@ def test_shortlist_with_highlight_and_EOF():
 
 
 @pytest.mark.parametrize('config', [ConfigWithPygments, ConfigWithPygmentsNone])
-def test_shortlist_with_pygments(config):
+def test_shortlist_with_pygments(config, monkeypatch):
 
     def fn():
         a = 1
         set_trace(Config=config)
 
         return a
+
+    calls = []
+    orig_get_func = pdbpp.Pdb._get_source_highlight_function
+
+    def check_calls(self):
+        orig_highlight = orig_get_func(self)
+        calls.append(["get", self])
+
+        def new_highlight(src):
+            calls.append(["highlight", src])
+            return orig_highlight(src)
+        return new_highlight
+
+    monkeypatch.setattr(pdbpp.Pdb, "_get_source_highlight_function", check_calls)
 
     check(fn, """
 [NUM] > .*fn()
@@ -1613,6 +1665,39 @@ NUM +\t$
 NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
 """.format(line_num=fn.__code__.co_firstlineno - 1))
+    assert len(calls) == 3, calls
+
+
+def test_shortlist_with_partial_code():
+    """Highlights the whole file, to handle partial docstring etc."""
+    def fn():
+        """
+        1
+        2
+        3
+        """
+        a = 1
+        set_trace(Config=ConfigWithPygments)
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> ^[[38;5;28;01mreturn^[[39;00m a
+   5 frames hidden .*
+# l
+NUM \t^[[38;5;124.*m        2^[[39.*m
+NUM \t^[[38;5;124.*m        3^[[39.*m
+NUM \t^[[38;5;124.*m        \"\"\"^[[39.*m
+NUM \t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
+NUM \t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
+NUM ->\t        ^[[38;5;28;01mreturn^[[39;00m a
+NUM \t$
+NUM \t    check(fn, ^[[38;5;124m\"\"\"^[[39m
+NUM \t^[[38;5;124m.* > .*fn()^[[39m
+NUM \t^[[38;5;124m-> ^[[38;5;28;01mreturn^[[39;00m a^[[39m
+NUM \t^[[38;5;124m   5 frames hidden .*^[[39m
+# c
+""")
 
 
 def test_truncated_source_with_pygments():
@@ -1729,7 +1814,7 @@ NUM \t    \"""Ensure that forget was called for lineno.\"""
 NUM \t-> return a
 NUM \t   5 frames hidden .*
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_heuristic():
@@ -1801,6 +1886,43 @@ NUM             set_trace()
 NUM  ->         return a
 # c
 """)
+
+
+def test_longlist_displays_whole_function():
+    """`ll` displays the whole function (no cutoff)."""
+    def fn():
+        set_trace()
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        a = 1
+        return a
+
+    check(fn, """
+[NUM] > .*fn()
+-> a = 1
+   5 frames hidden (try 'help hidden_frames')
+# ll
+NUM         def fn():
+NUM             set_trace()
+NUM  ->         a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             a = 1
+NUM             return a
+# c
+
+""", terminal_size=(len(__file__) + 50, 10))
 
 
 class TestListWithChangedSource:
@@ -2045,6 +2167,54 @@ NUM             print(a)
 NUM             set_trace(cleanup=False)
 NUM  ->         return a
  return 1
+# c
+""")
+
+
+def test_sticky_with_same_frame():
+    def fn():
+        def inner(cleanup):
+            set_trace(cleanup=cleanup)
+            print(cleanup)
+
+        for cleanup in (True, False):
+            inner(cleanup)
+
+    check(fn, """
+[NUM] > .*inner()
+-> print(cleanup)
+   5 frames hidden (try 'help hidden_frames')
+# sticky
+<CLEARSCREEN>
+[NUM] > .*inner(), 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+# n
+<CLEARSCREEN>
+True<PY27_MSG>
+[NUM] > .*inner()->None, 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+ return None
+# c
+[NUM] > .*inner(), 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+# n
+<CLEARSCREEN>
+False<PY27_MSG>
+[NUM] > .*inner()->None, 5 frames hidden
+
+NUM             def inner(cleanup):
+NUM                 set_trace(cleanup=cleanup)
+NUM  ->             print(cleanup)
+ return None
 # c
 """)
 
@@ -2314,6 +2484,55 @@ InnerTestException:
 """)
 
 
+def test_sticky_last_value():
+    """sys.last_value is displayed in sticky mode."""
+    def outer():
+        try:
+            raise ValueError("very long excmsg\n" * 10)
+        except ValueError:
+            sys.last_value, sys.last_traceback = sys.exc_info()[1:]
+
+    def fn():
+        outer()
+        set_trace()
+
+        __exception__ = "foo"  # noqa: F841
+        set_trace(cleanup=False)
+
+    expected = r"""
+[NUM] > .*fn()
+-> __exception__ = "foo"
+   5 frames hidden (try 'help hidden_frames')
+# sticky
+<CLEARSCREEN>
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             outer()
+NUM             set_trace()
+NUM
+NUM  ->         __exception__ = "foo"  # noqa: F841
+NUM             set_trace(cleanup=False)
+ValueError: very long excmsg\\nvery long excmsg\\nvery long e…
+# c
+<PY27_MSG>[NUM] > .*fn()->None, 5 frames hidden
+
+NUM         def fn():
+NUM             outer()
+NUM             set_trace()
+NUM
+NUM             __exception__ = "foo"  # noqa: F841
+NUM  ->         set_trace(cleanup=False)
+pdbpp: got unexpected __exception__: 'foo'
+# c
+"""
+    saved = sys.exc_info()[1:]
+    try:
+        check(fn, expected, terminal_size=(60, 20))
+    finally:
+        sys.last_value, sys.last_traceback = saved
+
+
 def test_sticky_dunder_return_with_highlight():
     class Config(ConfigWithHighlight, ConfigWithPygments):
         pass
@@ -2338,6 +2557,276 @@ def test_sticky_dunder_return_with_highlight():
         if x.startswith('^[[44m^[[36;01;44m') and '->' in x
     ]
     assert len(colored_cur_lines) == 2
+
+
+def test_sticky_cutoff_with_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         def fn():
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_head():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             # 4
+NUM             # 5
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_long_head_and_tail():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        # 6
+        # 7
+        # 8
+        # 9
+        # 10
+        # 11
+        # 12
+        # 13
+        # 14
+        # 15
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+...
+NUM             # 8
+NUM             # 9
+NUM             # 10
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+NUM             # 3
+NUM             # 4
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 15))
+
+
+def test_sticky_cutoff_with_decorator():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM             # 5
+NUM             set_trace(Config=MyConfig)
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_many_decorators():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM         @deco
+...
+NUM  ->         print(1)
+NUM             return
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_decorator_colored():
+    class MyConfig(ConfigWithPygmentsAndHighlight):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    @deco
+    def fn():
+        # 1
+        # 2
+        # 3
+        # 4
+        # 5
+        set_trace(Config=MyConfig)
+        print(1)
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+<COLORNUM>         ^[[38;5;129m@deco^[[39m
+...
+<COLORNUM>             set_trace.*
+<COLORCURLINE>  ->         ^[[38;5;28.*;44mprint.*
+<COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m
+# c
+1
+""", terminal_size=(len(__file__) + 50, 10))
+
+
+def test_sticky_cutoff_with_minimal_lines():
+    class MyConfig(ConfigTest):
+        sticky_by_default = True
+
+    def deco(f):
+        return f
+
+    @deco
+    def fn():
+        set_trace(Config=MyConfig)
+        print(1)
+        # 1
+        # 2
+        # 3
+        return
+
+    check(fn, """
+[NUM] > .*fn(), 5 frames hidden
+
+NUM         @deco
+...
+NUM  ->         print(1)
+NUM             # 1
+NUM             # 2
+...
+# c
+1
+""", terminal_size=(len(__file__) + 50, 3))
 
 
 def test_exception_lineno():
@@ -2545,9 +3034,9 @@ def test_bad_source():
 -> return 42
    5 frames hidden .*
 # source 42
-\*\* Error: .*module, class, method, function, traceback, frame, or code object .*\*\*
+\*\*\* could not get obj: .*module, class, method, .*, or code object.*
 # c
-""")  # noqa: E501
+""")
 
 
 def test_edit():
@@ -2603,6 +3092,35 @@ def test_edit_obj():
 RUN emacs \+%d %s
 # c
 """ % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
+
+
+def test_edit_fname_lineno():
+    def fn():
+        set_trace()
+
+    check(fn, r"""
+--Return--
+[NUM] > .*fn()->None
+-> set_trace()
+   5 frames hidden .*
+# edit {fname}
+RUN emacs \+1 {fname_edit}
+# edit {fname}:5
+RUN emacs \+5 {fname_edit}
+# edit {fname}:meh
+\*\*\* could not parse filename/lineno
+# edit {fname}:-1
+\*\*\* could not parse filename/lineno
+# edit {fname} meh:-1
+\*\*\* could not parse filename/lineno
+# edit os.py
+RUN emacs \+1 {os_fname}
+# edit doesnotexist.py
+\*\*\* could not parse filename/lineno
+# c
+""".format(fname=__file__,
+           fname_edit=RE_THIS_FILE_QUOTED,
+           os_fname=re.escape(quote(os.__file__.rstrip("c")))))
 
 
 def test_edit_py_code_source():
@@ -2938,6 +3456,46 @@ def test_hidden_pytest_frames():
     """)
 
 
+def test_hidden_pytest_frames_f_local_nondict():
+    class M:
+        values = []
+
+        def __getitem__(self, name):
+            if name == 0:
+                # Handle 'if "__tracebackhide__" in frame.f_locals'.
+                raise IndexError()
+            return globals()[name]
+
+        def __setitem__(self, name, value):
+            # pdb assigns to f_locals itself.
+            self.values.append((name, value))
+
+    def fn():
+        m = M()
+        set_trace()
+        exec("print(1)", {}, m)
+        assert m.values == [('__return__', None)]
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> exec("print(1)", {}, m)
+   5 frames hidden (try 'help hidden_frames')
+# s
+--Call--
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# n
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# n
+1
+--Return--
+[NUM] > <string>(1)<module>()
+   5 frames hidden (try 'help hidden_frames')
+# c
+    """)
+
+
 def test_hidden_unittest_frames():
 
     def s(set_trace=set_trace):
@@ -3247,14 +3805,6 @@ LEAVING RECURSIVE DEBUGGER
 
 
 def test_syntaxerror_in_command():
-    expected_debug_err = "ENTERING RECURSIVE DEBUGGER\n\\*\\*\\* SyntaxError: .*"
-
-    # Python 3.8.0a2+ handles the SyntaxError itself.
-    # Ref/followup: https://github.com/python/cpython/pull/12103
-    # https://github.com/python/cpython/commit/3e93643
-    if sys.version_info >= (3, 7, 3):
-        expected_debug_err += "\nLEAVING RECURSIVE DEBUGGER"
-
     def f():
         set_trace()
 
@@ -3266,9 +3816,11 @@ def test_syntaxerror_in_command():
 # print(
 \\*\\*\\* SyntaxError: .*
 # debug print(
-%s
+ENTERING RECURSIVE DEBUGGER
+\\*\\*\\* SyntaxError: .*
+LEAVING RECURSIVE DEBUGGER
 # c
-""" % expected_debug_err)
+""")
 
 
 def test_debug_with_overridden_continue():
@@ -3404,7 +3956,13 @@ Deleted breakpoint NUM
 # 6998: character maps to <undefined>.
 # So we XFail this test on Windows.
 @pytest.mark.xfail(
-    sys.platform == "win32",
+    (
+        sys.platform == "win32" and (
+            # bpo-41894: fixed in 3.10, backported to 3.9.1 and 3.8.7.
+            sys.version_info < (3, 8, 7) or
+            (sys.version_info[:2] == (3, 9) and sys.version_info < (3, 9, 1))
+        )
+    ),
     raises=UnicodeDecodeError,
     strict=True,
     reason=(
@@ -3547,39 +4105,6 @@ ENTERING RECURSIVE DEBUGGER
     # Needed for PyPy (Python 2.7.13[pypy-7.1.0-final]) with coverage and
     # restoring trace function.
     pdbpp.local.GLOBAL_PDB.reset()
-
-
-def test_debug_rebind_globals(monkeypatch):
-    class PdbWithCustomDebug(pdbpp.pdb.Pdb):
-        def do_debug(self, arg):
-            if "PdbTest" not in globals():
-                # Do not use assert here, since it might fail with "NameError:
-                # name '@pytest_ar' is not defined" via pytest's assertion
-                # rewriting then.
-                import pytest
-                pytest.fail("PdbTest is not in globals.")
-            print("called_do_debug", Pdb, self)  # noqa: F821
-
-    monkeypatch.setattr(pdbpp.pdb, "Pdb", PdbWithCustomDebug)
-
-    class CustomPdbTest(PdbTest, PdbWithCustomDebug):
-        pass
-
-    def fn():
-        def inner():
-            pass
-
-        set_trace(Pdb=CustomPdbTest)
-
-    check(fn, """
---Return--
-[NUM] > .*fn()
--> set_trace(.*)
-   5 frames hidden .*
-# debug inner()
-called_do_debug.*
-# c
-""")
 
 
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_previous_sigint_handler"),
@@ -3737,8 +4262,6 @@ after_set_trace
 
 
 def test_python_m_pdb_usage():
-    import subprocess
-
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -3752,11 +4275,10 @@ def test_python_m_pdb_usage():
 
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
-    import subprocess
     from sysconfig import get_path
 
     if PDBPP_HIJACK_PDB:
-        pth = os.path.join(get_path("purelib"), "_pdbpp_path_hack")
+        pth = os.path.join(get_path("purelib"), "pdbpp_hijack_pdb.pth")
         if not os.path.exists(pth):
             pytest.skip("Missing pth file ({}), editable install?".format(pth))
 
@@ -3790,7 +4312,9 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     if PDBPP_HIJACK_PDB:
         assert "(Pdb)" not in out
         assert "(Pdb++)" in out
-        if sys.platform == 'win32' and sys.version_info < (3,):  # XXX ???
+        if sys.platform == "win32" and (
+            sys.version_info < (3,) or sys.version_info >= (3, 5)
+        ):
             assert out.endswith("\n(Pdb++) " + os.linesep)
         else:
             assert out.endswith("\n(Pdb++) \n")
@@ -4132,70 +4656,6 @@ True
 """)
 
 
-def test_integration(testdir, readline_param):
-    """Integration test."""
-    import sys
-
-    tmpdir = testdir.tmpdir
-
-    f = tmpdir.ensure("test_file.py")
-    f.write("print('before'); __import__('pdb').set_trace(); print('after')")
-
-    if readline_param != "pyrepl":
-        # Create empty pyrepl module to ignore any installed pyrepl.
-        mocked_pyrepl = tmpdir.ensure("pyrepl.py")
-        mocked_pyrepl.write("")
-
-    child = testdir.spawn(sys.executable + " test_file.py", expect_timeout=1)
-    child.expect_exact("\n(Pdb++) ")
-
-    if readline_param != "pyrepl":
-        # Remove it after startup to not interfere with completions.
-        mocked_pyrepl.remove()
-
-    if readline_param == "pyrepl":
-        child.expect_exact("\x1b[?12l\x1b[?25h")
-        pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
-    else:
-        pdbpp_prompt = "\n(Pdb++) "
-
-    # Completes help as unique (coming from pdb and fancycompleter).
-    child.send(b"hel\t")
-    if readline_param == "pyrepl":
-        child.expect_exact(b"\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
-    else:
-        child.expect_exact(b"help")
-    child.sendline("")
-    child.expect_exact("\r\nDocumented commands")
-    child.expect_exact(pdbpp_prompt)
-
-    # Completes breakpoints via pdb, should not contain "\t" from
-    # fancycompleter.
-    if sys.version_info >= (3, 3):
-        child.send(b"b \t")
-        if readline_param == "pyrepl":
-            child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:'
-                               b'\x1b[?12l\x1b[?25h')
-        else:
-            child.expect_exact(b'b test_file.py:')
-
-        child.sendline("")
-        if readline_param == "pyrepl":
-            child.expect_exact(
-                b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
-                b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
-            )
-        else:
-            child.expect_exact(b"\r\n*** Bad lineno: \r\n(Pdb++) ")
-
-    child.sendline("c")
-    rest = child.read()
-    if readline_param == "pyrepl":
-        assert rest == b'\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>'
-    else:
-        assert rest == b'c\r\n'
-
-
 def test_complete_with_bang(monkeypatch_readline):
     """Test that completion works after "!".
 
@@ -4282,6 +4742,50 @@ True
 # c
 ok_end
 """)
+
+
+def test_nested_completer(testdir):
+    p1 = testdir.makepyfile(
+        """
+        import sys
+
+        frames = []
+
+        def inner():
+            completeme_inner = 1
+            frames.append(sys._getframe())
+
+        inner()
+
+        def outer():
+            completeme_outer = 2
+            __import__('pdb').set_trace()
+
+        outer()
+        """
+    )
+    with open(".fancycompleterrc.py", "w") as f:
+        f.write(textwrap.dedent("""
+            from fancycompleter import DefaultConfig
+
+            class Config(DefaultConfig):
+                use_colors = False
+                prefer_pyrepl = False
+            """))
+    testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+    child = testdir.spawn("{} {}".format(quote(sys.executable), str(p1)))
+    child.send("completeme\t")
+    child.expect_exact("\r\n(Pdb++) completeme_outer")
+    child.send("\nimport pdbpp; _p = pdbpp.Pdb(); _p.reset()")
+    child.send("\n_p.interaction(frames[0], None)\n")
+    child.expect_exact("\r\n-> frames.append(sys._getframe())\r\n(Pdb++) ")
+    child.send("completeme\t")
+    child.expect_exact("completeme_inner")
+    child.send("\nq\n")
+    child.send("completeme\t")
+    child.expect_exact("completeme_outer")
+    child.send("\n")
+    child.sendeof()
 
 
 def test_ensure_file_can_write_unicode():
@@ -4394,6 +4898,47 @@ before_interaction_hook
 before_interaction_hook
 # c
 """)
+
+
+def test_compute_stack_keeps_frame():
+    """With only hidden frames the last one is kept."""
+    def fn():
+        def raises():
+            raise Exception("foo")
+
+        try:
+            raises()
+        except Exception:
+            tb = sys.exc_info()[2]
+            tb_ = tb
+            while tb_:
+                tb_.tb_frame.f_locals["__tracebackhide__"] = True
+                tb_ = tb_.tb_next
+            pdbpp.post_mortem(tb, Pdb=PdbTest)
+        return 1
+
+    check(fn, """
+[0] > .*raises()
+-> raise Exception("foo")
+   1 frame hidden (try 'help hidden_frames')
+# bt
+> [0] .*raises()
+      raise Exception("foo")
+# hf_unhide
+# bt
+  [0] .*fn()
+      raises()
+> [1] .*raises()
+      raise Exception("foo")
+# q
+""")
+
+
+def test_compute_stack_without_stack():
+    pdb_ = PdbTest()
+    assert pdb_.compute_stack([], idx=None) == ([], 0)
+    assert pdb_.compute_stack([], idx=0) == ([], 0)
+    assert pdb_.compute_stack([], idx=10) == ([], 10)
 
 
 def test_rawinput_with_debug():
@@ -4544,6 +5089,45 @@ Traceback (most recent call last):
     f(i)
 # c
 """)
+
+
+@pytest.mark.parametrize("show", (True, False))
+def test_complete_displays_errors(show, monkeypatch, LineMatcher):
+    class Config(ConfigTest):
+        show_traceback_on_error = show
+
+    def raises(*args):
+        raise ValueError("err_complete")
+
+    monkeypatch.setattr("pdbpp.Pdb._get_all_completions", raises)
+
+    def fn():
+        set_trace(Config=Config)
+
+    out = runpdb(fn, ["get_completions('test')", "c"])
+    lm = LineMatcher(out)
+    if show:
+        lm.fnmatch_lines([
+            "--Return--",
+            "[[]*[]] > *fn()->None",
+            "-> set_trace(Config=Config)",
+            "   5 frames hidden (try 'help hidden_frames')",
+            "# get_completions('test')",
+            "*** error during completion: err_complete",
+            "ValueError: err_complete",
+            "[[][]]",
+            "# c",
+        ])
+    else:
+        lm.fnmatch_lines([
+            "[[]*[]] > *fn()->None",
+            "-> set_trace(Config=Config)",
+            "   5 frames hidden (try 'help hidden_frames')",
+            "# get_completions('test')",
+            "*** error during completion: err_complete",
+            "??",
+            "# c",
+        ])
 
 
 def test_next_with_exception_in_call():
@@ -5203,16 +5787,16 @@ do_help
 
 
 @pytest.mark.parametrize('s,maxlength,expected', [
-    ('foo', 3, 'foo'),
-    ('foo', 1, 'f'),
+    pytest.param('foo', 3, 'foo', id='id1'),
+    pytest.param('foo', 1, 'f', id='id2'),
 
     # Keeps trailing escape sequences (for reset at least).
-    ("\x1b[39m1\x1b[39m23", 1, "\x1b[39m1\x1b[39m"),
-    ("\x1b[39m1\x1b[39m23", 2, "\x1b[39m1\x1b[39m2"),
-    ("\x1b[39m1\x1b[39m23", 3, "\x1b[39m1\x1b[39m23"),
-    ("\x1b[39m1\x1b[39m23", 100, "\x1b[39m1\x1b[39m23"),
+    pytest.param("\x1b[39m1\x1b[39m23", 1, "\x1b[39m1\x1b[39m", id="id3"),
+    pytest.param("\x1b[39m1\x1b[39m23", 2, "\x1b[39m1\x1b[39m2", id="id4"),
+    pytest.param("\x1b[39m1\x1b[39m23", 3, "\x1b[39m1\x1b[39m23", id="id5"),
+    pytest.param("\x1b[39m1\x1b[39m23", 100, "\x1b[39m1\x1b[39m23", id="id5"),
 
-    ("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m"),
+    pytest.param("\x1b[39m1\x1b[39m", 100, "\x1b[39m1\x1b[39m", id="id5"),
 ])
 def test_truncate_to_visible_length(s, maxlength, expected):
     assert pdbpp.Pdb._truncate_to_visible_length(s, maxlength) == expected
@@ -5353,4 +5937,85 @@ is_skipped_module\? testing.test_pdb
 -> set_trace(Pdb=SkippingPdbTest, cleanup=False)  # 3
    5 frames hidden (try 'help hidden_frames')
 # c
+""")
+
+
+def test_exception_info_main(testdir):
+    """Test that interaction adds __exception__ similar to user_exception."""
+    p1 = testdir.makepyfile(
+        """
+        def f():
+            raise ValueError("foo")
+
+        f()
+        """
+    )
+    testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+    result = testdir.run(
+        sys.executable, "-m", "pdb", str(p1),
+        stdin=b"cont\nsticky\n",
+    )
+    result.stdout.fnmatch_lines(
+        [
+            '*Uncaught exception. Entering post mortem debugging',
+            "*[[]5[]] > *test_exception_info_main.py(2)f()",
+            "",
+            "1     def f():",
+            '2  ->     raise ValueError("foo")',
+            "ValueError: foo",
+        ]
+    )
+
+
+def test_interaction_no_exception():
+    """Check that it does not display `None`."""
+    def outer():
+        try:
+            raise ValueError()
+        except ValueError:
+            return sys.exc_info()[2]
+
+    def fn():
+        tb = outer()
+        pdb_ = PdbTest()
+        pdb_.reset()
+        pdb_.interaction(None, tb)
+
+    check(fn, """
+[NUM] > .*outer()
+-> raise ValueError()
+# sticky
+<CLEARSCREEN>
+[0] > .*outer()
+
+NUM         def outer():
+NUM             try:
+NUM  >>             raise ValueError()
+NUM             except ValueError:
+NUM  ->             return sys.exc_info()[2]
+# q
+""")
+
+
+def test_debug_in_post_mortem_does_not_trace_itself():
+    def fn():
+        try:
+            raise ValueError()
+        except:
+            pdbpp.post_mortem(Pdb=PdbTest)
+        a = 1
+        return a
+
+    check(fn, """
+[0] > .*fn()
+-> raise ValueError()
+# debug "".strip()
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) s
+--Return--
+[1] > <string>(1)<module>()->None
+(#) q
+LEAVING RECURSIVE DEBUGGER
+# q
 """)
