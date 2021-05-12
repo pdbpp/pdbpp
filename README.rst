@@ -40,6 +40,16 @@ Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
 
     $ pip install pdbpp
 
+.. note::
+
+    The current release is quite old already (pending cleanup/fixes for
+    dependencies), and many improvements and fixes have been done in the Git
+    master branch.
+
+    Therefore it is recommended currently to install the version from Git::
+
+        $ pip install git+https://github.com/pdbpp/pdbpp
+
 `pdb++` is also available via:
 
   - `conda`_::
@@ -50,16 +60,6 @@ Since ``pdb++`` is not a valid package name the package is named ``pdbpp``::
 
     - https://aur.archlinux.org/packages/python-pdbpp
     - https://aur.archlinux.org/packages/python-pdbpp-git
-
-.. note::
-
-    The current release is quite old already (pending cleanup/fixes for
-    dependencies), and many improvements and fixes have been done in the Git
-    master branch.
-
-    Therefore it is recommended currently to install the version from Git::
-
-        $ pip install git+https://github.com/pdbpp/pdbpp
 
 .. _conda: https://anaconda.org/conda-forge/pdbpp
 
