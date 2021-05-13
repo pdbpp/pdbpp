@@ -1,1 +1,8 @@
+include .coveragerc
 include CHANGELOG
+include LICENSE.txt
+include pdbpp_hijack_pdb.pth
+include pdbrc.py
+include screenshot.png
+include tox.ini
+recursive-include testing *.py
