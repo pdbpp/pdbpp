@@ -11,6 +11,7 @@ GitHub Actions, based on changes on master, but without the (more invasive)
 - Fixes
 
   - Fix hideframe decorator for Python 3.8+ (#263)
+  - Fix hidden_frames discrepancy with IPython (#426)
 
 - Misc
 
