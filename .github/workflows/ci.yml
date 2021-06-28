@@ -106,6 +106,7 @@ jobs:
       run: python -m pip list
 
     - name: Setup tox environment
+      id: setup_tox
       env:
         PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
         TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
@@ -123,7 +124,7 @@ jobs:
       run: python -m tox -v $TOX_ARGS --force-dep="$PYTEST"
 
     - name: Report coverage
-      if: always() && (contains(matrix.tox_env, '-coverage'))
+      if: always() && (contains(matrix.tox_env, '-coverage') && (steps.setup_tox.outcome == 'success'))
       uses: codecov/codecov-action@v1
       with:
         files: ./coverage-ci.xml
