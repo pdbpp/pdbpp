@@ -175,7 +175,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.tb_lineno = {}  # frame --> lineno where the exception raised
         self.history = []
         self.show_hidden_frames = False
-        self.hidden_frames = []
+        self._hidden_frames = []
         self.stdout = self.ensure_file_can_write_unicode(self.stdout)
 
     def ensure_file_can_write_unicode(self, f):
@@ -234,7 +234,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.forget()
 
     def print_hidden_frames_count(self):
-        n = len(self.hidden_frames)
+        n = len(self._hidden_frames)
         if n and self.config.show_hidden_frames_count:
             plural = n > 1 and "s" or ""
             print(
@@ -295,14 +295,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if self.show_hidden_frames:
             return fullstack, idx
 
-        self.hidden_frames = []
+        self._hidden_frames = []
         newstack = []
         for frame, lineno in fullstack:
             if self._is_hidden(frame):
-                self.hidden_frames.append((frame, lineno))
+                self._hidden_frames.append((frame, lineno))
             else:
                 newstack.append((frame, lineno))
-        newidx = idx - len(self.hidden_frames)
+        newidx = idx - len(self._hidden_frames)
         return newstack, newidx
 
     def refresh_stack(self):
@@ -566,7 +566,7 @@ except for when using the function decorator.
         self.refresh_stack()
 
     def do_hf_list(self, arg):
-        for frame_lineno in self.hidden_frames:
+        for frame_lineno in self._hidden_frames:
             print(self.format_stack_entry(frame_lineno, pdb.line_prefix),
                   file=self.stdout)
 
