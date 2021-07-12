@@ -6,11 +6,11 @@
 #
 bleach==3.3.0
     # via readme-renderer
-build==0.3.1.post1
+build==0.5.1
     # via check-manifest
-certifi==2020.12.5
+certifi==2021.5.30
     # via requests
-cffi==1.14.5
+cffi==1.14.6
     # via cryptography
 chardet==4.0.0
     # via requests
@@ -24,23 +24,23 @@ docutils==0.17.1
     # via readme-renderer
 idna==2.10
     # via requests
-importlib-metadata==4.0.1
+importlib-metadata==4.6.1
     # via
     #   keyring
     #   twine
-jeepney==0.6.0
+jeepney==0.7.0
     # via
     #   keyring
     #   secretstorage
 keyring==23.0.1
     # via twine
-packaging==20.9
+packaging==21.0
     # via
     #   bleach
     #   build
 pep517==0.10.0
     # via build
-pkginfo==1.7.0
+pkginfo==1.7.1
     # via twine
 pycparser==2.20
     # via cffi
@@ -69,17 +69,17 @@ toml==0.10.2
     #   build
     #   check-manifest
     #   pep517
-tqdm==4.60.0
+tqdm==4.61.2
     # via twine
 twine==3.4.1
     # via -r .github/workflows/requirements/release.in
-urllib3==1.26.4
+urllib3==1.26.6
     # via requests
 webencodings==0.5.1
     # via bleach
 wheel==0.36.2
     # via -r .github/workflows/requirements/release.in
-zipp==3.4.1
+zipp==3.5.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
