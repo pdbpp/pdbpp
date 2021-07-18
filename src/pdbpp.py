@@ -929,7 +929,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # Force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display.
             line = line[2:]
-            return super(Pdb, self).parseline(line)
+            cmd, arg, newline =  super(Pdb, self).parseline(line)
+            return cmd, arg, "!!" + newline
 
         if line.endswith('?') and not line.startswith("!"):
             arg = line.split('?', 1)[0]
@@ -947,7 +948,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exists in the current context;
-        # This prevents pdb to quit if you type e.g. 'r[0]' by mystake.
+        # This prevents pdb to quit if you type e.g. 'r[0]' by mistake.
         cmd, arg, newline = super(Pdb, self).parseline(line)
 
         if cmd:
