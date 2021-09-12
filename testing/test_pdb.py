@@ -1460,6 +1460,7 @@ True
 # cont
 """)
 
+
 def test_parseline_remembers_smart_command_escape():
     def fn():
         n = 42
@@ -1485,7 +1486,7 @@ def test_parseline_remembers_smart_command_escape():
 # n
 44
 # c
-""")
+""")  # noqa: W291
 
 
 def test_args_name():

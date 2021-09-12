@@ -929,7 +929,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # Force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display.
             line = line[2:]
-            cmd, arg, newline =  super(Pdb, self).parseline(line)
+            cmd, arg, newline = super(Pdb, self).parseline(line)
             return cmd, arg, "!!" + newline
 
         if line.endswith('?') and not line.startswith("!"):
