@@ -1461,6 +1461,34 @@ True
 """)
 
 
+def test_parseline_remembers_smart_command_escape():
+    def fn():
+        n = 42
+        set_trace()
+        n = 43
+        n = 44
+        return n
+
+    check(fn, """
+[NUM] > .*fn()
+-> n = 43
+   5 frames hidden .*
+# n
+42
+# !!n
+[NUM] > .*fn()
+-> n = 44
+   5 frames hidden .*
+# 
+[NUM] > .*fn()
+-> return n
+   5 frames hidden .*
+# n
+44
+# c
+""")  # noqa: W291
+
+
 def test_args_name():
     def fn():
         args = 42
