@@ -445,6 +445,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             linecache.checkcache = _linecache_checkcache
 
     def interaction(self, frame, traceback):
+        if frame is None:
+            # Skip clearing screen if called with no frame (e.g. via pdb.main).
+            self._sticky_skip_cls = True
         self._install_linecache_wrapper()
 
         self._in_interaction = True

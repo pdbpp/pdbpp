@@ -5969,7 +5969,7 @@ is_skipped_module\? testing.test_pdb
 """)
 
 
-def test_exception_info_main(testdir):
+def test_exception_info_main(testdir, LineMatcher):
     """Test that interaction adds __exception__ similar to user_exception."""
     p1 = testdir.makepyfile(
         """
@@ -5980,14 +5980,17 @@ def test_exception_info_main(testdir):
         """
     )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+
     result = testdir.run(
         sys.executable, "-m", "pdbpp", str(p1),
-        stdin=b"cont\nsticky\n",
+        stdin=b"sticky\ncont\n",
     )
     result.stdout.fnmatch_lines(
         [
-            '*Uncaught exception. Entering post mortem debugging',
-            "*[[]5[]] > *test_exception_info_main.py(2)f()",
+            # "ValueError: foo",
+            '(Pdb++) Uncaught exception. Entering post mortem debugging',
+            "Running 'cont' or 'step' will restart the program",
+            "[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
             '2  ->     raise ValueError("foo")',
@@ -6014,7 +6017,6 @@ def test_interaction_no_exception():
 [NUM] > .*outer()
 -> raise ValueError()
 # sticky
-<CLEARSCREEN>
 [0] > .*outer()
 
 NUM         def outer():
