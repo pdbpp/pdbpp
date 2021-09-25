@@ -48,7 +48,7 @@ def restore_settrace(monkeypatch):
     newtrace = sys.gettrace()
     if newtrace is not _orig_trace:
         sys.settrace(_orig_trace)
-        assert newtrace is None
+        assert newtrace is None, "tracing function was not reset! Breakpoints left? ({})".format(newtrace)
 
 
 @pytest.fixture(autouse=True, scope="session")
