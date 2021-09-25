@@ -5969,7 +5969,7 @@ is_skipped_module\? testing.test_pdb
 """)
 
 
-def test_exception_info_main(testdir, LineMatcher):
+def test_exception_info_main(testdir):
     """Test that interaction adds __exception__ similar to user_exception."""
     p1 = testdir.makepyfile(
         """
@@ -5987,9 +5987,10 @@ def test_exception_info_main(testdir, LineMatcher):
     )
     result.stdout.fnmatch_lines(
         [
-            # "ValueError: foo",
-            '(Pdb++) Uncaught exception. Entering post mortem debugging',
+            # NOTE: py27 and py35+ have the prompt in front.
+            "*Uncaught exception. Entering post mortem debugging",
             "Running 'cont' or 'step' will restart the program",
+            # NOTE: this explicitly checks for a missing CLEARSCREEN in front.
             "[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
