@@ -219,7 +219,7 @@ def runpdb(func, input, terminal_size=None):
 
 
 def is_prompt(line):
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) ', '(com++) '}
     for prompt in prompts:
         if line.startswith(prompt):
             return len(prompt)
@@ -242,6 +242,7 @@ shortcuts = [
     (')', '\\)'),
     ('^', '\\^'),
     (r'\(Pdb++\) ', r'\(Pdb\+\+\) '),
+    (r'\(com++\) ', r'\(com\+\+\) '),
     ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
     ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
     ('<COLORFNAME>', r'\^\[\[33;01m'),
@@ -6047,3 +6048,86 @@ ENTERING RECURSIVE DEBUGGER
 LEAVING RECURSIVE DEBUGGER
 # q
 """)
+
+
+class TestCommands:
+    @staticmethod
+    def fn():
+        def f():
+            print(a)
+
+        a = 0
+        set_trace()
+
+        for i in range(5):
+            a += i
+            f()
+
+    def test_commands_with_sticky(self):
+        check(
+            self.fn,
+            r"""
+            [NUM] > .*fn()
+            -> for i in range(5):
+               5 frames hidden .*
+            # sticky
+            <CLEARSCREEN>
+            [NUM] > .*(), 5 frames hidden
+
+            NUM         @staticmethod
+            NUM         def fn():
+            NUM             def f():
+            NUM                 print(a)
+            NUM     $
+            NUM             a = 0
+            NUM             set_trace()
+            NUM     $
+            NUM  ->         for i in range(5):
+            NUM                 a \+= i
+            NUM                 f()
+            # break f, a==6
+            Breakpoint NUM at .*
+            # commands
+            (com++) print("stop", a)
+            (com++) end
+            # c
+            0
+            1
+            3
+            stop 6
+            [NUM] > .*f(), 5 frames hidden
+
+            NUM             def f():
+            NUM  ->             print(a)
+            # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+            # c
+            6
+            10
+            """,
+        )
+
+    def test_commands_without_sticky(self):
+        check(
+            self.fn,
+            r"""
+            [NUM] > .*fn()
+            -> for i in range(5):
+               5 frames hidden .*
+            # break f, a==6
+            Breakpoint NUM at .*
+            # commands
+            (com++) print("stop", a)
+            (com++) end
+            # c
+            0
+            1
+            3
+            stop 6
+            [NUM] > .*f()$
+            -> print(a)
+            # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+            # c
+            6
+            10
+            """,
+        )

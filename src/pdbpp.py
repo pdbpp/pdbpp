@@ -491,6 +491,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         self.forget()
 
+    def break_here(self, frame):
+        ret = super(Pdb, self).break_here(frame)
+        if ret:
+            # Skip clearing screen if invoked via breakpoint, which e.g.
+            # might execute/display output from commands.
+            self._sticky_skip_cls = True
+        return ret
+
     def _sticky_handle_cls(self):
         if self._sticky_skip_cls:
             self._sticky_skip_cls = False
@@ -506,7 +514,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         """Handle clearing of the screen for sticky mode."""
         stop = super(Pdb, self).postcmd(stop, line)
         if self.sticky:
-            if stop:
+            if stop and not self.commands_defining:
                 self._sticky_handle_cls()
             else:
                 if self._sticky_messages:
@@ -1589,7 +1597,7 @@ except for when using the function decorator.
             print('** %s not in the display list **' % arg, file=self.stdout)
 
     def _print_if_sticky(self):
-        if self.sticky:
+        if self.sticky and not self.commands_defining:
             self._sticky_handle_cls()
             width, height = self.get_terminal_size()
 
@@ -1738,6 +1746,10 @@ except for when using the function decorator.
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
+        if self.sticky:
+            # Skip display of current frame when sticky mode display it later.
+            if sys._getframe(1).f_code.co_name == "bp_commands":
+                return
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
