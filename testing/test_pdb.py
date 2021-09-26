@@ -13,11 +13,12 @@ import textwrap
 import traceback
 from io import BytesIO
 
+import pdbpp
 import py
 import pytest
-
-import pdbpp
 from pdbpp import DefaultConfig, Pdb, StringIO
+
+from .conftest import skip_with_missing_pth_file
 
 try:
     from shlex import quote
@@ -4304,12 +4305,8 @@ def test_python_m_pdb_usage():
 
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
-    from sysconfig import get_path
-
     if PDBPP_HIJACK_PDB:
-        pth = os.path.join(get_path("purelib"), "pdbpp_hijack_pdb.pth")
-        if not os.path.exists(pth):
-            pytest.skip("Missing pth file ({}), editable install?".format(pth))
+        skip_with_missing_pth_file()
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
@@ -4788,7 +4785,7 @@ def test_nested_completer(testdir):
 
         def outer():
             completeme_outer = 2
-            __import__('pdb').set_trace()
+            __import__('pdbpp').set_trace()
 
         outer()
         """
