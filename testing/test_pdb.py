@@ -4441,11 +4441,16 @@ def test_completes_from_pdb(monkeypatch_readline):
 
     _, lineno = inspect.getsourcelines(fn)
 
+    if sys.version_info >= (3, 10, 0, "a", 7):  # bpo-24160
+        pre_py310_output = ""
+    else:
+        pre_py310_output = "\n'There are no breakpoints'"
+
     check(fn, """
 [NUM] > .*fn()
 .*
    5 frames hidden .*
-# break %d
+# break {lineno}
 Breakpoint NUM at .*
 # c
 --Return--
@@ -4454,9 +4459,9 @@ Breakpoint NUM at .*
    5 frames hidden .*
 # check_completions()
 True
-# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks(){pre_py310_output}
 # c
-""" % lineno)
+""".format(lineno=lineno, pre_py310_output=pre_py310_output))
 
 
 def test_completion_uses_tab_from_fancycompleter(monkeypatch_readline):
