@@ -1,5 +1,7 @@
 import functools
+import os
 import sys
+import sysconfig
 from contextlib import contextmanager
 
 import pytest
@@ -194,3 +196,12 @@ def monkeypatch_importerror(monkeypatch):
                 m.setattr('__builtin__.__import__', import_mock)
             yield m
     return cm
+
+
+def missing_pth_file(skip=False):
+    pth = os.path.join(sysconfig.get_path("purelib"), "pdbpp_hijack_pdb.pth")
+    if os.path.exists(pth):
+        return True
+    if skip:
+        pytest.skip("Missing pth file ({}), editable install?".format(pth))
+    return False

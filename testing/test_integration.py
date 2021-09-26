@@ -2,6 +2,8 @@ import sys
 
 import pytest
 
+from .conftest import missing_pth_file
+
 
 def test_integration(testdir, readline_param):
     tmpdir = testdir.tmpdir
@@ -70,6 +72,8 @@ def test_ipython(testdir):
     - `up` used to crash due to conflicting `hidden_frames` attribute/method.
     """
     pytest.importorskip("IPython")
+    missing_pth_file(skip=True)
+
     child = testdir.spawn(
         "{} -m IPython --colors=nocolor --simple-prompt".format(
             sys.executable,
