@@ -28,7 +28,7 @@ jobs:
       matrix:
         include:
           # Linux
-          - tox_env: "py39-ipython-coverage"
+          - tox_env: "py39-editable-ipython-coverage"
             python: "3.9"
             os: ubuntu-20.04
           - tox_env: "py38-coverage"
