@@ -5980,18 +5980,33 @@ def test_exception_info_main(testdir):
         """
     )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+
     result = testdir.run(
         sys.executable, "-m", "pdbpp", str(p1),
-        stdin=b"cont\nsticky\n",
+        stdin=b"p 'sticky'\nsticky\np 'cont'\ncont\np 'quit'\nq\n",
     )
+    result.stdout.lines = [
+        ln.replace(pdbpp.CLEARSCREEN, "<CLEARSCREEN>") for ln in result.stdout.lines
+    ]
+    assert result.stdout.str().count("<CLEARSCREEN>") == 2
+    if (3,) <= sys.version_info <= (3, 5):
+        # NOTE: skipping explicit check for slighty different output with py34.
+        return
     result.stdout.fnmatch_lines(
         [
-            '*Uncaught exception. Entering post mortem debugging',
-            "*[[]5[]] > *test_exception_info_main.py(2)f()",
+            "(Pdb++) 'sticky'",
+            "(Pdb++) <CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
+            "(Pdb++) 'cont'",
+            "(Pdb++) Uncaught exception. Entering post mortem debugging",
+            # NOTE: this explicitly checks for a missing CLEARSCREEN in front.
+            "[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
             '2  ->     raise ValueError("foo")',
             "ValueError: foo",
+            "(Pdb++) 'quit'",
+            "(Pdb++) Post mortem debugger finished. *",
+            "<CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
         ]
     )
 
@@ -6014,7 +6029,6 @@ def test_interaction_no_exception():
 [NUM] > .*outer()
 -> raise ValueError()
 # sticky
-<CLEARSCREEN>
 [0] > .*outer()
 
 NUM         def outer():
