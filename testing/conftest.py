@@ -198,10 +198,7 @@ def monkeypatch_importerror(monkeypatch):
     return cm
 
 
-def missing_pth_file(skip=False):
+def skip_with_missing_pth_file():
     pth = os.path.join(sysconfig.get_path("purelib"), "pdbpp_hijack_pdb.pth")
-    if os.path.exists(pth):
-        return True
-    if skip:
+    if not os.path.exists(pth):
         pytest.skip("Missing pth file ({}), editable install?".format(pth))
-    return False

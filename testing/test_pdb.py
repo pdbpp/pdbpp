@@ -18,7 +18,7 @@ import py
 import pytest
 from pdbpp import DefaultConfig, Pdb, StringIO
 
-from .conftest import missing_pth_file
+from .conftest import skip_with_missing_pth_file
 
 try:
     from shlex import quote
@@ -4306,7 +4306,7 @@ def test_python_m_pdb_usage():
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     if PDBPP_HIJACK_PDB:
-        missing_pth_file(skip=True)
+        skip_with_missing_pth_file(skip=True)
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
