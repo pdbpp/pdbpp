@@ -28,10 +28,10 @@ jobs:
       matrix:
         include:
           # Linux
-          - tox_env: "py39-editable-ipython-coverage"
+          - tox_env: "py39-ipython-coverage"
             python: "3.9"
             os: ubuntu-20.04
-          - tox_env: "py38-coverage"
+          - tox_env: "py38-editable-coverage"
             python: "3.8"
             os: ubuntu-20.04
           - tox_env: "py37-coverage"
