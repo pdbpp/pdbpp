@@ -2317,5 +2317,5 @@ def break_on_setattr(attrname, condition=always, Pdb=Pdb):
 
 
 if __name__ == '__main__':
-    import pdb
-    pdb.main()
+    import pdbpp
+    pdbpp.main()

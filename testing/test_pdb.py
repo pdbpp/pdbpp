@@ -5981,7 +5981,7 @@ def test_exception_info_main(testdir):
     )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
     result = testdir.run(
-        sys.executable, "-m", "pdb", str(p1),
+        sys.executable, "-m", "pdbpp", str(p1),
         stdin=b"cont\nsticky\n",
     )
     result.stdout.fnmatch_lines(
