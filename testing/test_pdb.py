@@ -4454,6 +4454,7 @@ Breakpoint NUM at .*
    5 frames hidden .*
 # check_completions()
 True
+# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
 # c
 """ % lineno)
 
