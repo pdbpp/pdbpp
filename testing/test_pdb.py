@@ -4785,7 +4785,7 @@ def test_nested_completer(testdir):
 
         def outer():
             completeme_outer = 2
-            __import__('pdb').set_trace()
+            __import__('pdbpp').set_trace()
 
         outer()
         """
