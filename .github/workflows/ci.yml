@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
+  PYTEST_ADDOPTS: "-vv"
   PIP_DISABLE_PIP_VERSION_CHECK: true
 
 defaults:
@@ -144,7 +144,7 @@ jobs:
       if: always() && (contains(matrix.tox_env, '-coverage') && (steps.setup_tox.outcome == 'success'))
       uses: codecov/codecov-action@v1
       with:
-        files: ./coverage-ci.xml
+        files: ./coverage.xml
         flags: ${{ runner.os }}
         name: ${{ matrix.tox_env }}
         fail_ci_if_error: true
