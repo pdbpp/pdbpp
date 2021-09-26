@@ -72,7 +72,7 @@ def test_ipython(testdir):
     - `up` used to crash due to conflicting `hidden_frames` attribute/method.
     """
     pytest.importorskip("IPython")
-    skip_with_missing_pth_file(skip=True)
+    skip_with_missing_pth_file()
 
     child = testdir.spawn(
         "{} -m IPython --colors=nocolor --simple-prompt".format(
