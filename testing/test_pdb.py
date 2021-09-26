@@ -5983,19 +5983,27 @@ def test_exception_info_main(testdir):
 
     result = testdir.run(
         sys.executable, "-m", "pdbpp", str(p1),
-        stdin=b"sticky\ncont\n",
+        stdin=b"p 'sticky'\nsticky\np 'cont'\ncont\np 'quit'\nq\n",
     )
+    result.stdout.lines = [
+        ln.replace(pdbpp.CLEARSCREEN, "<CLEARSCREEN>") for ln in result.stdout.lines
+    ]
+    assert result.stdout.str().count("<CLEARSCREEN>") == 2
     result.stdout.fnmatch_lines(
         [
-            # NOTE: py27 and py35+ have the prompt in front.
-            "*Uncaught exception. Entering post mortem debugging",
-            "Running 'cont' or 'step' will restart the program",
+            "(Pdb++) 'sticky'",
+            "(Pdb++) <CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
+            "(Pdb++) 'cont'",
+            "(Pdb++) Uncaught exception. Entering post mortem debugging",
             # NOTE: this explicitly checks for a missing CLEARSCREEN in front.
             "[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
             '2  ->     raise ValueError("foo")',
             "ValueError: foo",
+            "(Pdb++) 'quit'",
+            "(Pdb++) Post mortem debugger finished. *",
+            "<CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
         ]
     )
 
