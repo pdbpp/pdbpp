@@ -5031,6 +5031,11 @@ def test_chained_syntaxerror_with_traceback():
         set_trace()
 
     if sys.version_info > (3,):
+        if sys.version_info >= (3, 10, 0, "final"):  # changed after rc2 (bpo-45249).
+            caret_line = "           $"
+        else:
+            caret_line = "    .*^"
+
         check(fn, """
 --Return--
 [NUM] > .*fn()
@@ -5045,7 +5050,7 @@ Traceback (most recent call last):
     compile.*
   File "<stdin>", line 1
     invalid(
-    .*^
+""" + caret_line + """
 SyntaxError: .*
 
 During handling of the above exception, another exception occurred:
