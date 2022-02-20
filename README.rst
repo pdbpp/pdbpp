@@ -401,7 +401,7 @@ certain line of code does something, in principle it should be possible to
 comment it out and see which tests fail.
 
 In exceptional cases, the test might be too hard or impossible to write: in
-that cases it is fine to do a commit without a test, but you should explain
+such cases it is fine to do a commit without a test, but you should explain
 very precisely in the commit message why it is hard to write a test and how to
 reproduce the buggy behavior by hand.
 
