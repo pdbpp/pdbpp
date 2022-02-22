@@ -5031,7 +5031,9 @@ def test_chained_syntaxerror_with_traceback():
         set_trace()
 
     if sys.version_info > (3,):
-        if sys.version_info >= (3, 10, 0, "final"):  # changed after rc2 (bpo-45249).
+        if sys.version_info >= (3, 10, 1):
+            caret_line = "           $"
+        elif sys.version_info >= (3, 10, 0, "final"):  # changed after rc2 (bpo-45249).
             caret_line = "           $"
         else:
             caret_line = "    .*^"
