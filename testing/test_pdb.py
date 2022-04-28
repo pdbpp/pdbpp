@@ -1024,6 +1024,11 @@ def test_single_question_mark():
 def test_double_question_mark():
     """Test do_inspect_with_source."""
     def fn():
+        class TestStr(str):
+            __doc__ = "shortened"
+
+        s = TestStr("str")  # noqa: F841
+
         def f2(x, y):
             """Return product of x and y"""
             return x * y
@@ -1052,6 +1057,12 @@ def test_double_question_mark():
 .*     return x \* y
 # doesnotexist??
 \*\*\* NameError.*
+# s??
+^[[31;01mType:^[[00m           TestStr
+^[[31;01mString Form:^[[00m    str
+^[[31;01mLength:^[[00m         3
+^[[31;01mDocstring:^[[00m      shortened
+^[[31;01mSource:^[[00m         -
 # c
     """.format(
         filename=RE_THIS_FILE_CANONICAL,

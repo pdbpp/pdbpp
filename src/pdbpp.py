@@ -1073,7 +1073,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if with_source:
             self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
             _, lineno, lines = self._get_position_of_obj(obj, quiet=True)
-            if lineno is None:
+            if lines is None:
                 self.stdout.write(" -\n")
             else:
                 self.stdout.write("\n")
