@@ -25,11 +25,6 @@ try:
 except ImportError:
     from pipes import quote
 
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest
-
 
 # Windows support
 # The basic idea is that paths on Windows are dumb because of backslashes.
@@ -328,17 +323,33 @@ def check(func, expected, terminal_size=None):
     else:
         maxlen = 0
     all_ok = True
+    ellipsis = False
     print()
-    for pattern, string in zip_longest(expected, lines):
+    while expected or lines:
+        pattern = string = None
+        if expected:
+            pattern = expected.pop(0)
+        if lines:
+            string = lines.pop(0)
+
         if pattern is not None and string is not None:
+            ok = True
             if is_prompt(pattern) and is_prompt(string):
-                ok = True
+                ellipsis = False
+            elif pattern == "...":
+                ellipsis = True
             else:
                 try:
                     ok = re.match(pattern, string)
                 except re.error as exc:
                     raise ValueError("re.match failed for {!r}: {!r}".format(
                         pattern, exc))
+                if ok:
+                    ellipsis = False
+                elif ellipsis:
+                    ok = True
+                    expected.insert(0, pattern)
+                    pattern = "..."
         else:
             ok = False
             if pattern is None:
@@ -5655,12 +5666,16 @@ def test_error_with_pp():
             def __repr__(self):
                 raise Exception('repr_exc')
 
-        obj = BadRepr()  # noqa: F841
-        set_trace()
+        def func(obj):
+            nonlocal BadRepr
+            set_trace()
+
+        obj = BadRepr()
+        func(obj)
 
     check(fn, r"""
 --Return--
-[NUM] > .*fn()->None
+[NUM] > .*func()->None
 -> set_trace()
    5 frames hidden .*
 # p obj
@@ -5669,6 +5684,19 @@ def test_error_with_pp():
 \*\*\* Exception: repr_exc
 # pp BadRepr.__repr__()
 \*\*\* TypeError: .*__repr__.*
+# args
+\*\*\* error during cmdloop: repr_exc
+Traceback (most recent call last):
+  File .*, in _interaction
+    self._cmdloop()
+...
+  File .*, in __repr__
+    raise Exception('repr_exc')
+Exception: repr_exc
+--Return--
+[NUM] > .*fn()->None
+-> func(obj)
+   5 frames hidden (try 'help hidden_frames')
 # c
 """)
 
