@@ -145,7 +145,7 @@ jobs:
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage') && (steps.setup_tox.outcome == 'success'))
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         files: ./coverage-ci.xml
         flags: ${{ runner.os }}
