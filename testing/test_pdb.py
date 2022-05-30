@@ -5666,12 +5666,11 @@ def test_error_with_pp():
             def __repr__(self):
                 raise Exception('repr_exc')
 
-        def func(obj):
-            nonlocal BadRepr
+        def func(obj, BadRepr):
             set_trace()
 
         obj = BadRepr()
-        func(obj)
+        func(obj, BadRepr)
 
     check(fn, r"""
 --Return--
@@ -5695,7 +5694,7 @@ Traceback (most recent call last):
 Exception: repr_exc
 --Return--
 [NUM] > .*fn()->None
--> func(obj)
+-> func(obj, BadRepr)
    5 frames hidden (try 'help hidden_frames')
 # c
 """)
