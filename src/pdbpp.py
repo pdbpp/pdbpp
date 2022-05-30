@@ -520,12 +520,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             if stop and not self.commands_defining:
                 self._sticky_handle_cls()
             else:
-                if self._sticky_messages:
-                    for msg in self._sticky_messages:
-                        print(msg, file=self.stdout)
-                    self._sticky_messages = []
-                self._sticky_last_frame = self.stack[self.curindex]
+                self._flush_sticky_messages()
         return stop
+
+    def _flush_sticky_messages(self):
+        if self._sticky_messages:
+            for msg in self._sticky_messages:
+                print(msg, file=self.stdout)
+            self._sticky_messages = []
+        self._sticky_last_frame = self.stack[self.curindex]
 
     def set_continue(self):
         if self.sticky:
@@ -1512,6 +1515,7 @@ except for when using the function decorator.
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
         p._prompt = "({}) ".format(self._prompt.strip())
         self.message("ENTERING RECURSIVE DEBUGGER")
+        self._flush_sticky_messages()
         try:
             with self._custom_completer():
                 sys.call_tracing(p.run, (arg, globals, locals))

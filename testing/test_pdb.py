@@ -3811,6 +3811,19 @@ NUM             a = 1
 NUM             return a
 (#) c
 LEAVING RECURSIVE DEBUGGER
+# sticky
+<CLEARSCREEN>
+[NUM] > .*(), 5 frames hidden
+
+NUM         def fn():
+NUM             g()
+NUM             set_trace()
+NUM  ->         return 1
+# debug g()
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) c
+LEAVING RECURSIVE DEBUGGER
 # c
 """)
 
