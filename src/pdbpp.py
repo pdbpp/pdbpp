@@ -50,7 +50,7 @@ except ImportError:
         """Simple cache (with no maxsize basically) for py27 compatibility.
 
         Given that pdb there uses linecache.getline for each line with
-        do_list a cache makes a big differene."""
+        do_list a cache makes a big difference."""
 
         def dec(fn, *args):
             cache = {}
