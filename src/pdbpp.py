@@ -990,7 +990,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                         and cmd + arg == line  # not for "debug ..." etc
                     ) or arg.startswith("="):
                         cmd, arg, newline = None, None, line
-                    elif arg.startswith("(") and cmd in ("list", "next"):
+                    elif (
+                        cmd in ("list", "next")
+                        and (
+                            arg.startswith("(")
+                            or arg.startswith('.')
+                        )
+                    ):
                         # heuristic: handle "list(...", "next(..." etc as builtin.
                         cmd, arg, newline = None, None, line
 
