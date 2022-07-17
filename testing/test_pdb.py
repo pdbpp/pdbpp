@@ -38,7 +38,7 @@ except ImportError:
 # A lot of tests are regex checks and the back-slashed Windows paths end
 # up looking like they have escape characters in them (specifically the `\p`
 # in `...\pdbpp`). So we need to make sure to escape those strings.
-# In addtion, Windows is a case-insensitive file system. Most introspection
+# In addition, Windows is a case-insensitive file system. Most introspection
 # tools return the `normcase` version (eg: all lowercase), so we adjust the
 # canonical filename accordingly.
 RE_THIS_FILE = re.escape(__file__)
@@ -6023,7 +6023,7 @@ def test_exception_info_main(testdir):
     ]
     assert result.stdout.str().count("<CLEARSCREEN>") == 2
     if (3,) <= sys.version_info <= (3, 5):
-        # NOTE: skipping explicit check for slighty different output with py34.
+        # NOTE: skipping explicit check for slightly different output with py34.
         return
     result.stdout.fnmatch_lines(
         [
