@@ -237,7 +237,8 @@ Configuration and customization
 
 To customize pdb++, you can put a file named ``.pdbrc.py`` in your home
 directory.  The file must contain a class named ``Config`` inheriting from
-``pdb.DefaultConfig`` and override the desired values.
+``pdbpp.DefaultConfig`` and override the desired values
+(see `Example configurations`_).
 
 The following is a list of the options you can customize, together with their
 default value:
@@ -364,12 +365,6 @@ Options relevant for source code highlighting (using Pygments)
      ``None`` (default: ``None`` = use builtin colorscheme).
      Only used by ``TerminalFormatter``.
 
-Example::
-
-    class Config(pdb.DefaultConfig):
-        pygments_formatter_class = "pygments.formatters.TerminalTrueColorFormatter"
-        pygments_formatter_kwargs = {"style": "solarized-light"}
-
 .. _wmctrl: http://bitbucket.org/antocuni/wmctrl
 .. _SGR parameters: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 
@@ -385,6 +380,30 @@ The following means "reset all colors" (``0``), set foreground color to 18
 
 Constants are available via ``pdb.Color``, e.g. ``pdb.Color.red``
 (``"31;01"``), but in general any string can be used here.
+
+
+Example configurations
+^^^^^^^^^^^^^^^^^^^^^^
+
+An example configuration file, which activates ``sticky mode`` by default,
+would look like the following::
+
+    import pdbpp
+
+    class Config(pdbpp.DefaultConfig):
+        sticky_by_default = True
+
+
+As seen in the sections above, you can also adjust the source code
+highlighting. In order to use true colors and the solarized-light theme, you
+have to create a configuration as follows::
+
+    import pdbpp
+
+    class Config(pdbpp.DefaultConfig):
+        pygments_formatter_class = "pygments.formatters.TerminalTrueColorFormatter"
+        pygments_formatter_kwargs = {"style": "solarized-light"}
+
 
 Coding guidelines
 -----------------
