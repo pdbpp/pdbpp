@@ -1845,8 +1845,6 @@ except for when using the function decorator.
     def _get_position_of_obj(self, obj, quiet=False):
         if hasattr(inspect, "unwrap"):
             obj = inspect.unwrap(obj)
-        if isinstance(obj, str):
-            return obj, 1, None
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)

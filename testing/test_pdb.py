@@ -3135,6 +3135,28 @@ RUN emacs \+%d %s
 """ % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
+def test_edit_str_obj():
+    class StrLike(str):
+        pass
+
+    def fn():
+        bar = StrLike()
+        set_trace()
+        return bar
+    _, edit_lineno = inspect.getsourcelines(StrLike)
+
+    check(fn, r"""
+[NUM] > .*fn()
+-> return bar
+   5 frames hidden .*
+# edit bar
+\*\*\* could not parse filename/lineno
+# edit StrLike
+RUN emacs \+{:d} {}
+# c
+""".format(edit_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
+
+
 def test_edit_fname_lineno():
     def fn():
         set_trace()
