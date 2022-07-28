@@ -160,6 +160,10 @@ class DefaultConfig(object):
     line_number_color = Color.turquoise
     filename_color = Color.yellow
     current_line_color = "39;49;7"  # default fg, bg, inversed
+    # Windows/colorama doesn't support 'inversed', so instead of using the
+    # terminal default colors, we just use black-on-white
+    if sys.platform == "win32":
+        current_line_color = "30;47"  # black, white
 
     show_traceback_on_error = True
     show_traceback_on_error_limit = None
@@ -366,6 +370,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._disable_pytest_capture_maybe()
         kwargs = self.config.default_pdb_kwargs.copy()
         kwargs.update(**kwds)
+        if sys.platform == "win32":
+            try:
+                import colorama
+                # Do not strip the ANSI codes - they don't do anything on Windows
+                # and stripping them would mean updating many tests.
+                colorama.init(strip=False)
+            except ImportError:
+                print("Please install 'colorama' for color support on Windows.")
         super(Pdb, self).__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
