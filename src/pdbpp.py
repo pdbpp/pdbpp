@@ -487,10 +487,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         with self._custom_completer():
             self.config.before_interaction_hook(self)
             # Use _cmdloop on py3 which catches KeyboardInterrupt.
-            if hasattr(self, '_cmdloop'):
-                self._cmdloop()
-            else:
-                self.cmdloop()
+            try:
+                if hasattr(self, '_cmdloop'):
+                    self._cmdloop()
+                else:
+                    self.cmdloop()
+            except Exception as exc:
+                self.error("error during cmdloop: {}".format(exc))
+                if self.config.show_traceback_on_error:
+                    __import__("traceback").print_exc(file=self.stdout)
 
         self.forget()
 
