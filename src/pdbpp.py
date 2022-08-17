@@ -282,7 +282,7 @@ class PdbMeta(type):
                 # Do not stop while tracing is active (in _set_stopinfo).
                 # But skip it with instances that have not called set_trace
                 # before.
-                # Excplicitly unset tracing function always (with breakpoints).
+                # Explicitly unset tracing function always (with breakpoints).
                 sys.settrace(None)
                 global_pdb.set_continue()
                 global_pdb._set_trace_use_next = True
