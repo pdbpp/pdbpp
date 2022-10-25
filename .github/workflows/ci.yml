@@ -39,22 +39,22 @@ jobs:
             os: ubuntu-22.04
           - tox_env: "py37-coverage"
             python: "3.7"
-            os: ubuntu-22.04
+            os: ubuntu-20.04
           - tox_env: "py36-coverage"
             python: "3.6"
-            os: ubuntu-22.04
+            os: ubuntu-20.04
           - tox_env: "py35-coverage"
             python: "3.5"
-            os: ubuntu-22.04
+            os: ubuntu-20.04
 
           - tox_env: "py27-coverage"
             python: "2.7"
-            os: ubuntu-22.04
+            os: ubuntu-20.04
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           - tox_env: "pypy3-coverage"
             python: "pypy-3.7"
-            os: ubuntu-22.04
+            os: ubuntu-20.04
           - tox_env: "pypy-coverage"
             python: "pypy-2.7"
             os: ubuntu-22.04
