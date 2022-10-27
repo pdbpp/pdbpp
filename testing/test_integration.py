@@ -2,12 +2,14 @@ import sys
 
 import pytest
 
+from .conftest import skip_with_missing_pth_file
+
 
 def test_integration(testdir, readline_param):
     tmpdir = testdir.tmpdir
 
     f = tmpdir.ensure("test_file.py")
-    f.write("print('before'); __import__('pdb').set_trace(); print('after')")
+    f.write("print('before'); __import__('pdbpp').set_trace(); print('after')")
 
     if readline_param != "pyrepl":
         # Create empty pyrepl module to ignore any installed pyrepl.
@@ -70,6 +72,8 @@ def test_ipython(testdir):
     - `up` used to crash due to conflicting `hidden_frames` attribute/method.
     """
     pytest.importorskip("IPython")
+    skip_with_missing_pth_file()
+
     child = testdir.spawn(
         "{} -m IPython --colors=nocolor --simple-prompt".format(
             sys.executable,

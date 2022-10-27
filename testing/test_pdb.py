@@ -13,11 +13,12 @@ import textwrap
 import traceback
 from io import BytesIO
 
+import pdbpp
 import py
 import pytest
-
-import pdbpp
 from pdbpp import DefaultConfig, Pdb, StringIO
+
+from .conftest import skip_with_missing_pth_file
 
 try:
     from shlex import quote
@@ -219,7 +220,7 @@ def runpdb(func, input, terminal_size=None):
 
 
 def is_prompt(line):
-    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) '}
+    prompts = {'# ', '(#) ', '((#)) ', '(((#))) ', '(Pdb) ', '(Pdb++) ', '(com++) '}
     for prompt in prompts:
         if line.startswith(prompt):
             return len(prompt)
@@ -242,6 +243,7 @@ shortcuts = [
     (')', '\\)'),
     ('^', '\\^'),
     (r'\(Pdb++\) ', r'\(Pdb\+\+\) '),
+    (r'\(com++\) ', r'\(com\+\+\) '),
     ('<COLORCURLINE>', r'\^\[\[44m\^\[\[36;01;44m *[0-9]+\^\[\[00;44m'),
     ('<COLORNUM>', r'\^\[\[36;01m *[0-9]+\^\[\[00m'),
     ('<COLORFNAME>', r'\^\[\[33;01m'),
@@ -1022,6 +1024,11 @@ def test_single_question_mark():
 def test_double_question_mark():
     """Test do_inspect_with_source."""
     def fn():
+        class TestStr(str):
+            __doc__ = "shortened"
+
+        s = TestStr("str")  # noqa: F841
+
         def f2(x, y):
             """Return product of x and y"""
             return x * y
@@ -1050,6 +1057,12 @@ def test_double_question_mark():
 .*     return x \* y
 # doesnotexist??
 \*\*\* NameError.*
+# s??
+^[[31;01mType:^[[00m           TestStr
+^[[31;01mString Form:^[[00m    str
+^[[31;01mLength:^[[00m         3
+^[[31;01mDocstring:^[[00m      shortened
+^[[31;01mSource:^[[00m         -
 # c
     """.format(
         filename=RE_THIS_FILE_CANONICAL,
@@ -1459,6 +1472,34 @@ True
 'r.text'
 # cont
 """)
+
+
+def test_parseline_remembers_smart_command_escape():
+    def fn():
+        n = 42
+        set_trace()
+        n = 43
+        n = 44
+        return n
+
+    check(fn, """
+[NUM] > .*fn()
+-> n = 43
+   5 frames hidden .*
+# n
+42
+# !!n
+[NUM] > .*fn()
+-> n = 44
+   5 frames hidden .*
+# 
+[NUM] > .*fn()
+-> return n
+   5 frames hidden .*
+# n
+44
+# c
+""")  # noqa: W291
 
 
 def test_args_name():
@@ -3770,6 +3811,19 @@ NUM             a = 1
 NUM             return a
 (#) c
 LEAVING RECURSIVE DEBUGGER
+# sticky
+<CLEARSCREEN>
+[NUM] > .*(), 5 frames hidden
+
+NUM         def fn():
+NUM             g()
+NUM             set_trace()
+NUM  ->         return 1
+# debug g()
+ENTERING RECURSIVE DEBUGGER
+[1] > <string>(1)<module>()
+(#) c
+LEAVING RECURSIVE DEBUGGER
 # c
 """)
 
@@ -4275,12 +4329,8 @@ def test_python_m_pdb_usage():
 
 @pytest.mark.parametrize('PDBPP_HIJACK_PDB', (1, 0))
 def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
-    from sysconfig import get_path
-
     if PDBPP_HIJACK_PDB:
-        pth = os.path.join(get_path("purelib"), "pdbpp_hijack_pdb.pth")
-        if not os.path.exists(pth):
-            pytest.skip("Missing pth file ({}), editable install?".format(pth))
+        skip_with_missing_pth_file()
 
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
@@ -4415,11 +4465,16 @@ def test_completes_from_pdb(monkeypatch_readline):
 
     _, lineno = inspect.getsourcelines(fn)
 
+    if sys.version_info >= (3, 10, 0, "a", 7):  # bpo-24160
+        pre_py310_output = ""
+    else:
+        pre_py310_output = "\n'There are no breakpoints'"
+
     check(fn, """
 [NUM] > .*fn()
 .*
    5 frames hidden .*
-# break %d
+# break {lineno}
 Breakpoint NUM at .*
 # c
 --Return--
@@ -4428,8 +4483,9 @@ Breakpoint NUM at .*
    5 frames hidden .*
 # check_completions()
 True
+# import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks(){pre_py310_output}
 # c
-""" % lineno)
+""".format(lineno=lineno, pre_py310_output=pre_py310_output))
 
 
 def test_completion_uses_tab_from_fancycompleter(monkeypatch_readline):
@@ -4759,7 +4815,7 @@ def test_nested_completer(testdir):
 
         def outer():
             completeme_outer = 2
-            __import__('pdb').set_trace()
+            __import__('pdbpp').set_trace()
 
         outer()
         """
@@ -4999,6 +5055,12 @@ def test_chained_syntaxerror_with_traceback():
         set_trace()
 
     if sys.version_info > (3,):
+        if sys.version_info >= (3, 10, 0, "final") and sys.version_info <= (3, 10, 1):
+            # changed after rc2 (bpo-45249), fixed in 3.10.1.
+            caret_line = "           $"
+        else:
+            caret_line = "    .*^"
+
         check(fn, """
 --Return--
 [NUM] > .*fn()
@@ -5013,7 +5075,7 @@ Traceback (most recent call last):
     compile.*
   File "<stdin>", line 1
     invalid(
-    .*^
+""" + caret_line + """
 SyntaxError: .*
 
 During handling of the above exception, another exception occurred:
@@ -5951,18 +6013,33 @@ def test_exception_info_main(testdir):
         """
     )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
+
     result = testdir.run(
-        sys.executable, "-m", "pdb", str(p1),
-        stdin=b"cont\nsticky\n",
+        sys.executable, "-m", "pdbpp", str(p1),
+        stdin=b"p 'sticky'\nsticky\np 'cont'\ncont\np 'quit'\nq\n",
     )
+    result.stdout.lines = [
+        ln.replace(pdbpp.CLEARSCREEN, "<CLEARSCREEN>") for ln in result.stdout.lines
+    ]
+    assert result.stdout.str().count("<CLEARSCREEN>") == 2
+    if (3,) <= sys.version_info <= (3, 5):
+        # NOTE: skipping explicit check for slighty different output with py34.
+        return
     result.stdout.fnmatch_lines(
         [
-            '*Uncaught exception. Entering post mortem debugging',
-            "*[[]5[]] > *test_exception_info_main.py(2)f()",
+            "(Pdb++) 'sticky'",
+            "(Pdb++) <CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
+            "(Pdb++) 'cont'",
+            "(Pdb++) Uncaught exception. Entering post mortem debugging",
+            # NOTE: this explicitly checks for a missing CLEARSCREEN in front.
+            "[[]5[]] > *test_exception_info_main.py(2)f()",
             "",
             "1     def f():",
             '2  ->     raise ValueError("foo")',
             "ValueError: foo",
+            "(Pdb++) 'quit'",
+            "(Pdb++) Post mortem debugger finished. *",
+            "<CLEARSCREEN>[[]2[]] > */test_exception_info_main.py(1)<module>()",
         ]
     )
 
@@ -5985,7 +6062,6 @@ def test_interaction_no_exception():
 [NUM] > .*outer()
 -> raise ValueError()
 # sticky
-<CLEARSCREEN>
 [0] > .*outer()
 
 NUM         def outer():
@@ -6019,3 +6095,86 @@ ENTERING RECURSIVE DEBUGGER
 LEAVING RECURSIVE DEBUGGER
 # q
 """)
+
+
+class TestCommands:
+    @staticmethod
+    def fn():
+        def f():
+            print(a)
+
+        a = 0
+        set_trace()
+
+        for i in range(5):
+            a += i
+            f()
+
+    def test_commands_with_sticky(self):
+        check(
+            self.fn,
+            r"""
+            [NUM] > .*fn()
+            -> for i in range(5):
+               5 frames hidden .*
+            # sticky
+            <CLEARSCREEN>
+            [NUM] > .*(), 5 frames hidden
+
+            NUM         @staticmethod
+            NUM         def fn():
+            NUM             def f():
+            NUM                 print(a)
+            NUM     $
+            NUM             a = 0
+            NUM             set_trace()
+            NUM     $
+            NUM  ->         for i in range(5):
+            NUM                 a \+= i
+            NUM                 f()
+            # break f, a==6
+            Breakpoint NUM at .*
+            # commands
+            (com++) print("stop", a)
+            (com++) end
+            # c
+            0
+            1
+            3
+            stop 6
+            [NUM] > .*f(), 5 frames hidden
+
+            NUM             def f():
+            NUM  ->             print(a)
+            # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+            # c
+            6
+            10
+            """,
+        )
+
+    def test_commands_without_sticky(self):
+        check(
+            self.fn,
+            r"""
+            [NUM] > .*fn()
+            -> for i in range(5):
+               5 frames hidden .*
+            # break f, a==6
+            Breakpoint NUM at .*
+            # commands
+            (com++) print("stop", a)
+            (com++) end
+            # c
+            0
+            1
+            3
+            stop 6
+            [NUM] > .*f()$
+            -> print(a)
+            # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+            # c
+            6
+            10
+            """,
+        )

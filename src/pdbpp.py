@@ -50,7 +50,7 @@ except ImportError:
         """Simple cache (with no maxsize basically) for py27 compatibility.
 
         Given that pdb there uses linecache.getline for each line with
-        do_list a cache makes a big differene."""
+        do_list a cache makes a big difference."""
 
         def dec(fn, *args):
             cache = {}
@@ -445,6 +445,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             linecache.checkcache = _linecache_checkcache
 
     def interaction(self, frame, traceback):
+        if frame is None:
+            # Skip clearing screen if called with no frame (e.g. via pdb.main).
+            self._sticky_skip_cls = True
         self._install_linecache_wrapper()
 
         self._in_interaction = True
@@ -491,6 +494,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         self.forget()
 
+    def break_here(self, frame):
+        ret = super(Pdb, self).break_here(frame)
+        if ret:
+            # Skip clearing screen if invoked via breakpoint, which e.g.
+            # might execute/display output from commands.
+            self._sticky_skip_cls = True
+        return ret
+
     def _sticky_handle_cls(self):
         if self._sticky_skip_cls:
             self._sticky_skip_cls = False
@@ -506,15 +517,18 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         """Handle clearing of the screen for sticky mode."""
         stop = super(Pdb, self).postcmd(stop, line)
         if self.sticky:
-            if stop:
+            if stop and not self.commands_defining:
                 self._sticky_handle_cls()
             else:
-                if self._sticky_messages:
-                    for msg in self._sticky_messages:
-                        print(msg, file=self.stdout)
-                    self._sticky_messages = []
-                self._sticky_last_frame = self.stack[self.curindex]
+                self._flush_sticky_messages()
         return stop
+
+    def _flush_sticky_messages(self):
+        if self._sticky_messages:
+            for msg in self._sticky_messages:
+                print(msg, file=self.stdout)
+            self._sticky_messages = []
+        self._sticky_last_frame = self.stack[self.curindex]
 
     def set_continue(self):
         if self.sticky:
@@ -929,7 +943,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             # Force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display.
             line = line[2:]
-            return super(Pdb, self).parseline(line)
+            cmd, arg, newline = super(Pdb, self).parseline(line)
+            return cmd, arg, "!!" + newline
 
         if line.endswith('?') and not line.startswith("!"):
             arg = line.split('?', 1)[0]
@@ -947,7 +962,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exists in the current context;
-        # This prevents pdb to quit if you type e.g. 'r[0]' by mystake.
+        # This prevents pdb to quit if you type e.g. 'r[0]' by mistake.
         cmd, arg, newline = super(Pdb, self).parseline(line)
 
         if cmd:
@@ -1061,7 +1076,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if with_source:
             self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
             _, lineno, lines = self._get_position_of_obj(obj, quiet=True)
-            if lineno is None:
+            if lines is None:
                 self.stdout.write(" -\n")
             else:
                 self.stdout.write("\n")
@@ -1500,6 +1515,7 @@ except for when using the function decorator.
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
         p._prompt = "({}) ".format(self._prompt.strip())
         self.message("ENTERING RECURSIVE DEBUGGER")
+        self._flush_sticky_messages()
         try:
             with self._custom_completer():
                 sys.call_tracing(p.run, (arg, globals, locals))
@@ -1588,7 +1604,7 @@ except for when using the function decorator.
             print('** %s not in the display list **' % arg, file=self.stdout)
 
     def _print_if_sticky(self):
-        if self.sticky:
+        if self.sticky and not self.commands_defining:
             self._sticky_handle_cls()
             width, height = self.get_terminal_size()
 
@@ -1737,6 +1753,10 @@ except for when using the function decorator.
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
+        if self.sticky:
+            # Skip display of current frame when sticky mode display it later.
+            if sys._getframe(1).f_code.co_name == "bp_commands":
+                return
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
@@ -2304,5 +2324,5 @@ def break_on_setattr(attrname, condition=always, Pdb=Pdb):
 
 
 if __name__ == '__main__':
-    import pdb
-    pdb.main()
+    import pdbpp
+    pdbpp.main()

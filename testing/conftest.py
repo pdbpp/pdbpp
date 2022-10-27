@@ -1,5 +1,7 @@
 import functools
+import os
 import sys
+import sysconfig
 from contextlib import contextmanager
 
 import pytest
@@ -48,7 +50,9 @@ def restore_settrace(monkeypatch):
     newtrace = sys.gettrace()
     if newtrace is not _orig_trace:
         sys.settrace(_orig_trace)
-        assert newtrace is None
+        assert newtrace is None, (
+            "tracing function was not reset! Breakpoints left? ({})".format(
+                newtrace))
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -192,3 +196,9 @@ def monkeypatch_importerror(monkeypatch):
                 m.setattr('__builtin__.__import__', import_mock)
             yield m
     return cm
+
+
+def skip_with_missing_pth_file():
+    pth = os.path.join(sysconfig.get_path("purelib"), "pdbpp_hijack_pdb.pth")
+    if not os.path.exists(pth):
+        pytest.skip("Missing pth file ({}), editable install?".format(pth))

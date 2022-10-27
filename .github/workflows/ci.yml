@@ -28,10 +28,13 @@ jobs:
       matrix:
         include:
           # Linux
+          - tox_env: "py310-coverage"
+            python: "3.10"
+            os: ubuntu-20.04
           - tox_env: "py39-ipython-coverage"
             python: "3.9"
             os: ubuntu-20.04
-          - tox_env: "py38-coverage"
+          - tox_env: "py38-editable-coverage"
             python: "3.8"
             os: ubuntu-20.04
           - tox_env: "py37-coverage"
@@ -123,6 +126,7 @@ jobs:
       run: python -m pip list
 
     - name: Setup tox environment
+      id: setup_tox
       env:
         PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
         TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
@@ -140,8 +144,8 @@ jobs:
       run: python -m tox -v $TOX_ARGS --force-dep="$PYTEST"
 
     - name: Report coverage
-      if: always() && (contains(matrix.tox_env, '-coverage'))
-      uses: codecov/codecov-action@v1
+      if: always() && (contains(matrix.tox_env, '-coverage') && (steps.setup_tox.outcome == 'success'))
+      uses: codecov/codecov-action@v3
       with:
         files: ./coverage-ci.xml
         flags: ${{ runner.os }}
