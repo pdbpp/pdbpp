@@ -132,11 +132,11 @@ def rebind_globals(func, newglobals):
         )
 
     # Python 3.11
-    _pdb = __import__("pdb", fromlist=("_ModuleTarget", "_ScriptTargetu"))
+    _pdb = __import__("pdb", fromlist=("_ModuleTarget", "_ScriptTarget"))
     if (
         hasattr(_pdb, '_ModuleTarget')
         and hasattr(_pdb, '_ScriptTarget')
-        and isinstance(func, (_pdb._ModuleTarget, _pdb._ScriptTarget))
+        and func.__name__ in ("_ModuleTarget", "_ScriptTarget")
     ):
         return func
 
