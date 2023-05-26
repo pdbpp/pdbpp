@@ -131,6 +131,11 @@ def rebind_globals(func, newglobals):
             _newfunc(func.func, newglobals), *func.args, **func.keywords
         )
 
+    # Python 3.11
+    _pdb = __import__("pdb", fromlist=("_ModuleTarget", "_ScriptTarget"))
+    if isinstance(func, (_pdb._ModuleTarget, _pdb._ScriptTarget)):
+        return func
+
     raise ValueError("cannot handle func {!r}".format(func))
 
 
@@ -2199,7 +2204,16 @@ if hasattr(pdb, '_usage'):
     _usage = pdb._usage
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall main set_trace'.split():
+for name in (
+    "run",
+    "runeval",
+    "runctx",
+    "runcall",
+    "main",
+    "set_trace",
+    "_ModuleTarget",  # Python 3.11
+    "_ScriptTarget",  # Python 3.11
+):
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
