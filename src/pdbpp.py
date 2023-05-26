@@ -132,8 +132,12 @@ def rebind_globals(func, newglobals):
         )
 
     # Python 3.11
-    _pdb = __import__("pdb", fromlist=("_ModuleTarget", "_ScriptTarget"))
-    if isinstance(func, (_pdb._ModuleTarget, _pdb._ScriptTarget)):
+    _pdb = __import__("pdb", fromlist=("_ModuleTarget", "_ScriptTargetu"))
+    if (
+        hasattr(_pdb, '_ModuleTarget')
+        and hasattr(_pdb, '_ScriptTarget')
+        and isinstance(func, (_pdb._ModuleTarget, _pdb._ScriptTarget))
+    ):
         return func
 
     raise ValueError("cannot handle func {!r}".format(func))
