@@ -131,6 +131,12 @@ def rebind_globals(func, newglobals):
             _newfunc(func.func, newglobals), *func.args, **func.keywords
         )
 
+    if sys.version_info >= (3, 11) and func.__name__ in (
+        "_ModuleTarget",
+        "_ScriptTarget",
+    ):
+        return func
+
     raise ValueError("cannot handle func {!r}".format(func))
 
 
@@ -2199,10 +2205,13 @@ if hasattr(pdb, '_usage'):
     _usage = pdb._usage
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall main set_trace'.split():
+to_rebind = ["run", "runeval", "runctx", "runcall", "main", "set_trace"]
+if sys.version_info >= (3, 11):
+    to_rebind += ["_ModuleTarget", "_ScriptTarget"]
+for name in to_rebind:
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
-del name, func
+del name, func, to_rebind
 
 
 # Post-Mortem interface
