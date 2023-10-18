@@ -14,6 +14,7 @@ import traceback
 from io import BytesIO
 
 import pdbpp
+import pygments
 import pytest
 from pdbpp import DefaultConfig, Pdb, StringIO
 
@@ -28,6 +29,12 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
+
+# ref: https://github.com/pygments/pygments/commit/147b22fa
+PYGMENTS_VERSION_TUPLE = tuple(int(x) for x in pygments.__version__.split("."))
+PYGMENTS_WHITESPACE_PREFIX = (
+    "^[[38;5;250m        ^[[39m" if PYGMENTS_VERSION_TUPLE > (2, 14) else "        "
+)
 
 
 # Windows support
@@ -1756,7 +1763,7 @@ def test_truncated_source_with_pygments():
 # l {line_num}, 5
 NUM +\t$
 NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +\t^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
+NUM +\t{pygments_prefix}^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
 NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +\t$
@@ -1765,13 +1772,16 @@ NUM +\t$
 [NUM] > .*fn(), 5 frames hidden
 
 NUM +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +    ^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
+NUM +    {pygments_prefix}^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
 NUM +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +$
 NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
 # c
-""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+""".format(  # noqa: E501
+        line_num=fn.__code__.co_firstlineno - 1,
+        pygments_prefix=PYGMENTS_WHITESPACE_PREFIX,
+    ))
 
 
 def test_truncated_source_with_pygments_and_highlight():
@@ -1790,7 +1800,7 @@ def test_truncated_source_with_pygments_and_highlight():
 # l {line_num}, 5
 <COLORNUM> +\t$
 <COLORNUM> +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +\t^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
+<COLORNUM> +\t{pygments_prefix}^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
 <COLORNUM> +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +\t$
@@ -1799,13 +1809,16 @@ def test_truncated_source_with_pygments_and_highlight():
 [NUM] > .*fn(), 5 frames hidden
 
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +   ^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines<PYGMENTSRESET>
+<COLORNUM> +    {pygments_prefix}^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines<PYGMENTSRESET>
 <COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +$
 <COLORCURLINE> +->         ^[[38;5;28;01;44mreturn<PYGMENTSRESET> a                                                       ^[[00m
 # c
-""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+""".format(  # noqa: E501
+        line_num=fn.__code__.co_firstlineno - 1,
+        pygments_prefix=PYGMENTS_WHITESPACE_PREFIX,
+    ))
 
 
 def test_shortlist_with_highlight():
