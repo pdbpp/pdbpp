@@ -1090,7 +1090,7 @@ def test_question_mark_unit(capsys, LineMatcher):
     ])
 
     # Source for function, indented docstring.
-    def foo():
+    def foo():  # noqa: F811
         """doc_for_foo
 
         3rd line."""
@@ -4542,7 +4542,7 @@ def test_complete_removes_duplicates_with_coloring(
             if readline_param == "pyrepl":
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 comps = get_completions("helpvar.")
-                assert type(helpvar.denominator) == int
+                assert type(helpvar.denominator) is int
                 assert any(
                     re.match(r"\x1b\[\d\d\d;00m\x1b\[33;01mdenominator\x1b\[00m", x)
                     for x in comps
