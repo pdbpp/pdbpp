@@ -14,7 +14,6 @@ import traceback
 from io import BytesIO
 
 import pdbpp
-import py
 import pytest
 from pdbpp import DefaultConfig, Pdb, StringIO
 
@@ -2960,29 +2959,6 @@ AssertionError.*
     ))
 
 
-def test_py_code_source():  # noqa: F821
-    src = py.code.Source("""
-    def fn():
-        x = 42
-        set_trace()
-        return x
-    """)
-
-    exec(src.compile(), globals())
-    check(fn,  # noqa: F821
-          """
-[NUM] > .*fn()
--> return x
-   5 frames hidden .*
-# ll
-NUM     def fn():
-NUM         x = 42
-NUM         set_trace()
-NUM  ->     return x
-# c
-""")
-
-
 def test_source():
     def bar():
         return 42
@@ -3162,28 +3138,6 @@ RUN emacs \+1 {os_fname}
 """.format(fname=__file__,
            fname_edit=RE_THIS_FILE_QUOTED,
            os_fname=re.escape(quote(os.__file__.rstrip("c")))))
-
-
-def test_edit_py_code_source():
-    src = py.code.Source("""
-    def bar():
-        set_trace()
-        return 42
-    """)
-    _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
-    dic = {'set_trace': set_trace}
-    exec(src.compile(), dic)  # 8th line from the beginning of the function
-    bar = dic['bar']
-    src_compile_lineno = base_lineno + 8
-
-    check(bar, r"""
-[NUM] > .*bar()
--> return 42
-   5 frames hidden .*
-# edit bar
-RUN emacs \+%d %s
-# c
-""" % (src_compile_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_put():
