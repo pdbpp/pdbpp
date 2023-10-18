@@ -61,9 +61,9 @@ jobs:
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # macOS
-          - tox_env: "py37-coverage"
-            python: "3.7"
-            os: macos-10.15
+          - tox_env: "py311-coverage"
+            python: "3.11"
+            os: macos-11
 
           # Windows
           - tox_env: "py38-coverage"
@@ -76,10 +76,9 @@ jobs:
             os: windows-2019
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
             tox: tox==3.14.0  # tox 3.14.1 dropped support for py34.
-            tox_args: "-e py34-coverage"  # no '--durations'.
           - tox_env: "py27-coverage"
             python: "2.7"
-            os: windows-2016
+            os: windows-2019
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # Generic
@@ -95,6 +94,14 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
+      # Skip for py27, where it is available in the image (ubuntu-20.04).
+      if: matrix.python != '2.7'
+    - name: Set up Python 2
+      if: matrix.python == '2.7' && matrix.os != 'windows-2019'
+      run: |
+        ln -sfn /usr/bin/python2.7 /usr/local/bin/python
+        curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+        python get-pip.py
 
     # Caching.
     - name: set PY_CACHE_KEY
@@ -107,6 +114,7 @@ jobs:
 
     - name: (Initial) version information/pinning
       run: |
+        python -VV
         python -m site
         python -m pip --version
         python -m pip list
@@ -120,7 +128,7 @@ jobs:
         python -m pip install -U virtualenv==20.4.3
 
     - name: Install tox
-      run: python -m pip install ${{ matrix.tox || 'git+https://github.com/blueyed/tox@master' }}
+      run: python -m pip install ${{ matrix.tox || 'tox' }}
 
     - name: Version information
       run: python -m pip list
@@ -129,8 +137,7 @@ jobs:
       id: setup_tox
       env:
         PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
-        TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
-      run: python -m tox --notest -v $TOX_ARGS --force-dep="$PYTEST"
+      run: python -m tox --notest -v -e ${{ matrix.tox_env }} --force-dep="$PYTEST"
 
     - name: Test
       env:
@@ -139,9 +146,8 @@ jobs:
         PYTEST: ${{ matrix.pytest || 'pytest @ git+https://github.com/blueyed/pytest@my-master' }}
         # UTF-8 mode for Windows (https://docs.python.org/3/using/windows.html#utf-8-mode).
         PYTHONUTF8: "1"
-        TOX_ARGS: "${{ matrix.tox_args || format('--durations -e {0}', matrix.tox_env) }}"
         TOX_TESTENV_PASSENV: "PYTHONUTF8"
-      run: python -m tox -v $TOX_ARGS --force-dep="$PYTEST"
+      run: python -m tox -v -e ${{ matrix.tox_env }} --force-dep="$PYTEST"
 
     - name: Report coverage
       if: always() && (contains(matrix.tox_env, '-coverage') && (steps.setup_tox.outcome == 'success'))
