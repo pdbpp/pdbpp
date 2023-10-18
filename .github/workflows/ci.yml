@@ -61,9 +61,9 @@ jobs:
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # macOS
-          - tox_env: "py37-coverage"
-            python: "3.7"
-            os: macos-12
+          - tox_env: "py311-coverage"
+            python: "3.11"
+            os: macos-11
 
           # Windows
           - tox_env: "py38-coverage"
