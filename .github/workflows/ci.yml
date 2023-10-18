@@ -96,6 +96,10 @@ jobs:
         python-version: ${{ matrix.python }}
       # Skip for py27, where it is available in the image (ubuntu-20.04).
       if: matrix.python != '2.7'
+    - name: Set up Python 2
+      if: matrix.python == '2.7'
+      run: |
+        ln -sfn/usr/bin/python2.7 /usr/bin/python
 
     # Caching.
     - name: set PY_CACHE_KEY
@@ -108,6 +112,7 @@ jobs:
 
     - name: (Initial) version information/pinning
       run: |
+        python -VV
         python -m site
         python -m pip --version
         python -m pip list
