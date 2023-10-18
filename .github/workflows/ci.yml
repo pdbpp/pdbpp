@@ -28,6 +28,9 @@ jobs:
       matrix:
         include:
           # Linux
+          - tox_env: "py311-coverage"
+            python: "3.11"
+            os: ubuntu-22.04
           - tox_env: "py310-coverage"
             python: "3.10"
             os: ubuntu-20.04
