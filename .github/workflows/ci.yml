@@ -100,7 +100,7 @@ jobs:
       if: matrix.python == '2.7'
       run: |
         ln -sfn /usr/bin/python2.7 /usr/local/bin/python
-        apt-get install python-pip
+        sudo apt-get install python-pip
 
     # Caching.
     - name: set PY_CACHE_KEY
