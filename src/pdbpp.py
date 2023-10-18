@@ -316,7 +316,7 @@ class PdbMeta(type):
         _env = getattr(obj, "_env", None)
         if _env is not None and _env.get("HOME") != os.environ.get("HOME"):
             return False
-        if type(obj) == C:
+        if type(obj) is C:
             return True
         if getattr(obj, "_use_global_pdb_for_class", None) == C:
             return True
