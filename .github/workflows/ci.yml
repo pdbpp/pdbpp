@@ -30,16 +30,16 @@ jobs:
           # Linux
           - tox_env: "py310-coverage"
             python: "3.10"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - tox_env: "py39-ipython-coverage"
             python: "3.9"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - tox_env: "py38-editable-coverage"
             python: "3.8"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - tox_env: "py37-coverage"
             python: "3.7"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - tox_env: "py36-coverage"
             python: "3.6"
             os: ubuntu-20.04
@@ -54,10 +54,10 @@ jobs:
 
           - tox_env: "pypy3-coverage"
             python: "pypy-3.7"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - tox_env: "pypy-coverage"
             python: "pypy-2.7"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # macOS
@@ -85,7 +85,7 @@ jobs:
           # Generic
           - tox_env: "checkqa"
             python: "3.9"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
