@@ -97,7 +97,7 @@ jobs:
       # Skip for py27, where it is available in the image (ubuntu-20.04).
       if: matrix.python != '2.7'
     - name: Set up Python 2
-      if: matrix.python == '2.7'
+      if: matrix.python == '2.7' && matrix.os != 'windows-2019'
       run: |
         ln -sfn /usr/bin/python2.7 /usr/local/bin/python
         curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
