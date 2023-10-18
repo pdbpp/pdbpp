@@ -99,7 +99,7 @@ jobs:
     - name: Set up Python 2
       if: matrix.python == '2.7'
       run: |
-        ln -sfn /usr/bin/python2.7 /usr/bin/python
+        ln -sfn /usr/bin/python2.7 /usr/local/bin/python
 
     # Caching.
     - name: set PY_CACHE_KEY
