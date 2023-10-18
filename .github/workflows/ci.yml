@@ -95,7 +95,7 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
       # Skip for py27, where it is available in the image (ubuntu-20.04).
-      if: matrix.python_version != '2.7'
+      if: matrix.python != '2.7'
 
     # Caching.
     - name: set PY_CACHE_KEY
