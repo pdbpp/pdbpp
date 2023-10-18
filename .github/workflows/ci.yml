@@ -78,7 +78,7 @@ jobs:
             tox: tox==3.14.0  # tox 3.14.1 dropped support for py34.
           - tox_env: "py27-coverage"
             python: "2.7"
-            os: windows-2016
+            os: windows-2019
             pytest: "pytest @ git+https://github.com/blueyed/pytest@my-4.6-maintenance"
 
           # Generic
