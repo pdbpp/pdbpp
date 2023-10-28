@@ -1,0 +1,50 @@
+name: lint
+
+on:
+  push:
+    branches:
+      - "master"
+      - "release-*"
+  pull_request:
+    branches:
+      - "master"
+      - "release-*"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-latest, macos-latest]
+        pyv: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.pyv }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.pyv }}
+
+      - name: set PY_CACHE_KEY
+        run: echo "PY_CACHE_KEY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
+      - name: Cache .tox
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/.tox/checkqa
+          key: "tox-lint|${{ matrix.os }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
+
+      - name: Update pip/setuptools
+        run: |
+          pip install -U pip setuptools
+
+      - name: Install tox
+        run: python -m pip install tox
+
+      - name: Version information
+        run: python -m pip list
+
+      - name: Lint
+        run: tox -v -e checkqa
