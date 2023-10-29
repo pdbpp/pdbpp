@@ -41,22 +41,21 @@ def test_integration(testdir, readline_param):
 
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
-    if sys.version_info >= (3, 3):
-        child.send(b"b \t")
-        if readline_param == "pyrepl":
-            child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:'
-                               b'\x1b[?12l\x1b[?25h')
-        else:
-            child.expect_exact(b'b test_file.py:')
+    child.send(b"b \t")
+    if readline_param == "pyrepl":
+        child.expect_exact(b'\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:'
+                           b'\x1b[?12l\x1b[?25h')
+    else:
+        child.expect_exact(b'b test_file.py:')
 
-        child.sendline("")
-        if readline_param == "pyrepl":
-            child.expect_exact(
-                b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
-                b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
-            )
-        else:
-            child.expect_exact(b"\r\n*** Bad lineno: \r\n(Pdb++) ")
+    child.sendline("")
+    if readline_param == "pyrepl":
+        child.expect_exact(
+            b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
+            b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
+        )
+    else:
+        child.expect_exact(b"\r\n*** Bad lineno: \r\n(Pdb++) ")
 
     child.sendline("c")
     rest = child.read()
@@ -75,9 +74,7 @@ def test_ipython(testdir):
     skip_with_missing_pth_file()
 
     child = testdir.spawn(
-        "{} -m IPython --colors=nocolor --simple-prompt".format(
-            sys.executable,
-        )
+        f"{sys.executable} -m IPython --colors=nocolor --simple-prompt"
     )
     child.sendline("%debug raise ValueError('my_value_error')")
     child.sendline("up")

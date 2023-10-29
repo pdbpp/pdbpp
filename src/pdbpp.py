@@ -51,7 +51,7 @@ def __getattr__(name):  # FIXME: ???
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
         return local.GLOBAL_PDB
-    raise AttributeError("module '{}' has no attribute '{}'".format(__name__, name))
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 def import_from_stdlib(name):
@@ -92,7 +92,7 @@ def rebind_globals(func, newglobals):
             _newfunc(func.func, newglobals), *func.args, **func.keywords
         )
 
-    raise ValueError("cannot handle func {!r}".format(func))
+    raise ValueError(f"cannot handle func {func}")
 
 
 class DefaultConfig:
@@ -377,7 +377,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             import py.test
 
             # Force raising of ImportError if pytest is not installed.
-            py.test.config
+            py.test.config  # noqa: B018
         except (ImportError, AttributeError):
             return
         try:
@@ -728,9 +728,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                         x[prefix_len:] if x.startswith(prefix) else x
                         for x in pdb_completions
                     ]
-                if len(completions) == 1 and "." in completions[0]:
-                    if pdb_prefix:
-                        pdb_completions = []
+                if len(completions) == 1 and "." in completions[0] and pdb_prefix:
+                    pdb_completions = []
 
                 for x in pdb_completions:
                     if x not in clean_fancy_completions:
@@ -812,7 +811,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         try:
             pygments_formatter = self._get_pygments_formatter()
         except Exception as exc:
-            self.message("pdb++: could not setup Pygments, disabling: {}".format(exc))
+            self.message(f"pdb++: could not setup Pygments, disabling: {exc}")
             return False
 
         lexer = pygments.lexers.PythonLexer(stripnl=False)
@@ -989,38 +988,30 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         data = OrderedDict()
         data["Type"] = type(obj).__name__
         data["String Form"] = str(obj).strip()
-        try:
+        with contextlib.suppress(TypeError):
             data["Length"] = str(len(obj))
-        except TypeError:
-            pass
         try:
             data["File"] = inspect.getabsfile(obj)
         except TypeError:
             pass
         else:
-            try:
+            with contextlib.suppress(AttributeError):
                 data["File"] += ":" + str(obj.__code__.co_firstlineno)
-            except AttributeError:
-                pass
 
         if (
             isinstance(obj, type)
             and hasattr(obj, "__init__")
-            and getattr(obj, "__module__") != "__builtin__"
+            and obj.__module__ != "__builtin__"
         ):
             # Class - show definition and docstring for constructor
             data["Docstring"] = inspect.getdoc(obj)
             data["Constructor information"] = ""
-            try:
-                data["  Definition"] = "%s%s" % (arg, signature(obj))
-            except ValueError:
-                pass
+            with contextlib.suppress(ValueError):
+                data["  Definition"] = f"{arg}{signature(obj)}"
             data["  Docstring"] = inspect.getdoc(obj.__init__)
         else:
-            try:
-                data["Definition"] = "%s%s" % (arg, signature(obj))
-            except (TypeError, ValueError):
-                pass
+            with contextlib.suppress(TypeError, ValueError):
+                data["Definition"] = f"{arg}{signature(obj)}"
             data["Docstring"] = inspect.getdoc(obj)
 
         for key, value in data.items():
@@ -1081,7 +1072,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         try:
             return super().do_help(arg)
         except AttributeError:
-            print("*** No help for '{command}'".format(command=arg), file=self.stdout)
+            print(f"*** No help for '{arg}'", file=self.stdout)
 
     do_help.__doc__ = pdb.Pdb.do_help.__doc__
 
@@ -1227,7 +1218,7 @@ except for when using the function decorator.
         return ret
 
     def _cut_lines(self, lines, lineno, max_lines):
-        max_lines = max(6, len(lines) if not max_lines else max_lines)
+        max_lines = max(6, max_lines if max_lines else len(lines))
         if len(lines) <= max_lines:
             for i, line in enumerate(lines, lineno):
                 yield i, line
@@ -1241,7 +1232,7 @@ except for when using the function decorator.
         # TODO: check behavior with lambdas.
         COLOR_OR_SPACE = r"(?:\x1b[^m]+m|\s)"
         keep_pat = re.compile(
-            r"(?:^{col}*@)" r"|(?<!\w)lambda(?::|{col})".format(col=COLOR_OR_SPACE)
+            rf"(?:^{COLOR_OR_SPACE}*@)" rf"|(?<!\w)lambda(?::|{COLOR_OR_SPACE})"
         )
         keep_head = 0
         while keep_pat.match(lines[keep_head]):
@@ -1307,18 +1298,18 @@ except for when using the function decorator.
         new_lines = []
         if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
-            for lineno, line in self._cut_lines(lines, lineno, max_lines):
-                if lineno is None:
+            for line_no, line in self._cut_lines(lines, lineno, max_lines):
+                if line_no is None:
                     new_lines.append(line)
                     continue
 
-                if lineno == self.curframe.f_lineno:
+                if line_no == self.curframe.f_lineno:
                     marker = "->"
-                elif lineno == exc_lineno:
+                elif line_no == exc_lineno:
                     marker = ">>"
                 else:
                     marker = ""
-                line = self._format_line(lineno, marker, line, lineno_width)
+                line = self._format_line(line_no, marker, line, lineno_width)
 
                 if marker == "->" and set_bg:
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
@@ -1326,7 +1317,7 @@ except for when using the function decorator.
                     line = setbgcolor(line, self.config.current_line_color)
                 new_lines.append(line)
         else:
-            for i, line in enumerate(lines):
+            for _i, line in enumerate(lines):
                 new_lines.append(self._format_line(lineno, "", line, lineno_width))
                 lineno += 1
         print("\n".join(new_lines), file=self.stdout)
@@ -1357,7 +1348,7 @@ except for when using the function decorator.
                 for prefix in prefixes
             ]
 
-        return ["%s\t%s" % (prefix, src) for (prefix, src) in zip(prefixes, src_lines)]
+        return [f"{prefix}\t{src}" for (prefix, src) in zip(prefixes, src_lines)]
 
     @contextlib.contextmanager
     def _patch_linecache_for_source_highlight(self):
@@ -1443,7 +1434,7 @@ except for when using the function decorator.
             try:
                 width, _ = self.get_terminal_size()
             except Exception as exc:
-                self.message("warning: could not get terminal size ({})".format(exc))
+                self.message(f"warning: could not get terminal size ({exc})")
                 width = None
         try:
             pprint.pprint(val, self.stdout, width=width)
@@ -1479,7 +1470,7 @@ except for when using the function decorator.
 
         prev_pdb = local.GLOBAL_PDB
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
-        p._prompt = "({}) ".format(self._prompt.strip())
+        p._prompt = f"({self._prompt.strip()}) "
         self.message("ENTERING RECURSIVE DEBUGGER")
         self._flush_sticky_messages()
         try:
@@ -1589,7 +1580,7 @@ except for when using the function decorator.
                         # Handled below.
                         continue
                     if msg.startswith("--") and msg.endswith("--"):
-                        s += ", {}".format(msg)
+                        s += f", {msg}"
                     else:
                         top_lines.append(msg)
                 self._sticky_messages = []
@@ -1648,7 +1639,7 @@ except for when using the function decorator.
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
-            return "pdbpp: got unexpected __exception__: %r" % (exc,)
+            return f"pdbpp: got unexpected __exception__: {exc!r}"
 
         exc_type, exc_value = exc
         s = ""
@@ -1664,7 +1655,7 @@ except for when using the function decorator.
             raise
         except Exception as exc:
             try:
-                s += "(unprintable exception: %r)" % (exc,)
+                s += f"(unprintable exception: {exc!r})"
             except:
                 s += "(unprintable exception)"
         else:
@@ -1718,10 +1709,9 @@ except for when using the function decorator.
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
-        if self.sticky:
+        if self.sticky and sys._getframe(1).f_code.co_name == "bp_commands":
             # Skip display of current frame when sticky mode display it later.
-            if sys._getframe(1).f_code.co_name == "bp_commands":
-                return
+            return
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
@@ -1731,10 +1721,7 @@ except for when using the function decorator.
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
         frame, lineno = frame_lineno
-        if frame is self.curframe:
-            marker = "> "
-        else:
-            marker = "  "
+        marker = "> " if frame is self.curframe else "  "
 
         frame_prefix_width = len(str(len(self.stack)))
         if frame_index is None:
@@ -1769,7 +1756,7 @@ except for when using the function decorator.
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
                 display_list[expr] = newvalue
-                print("%s: %r --> %r" % (expr, oldvalue, newvalue), file=self.stdout)
+                print(f"{expr}: {oldvalue!r} --> {newvalue!r}", file=self.stdout)
 
     def _get_position_of_arg(self, arg, quiet=False):
         try:
@@ -1778,7 +1765,7 @@ except for when using the function decorator.
             if not quiet:
                 exc_info = sys.exc_info()[:2]
                 error = traceback.format_exception_only(*exc_info)[-1].strip()
-                self.error("failed to eval: {}".format(error))
+                self.error(f"failed to eval: {error}")
             return None, None, None
         try:
             return self._get_position_of_obj(obj, quiet=quiet)
@@ -1816,7 +1803,7 @@ except for when using the function decorator.
             lines, lineno = inspect.getsourcelines(obj)
         except (OSError, TypeError) as e:
             if not quiet:
-                self.error("could not get obj: {}".format(e))
+                self.error(f"could not get obj: {e}")
             return None, None, None
         return filename, lineno, lines
 
@@ -1840,7 +1827,7 @@ except for when using the function decorator.
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if abs(arg) >= len(self.stack):
             print("*** Out of range", file=self.stdout)
@@ -1861,7 +1848,7 @@ except for when using the function decorator.
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if self.curindex - arg < 0:
             print("*** Oldest frame", file=self.stdout)
@@ -1880,7 +1867,7 @@ except for when using the function decorator.
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print('*** Expected a number, got "{}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if self.curindex + arg >= len(self.stack):
             print("*** Newest frame", file=self.stdout)
@@ -2059,11 +2046,13 @@ except for when using the function decorator.
 
     def stop_here(self, frame):
         # Always stop at starting frame (https://bugs.python.org/issue38806).
-        if self.stopframe is None:
-            if getattr(self, "_via_set_trace_frame", None) == frame:
-                if not self._stopped_for_set_trace:
-                    self._stopped_for_set_trace = True
-                    return True
+        if (
+            (self.stopframe is None)
+            and (getattr(self, "_via_set_trace_frame", None) == frame)
+            and (not self._stopped_for_set_trace)
+        ):
+            self._stopped_for_set_trace = True
+            return True
         if Pdb is not None:
             return super().stop_here(frame)
 

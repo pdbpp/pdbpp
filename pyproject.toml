@@ -19,4 +19,4 @@ select = [
 ignore = ["F401", "E722"]
 
 [tool.ruff.per-file-ignores]
-"testing/**" = ["S", "B011"]
+"testing/**" = ["S", "B011", "B904"]
