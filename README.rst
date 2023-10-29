@@ -203,7 +203,7 @@ pdb++.
   by default, it breaks every time the attribute is set. E.g.::
 
       @break_on_setattr('bar')
-      class Foo(object):
+      class Foo:
           pass
       f = Foo()
       f.bar = 42    # the program breaks here
@@ -211,7 +211,7 @@ pdb++.
   If can be used even after the class has already been created, e.g. if we
   want to break when some attribute of a particular object is set::
 
-      class Foo(object):
+      class Foo:
           pass
       a = Foo()
       b = Foo()

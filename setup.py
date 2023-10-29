@@ -50,12 +50,9 @@ setup(
         "fancycompleter @ git+https://github.com/pdbpp/fancycompleter@master#egg=fancycompleter",  # noqa: E501
         "wmctrl",
         "pygments",
-        "six",
     ],
     extras_require={
-        "funcsigs": ["funcsigs"],
         "testing": [
-            "funcsigs",
             "pytest",
         ],
     },

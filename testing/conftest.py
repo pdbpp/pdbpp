@@ -190,10 +190,7 @@ def monkeypatch_importerror(monkeypatch):
             return orig_import(name, *args)
 
         with monkeypatch.context() as m:
-            if sys.version_info >= (3,):
-                m.setattr('builtins.__import__', import_mock)
-            else:
-                m.setattr('__builtin__.__import__', import_mock)
+            m.setattr('builtins.__import__', import_mock)
             yield m
     return cm
 
