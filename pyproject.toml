@@ -20,3 +20,6 @@ ignore = ["F401", "E722"]
 
 [tool.ruff.per-file-ignores]
 "testing/**" = ["S", "B011", "B904"]
+"src/pdbpp.py" = [
+    "B019" # lru cache can lead to memory leaks. TODO: stop silencing the error and fix it
+]
