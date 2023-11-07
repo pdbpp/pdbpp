@@ -3,3 +3,4 @@ codecov:
   notify:
     after_n_builds: 12
     wait_for_ci: false
+  token: 4618b651-99b4-456c-b09e-f848a532b854

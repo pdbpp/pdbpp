@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 pdb++, a drop-in replacement for pdb
 ====================================
@@ -7,78 +6,39 @@ This module extends the stdlib pdb in numerous ways: look at the README for
 more details on pdb++ features.
 """
 
-from __future__ import print_function
-
-import sys
-import os.path
-import inspect
 import code
 import codecs
 import contextlib
-import types
-import traceback
-import subprocess
-import threading
+import inspect
+import os.path
 import pprint
 import re
+import shlex
 import signal
+import subprocess
+import sys
+import threading
+import traceback
+import types
 from collections import OrderedDict
+from functools import lru_cache
+from inspect import signature
+from io import StringIO
 
 import fancycompleter
-import six
 from fancycompleter import Color, Completer, ConfigurableClass
 
-__author__ = 'Antonio Cuni <anto.cuni@gmail.com>'
-__url__ = 'http://github.com/antocuni/pdb'
-__version__ = fancycompleter.LazyVersion('pdbpp')
+__author__ = "Antonio Cuni <anto.cuni@gmail.com>"
+__url__ = "http://github.com/antocuni/pdb"
+__version__ = fancycompleter.LazyVersion("pdbpp")
 
-try:
-    from inspect import signature  # Python >= 3.3
-except ImportError:
-    try:
-        from funcsigs import signature
-    except ImportError:
-        def signature(obj):
-            return ' [pip install funcsigs to show the signature]'
-
-try:
-    from functools import lru_cache
-except ImportError:
-    from functools import wraps
-
-    def lru_cache(maxsize):
-        """Simple cache (with no maxsize basically) for py27 compatibility.
-
-        Given that pdb there uses linecache.getline for each line with
-        do_list a cache makes a big difference."""
-
-        def dec(fn, *args):
-            cache = {}
-
-            @wraps(fn)
-            def wrapper(*args):
-                key = args
-                try:
-                    ret = cache[key]
-                except KeyError:
-                    ret = cache[key] = fn(*args)
-                return ret
-
-            return wrapper
-
-        return dec
 
 # If it contains only _, digits, letters, [] or dots, it's probably side
 # effects free.
-side_effects_free = re.compile(r'^ *[_0-9a-zA-Z\[\].]* *$')
+side_effects_free = re.compile(r"^ *[_0-9a-zA-Z\[\].]* *$")
 
 RE_COLOR_ESCAPES = re.compile("(\x1b[^m]+m)+")
 RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS = re.compile(r"\x1b\[[\d;]+m")
-
-if sys.version_info < (3, ):
-    from io import BytesIO as StringIO
-else:
-    from io import StringIO
 
 
 local = threading.local()
@@ -87,36 +47,37 @@ local._pdbpp_completing = False
 local._pdbpp_in_init = False
 
 
-def __getattr__(name):
+def __getattr__(name):  # FIXME: ???
     """Backward compatibility (Python 3.7+)"""
     if name == "GLOBAL_PDB":
         return local.GLOBAL_PDB
-    raise AttributeError("module '{}' has no attribute '{}'".format(__name__, name))
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
+
     result = types.ModuleType(name)
 
     stdlibdir, _ = os.path.split(code.__file__)
-    pyfile = os.path.join(stdlibdir, name + '.py')
+    pyfile = os.path.join(stdlibdir, name + ".py")
     with open(pyfile) as f:
         src = f.read()
-    co_module = compile(src, pyfile, 'exec', dont_inherit=True)
+    co_module = compile(src, pyfile, "exec", dont_inherit=True)
     exec(co_module, result.__dict__)
 
     return result
 
 
-pdb = import_from_stdlib('pdb')
+pdb = import_from_stdlib("pdb")
 
 
 def _newfunc(func, newglobals):
-    newfunc = types.FunctionType(func.__code__, newglobals, func.__name__,
-                                 func.__defaults__, func.__closure__)
-    if sys.version_info >= (3, ):
-        newfunc.__annotations__ = func.__annotations__
-        newfunc.__kwdefaults__ = func.__kwdefaults__
+    newfunc = types.FunctionType(
+        func.__code__, newglobals, func.__name__, func.__defaults__, func.__closure__
+    )
+    newfunc.__annotations__ = func.__annotations__
+    newfunc.__kwdefaults__ = func.__kwdefaults__
     return newfunc
 
 
@@ -131,11 +92,11 @@ def rebind_globals(func, newglobals):
             _newfunc(func.func, newglobals), *func.args, **func.keywords
         )
 
-    raise ValueError("cannot handle func {!r}".format(func))
+    raise ValueError(f"cannot handle func {func}")
 
 
-class DefaultConfig(object):
-    prompt = '(Pdb++) '
+class DefaultConfig:
+    prompt = "(Pdb++) "
     highlight = True
     sticky_by_default = False
 
@@ -144,15 +105,15 @@ class DefaultConfig(object):
     pygments_formatter_class = None  # Defaults to autodetect, based on $TERM.
     pygments_formatter_kwargs = {}
     # Legacy options.  Should use pygments_formatter_kwargs instead.
-    bg = 'dark'
+    bg = "dark"
     colorscheme = None
 
     editor = None  # Autodetected if unset.
-    stdin_paste = None       # for emacs, you can use my bin/epaste script
+    stdin_paste = None  # for emacs, you can use my bin/epaste script
     truncate_long_lines = True
     exec_if_unfocused = None
     disable_pytest_capturing = False
-    encodings = ('utf-8', 'latin-1')
+    encodings = ("utf-8", "latin-1")
 
     enable_hidden_frames = True
     show_hidden_frames_count = True
@@ -165,8 +126,7 @@ class DefaultConfig(object):
     show_traceback_on_error_limit = None
 
     # Default keyword arguments passed to ``Pdb`` constructor.
-    default_pdb_kwargs = {
-    }
+    default_pdb_kwargs = {}
 
     def setup(self, pdb):
         pass
@@ -179,10 +139,11 @@ def setbgcolor(line, color):
     # hack hack hack
     # add a bgcolor attribute to all escape sequences found
     import re
-    setbg = '\x1b[%sm' % color
-    regexbg = '\\1;%sm' % color
-    result = setbg + re.sub('(\x1b\\[.*?)m', regexbg, line) + '\x1b[00m'
-    if os.environ.get('TERM') == 'eterm-color':
+
+    setbg = "\x1b[%sm" % color
+    regexbg = "\\1;%sm" % color
+    result = setbg + re.sub("(\x1b\\[.*?)m", regexbg, line) + "\x1b[00m"
+    if os.environ.get("TERM") == "eterm-color":
         # it seems that emacs' terminal has problems with some ANSI escape
         # sequences. Eg, 'ESC[44m' sets the background color in all terminals
         # I tried, but not in emacs. To set the background color, it needs to
@@ -193,17 +154,18 @@ def setbgcolor(line, color):
         # want to change it.  These lines seems to work fine with the ANSI
         # codes produced by pygments, but they are surely not a general
         # solution.
-        result = result.replace(setbg, '\x1b[37;%dm' % color)
-        result = result.replace('\x1b[00;%dm' % color, '\x1b[37;%dm' % color)
-        result = result.replace('\x1b[39;49;00;', '\x1b[37;')
+        result = result.replace(setbg, "\x1b[37;%dm" % color)
+        result = result.replace("\x1b[00;%dm" % color, "\x1b[37;%dm" % color)
+        result = result.replace("\x1b[39;49;00;", "\x1b[37;")
     return result
 
 
-CLEARSCREEN = '\033[2J\033[1;1H'
+CLEARSCREEN = "\033[2J\033[1;1H"
 
 
 def lasti2lineno(code, lasti):
     import dis
+
     linestarts = list(dis.findlinestarts(code))
     linestarts.reverse()
     for i, lineno in linestarts:
@@ -214,7 +176,7 @@ def lasti2lineno(code, lasti):
 
 class Undefined:
     def __repr__(self):
-        return '<undefined>'
+        return "<undefined>"
 
 
 undefined = Undefined()
@@ -222,8 +184,9 @@ undefined = Undefined()
 
 class ArgWithCount(str):
     """Extend arguments with a count, e.g. "10pp …"."""
+
     def __new__(cls, value, count, **kwargs):
-        obj = super(ArgWithCount, cls).__new__(cls, value)
+        obj = super().__new__(cls, value)
         obj.cmd_count = count
         return obj
 
@@ -231,7 +194,7 @@ class ArgWithCount(str):
         return "<{} cmd_count={!r} value={}>".format(
             self.__class__.__name__,
             self.cmd_count,
-            super(ArgWithCount, self).__repr__(),
+            super().__repr__(),
         )
 
 
@@ -241,12 +204,14 @@ class PdbMeta(type):
 
         # Prevent recursion errors with pdb.set_trace() during init/debugging.
         if getattr(local, "_pdbpp_in_init", False):
-            class OrigPdb(pdb.Pdb, object):
+
+            class OrigPdb(pdb.Pdb):
                 def set_trace(self, frame=None):
                     print("pdb++: using pdb.Pdb for recursive set_trace.")
                     if frame is None:
                         frame = sys._getframe().f_back
-                    super(OrigPdb, self).set_trace(frame)
+                    super().set_trace(frame)
+
             orig_pdb = OrigPdb.__new__(OrigPdb)
             # Remove any pdb++ only kwargs.
             kwargs.pop("Config", None)
@@ -320,8 +285,6 @@ class PdbMeta(type):
             return True
         if getattr(obj, "_use_global_pdb_for_class", None) == C:
             return True
-        if sys.version_info < (3, 3):
-            return inspect.getsourcelines(obj.__class__) == inspect.getsourcelines(C)
         return C.__qualname__ == obj.__class__.__qualname__
 
     @staticmethod
@@ -340,20 +303,18 @@ class PdbMeta(type):
         return called_for_set_trace
 
 
-@six.add_metaclass(PdbMeta)
-class Pdb(pdb.Pdb, ConfigurableClass, object):
-
+class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
     DefaultConfig = DefaultConfig
-    config_filename = '.pdbrc.py'
+    config_filename = ".pdbrc.py"
     disabled = False
     fancycompleter = None
 
     _in_interaction = False
 
     def __init__(self, *args, **kwds):
-        self.ConfigFactory = kwds.pop('Config', None)
-        self.start_lineno = kwds.pop('start_lineno', None)
-        self.start_filename = kwds.pop('start_filename', None)
+        self.ConfigFactory = kwds.pop("Config", None)
+        self.start_lineno = kwds.pop("start_lineno", None)
+        self.start_filename = kwds.pop("start_filename", None)
 
         self.config = self.get_config(self.ConfigFactory)
         self.config.setup(self)
@@ -366,7 +327,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._disable_pytest_capture_maybe()
         kwargs = self.config.default_pdb_kwargs.copy()
         kwargs.update(**kwds)
-        super(Pdb, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.tb_lineno = {}  # frame --> lineno where the exception raised
@@ -402,22 +363,25 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def ensure_file_can_write_unicode(self, f):
         # Wrap with an encoder, but only if not already wrapped
-        if (not hasattr(f, 'stream')
-                and getattr(f, 'encoding', False)
-                and f.encoding.lower() != 'utf-8'):
-            f = codecs.getwriter('utf-8')(getattr(f, 'buffer', f))
+        if (
+            not hasattr(f, "stream")
+            and getattr(f, "encoding", False)
+            and f.encoding.lower() != "utf-8"
+        ):
+            f = codecs.getwriter("utf-8")(getattr(f, "buffer", f))
 
         return f
 
     def _disable_pytest_capture_maybe(self):
         try:
             import py.test
+
             # Force raising of ImportError if pytest is not installed.
-            py.test.config
+            py.test.config  # noqa: B018
         except (ImportError, AttributeError):
             return
         try:
-            capman = py.test.config.pluginmanager.getplugin('capturemanager')
+            capman = py.test.config.pluginmanager.getplugin("capturemanager")
             capman.suspendcapture()
         except KeyError:
             pass
@@ -458,7 +422,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def _interaction(self, frame, traceback):
         # Restore the previous signal handler at the Pdb prompt.
-        if getattr(pdb.Pdb, '_previous_sigint_handler', None):
+        if getattr(pdb.Pdb, "_previous_sigint_handler", None):
             try:
                 signal.signal(signal.SIGINT, pdb.Pdb._previous_sigint_handler)
             except ValueError:  # ValueError: signal only works in main thread
@@ -478,7 +442,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if frame is None and traceback:
             exc = sys.exc_info()[:2]
             if exc != (None, None):
-                self.curframe.f_locals['__exception__'] = exc
+                self.curframe.f_locals["__exception__"] = exc
 
         if not self.sticky:
             self.print_stack_entry(self.stack[self.curindex])
@@ -487,7 +451,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         with self._custom_completer():
             self.config.before_interaction_hook(self)
             # Use _cmdloop on py3 which catches KeyboardInterrupt.
-            if hasattr(self, '_cmdloop'):
+            if hasattr(self, "_cmdloop"):
                 self._cmdloop()
             else:
                 self.cmdloop()
@@ -495,7 +459,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         self.forget()
 
     def break_here(self, frame):
-        ret = super(Pdb, self).break_here(frame)
+        ret = super().break_here(frame)
         if ret:
             # Skip clearing screen if invoked via breakpoint, which e.g.
             # might execute/display output from commands.
@@ -515,7 +479,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def postcmd(self, stop, line):
         """Handle clearing of the screen for sticky mode."""
-        stop = super(Pdb, self).postcmd(stop, line)
+        stop = super().postcmd(stop, line)
         if self.sticky:
             if stop and not self.commands_defining:
                 self._sticky_handle_cls()
@@ -533,12 +497,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
     def set_continue(self):
         if self.sticky:
             self._sticky_skip_cls = True
-        super(Pdb, self).set_continue()
+        super().set_continue()
 
     def set_quit(self):
         if self.sticky:
             self._sticky_skip_cls = True
-        super(Pdb, self).set_quit()
+        super().set_quit()
 
     def _setup_fancycompleter(self):
         """Similar to fancycompleter.setup(), but returning the old completer."""
@@ -550,7 +514,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if fancycompleter.has_leopard_libedit(completer.config):
             readline.parse_and_bind("bind ^I rl_complete")
         else:
-            readline.parse_and_bind('tab: complete')
+            readline.parse_and_bind("tab: complete")
         readline.set_completer(self.complete)
         return old_completer
 
@@ -575,19 +539,24 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def exec_if_unfocused(self):
         import os
+
         import wmctrl
-        term = os.getenv('TERM', '')
+
+        term = os.getenv("TERM", "")
         try:
-            winid = int(os.getenv('WINDOWID'))
+            winid = int(os.getenv("WINDOWID"))
         except (TypeError, ValueError):
             return  # cannot find WINDOWID of the terminal
         active_win = wmctrl.Window.get_active()
-        if not active_win or (int(active_win.id, 16) != winid) and \
-           not (active_win.wm_class == 'emacs.Emacs' and term.startswith('eterm')):
+        if (
+            not active_win
+            or (int(active_win.id, 16) != winid)
+            and not (active_win.wm_class == "emacs.Emacs" and term.startswith("eterm"))
+        ):
             os.system(self.config.exec_if_unfocused)
 
     def setup(self, frame, tb):
-        ret = super(Pdb, self).setup(frame, tb)
+        ret = super().setup(frame, tb)
         if not ret:
             while tb:
                 lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
@@ -608,7 +577,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         if frame is getattr(self, "_via_set_trace_frame", None):
             return False
 
-        if frame.f_globals.get('__unittest'):
+        if frame.f_globals.get("__unittest"):
             return True
 
         # `f_locals` might be a list (checked via PyMapping_Check).
@@ -623,7 +592,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def get_stack(self, f, t):
         # show all the frames, except the ones that explicitly ask to be hidden
-        fullstack, idx = super(Pdb, self).get_stack(f, t)
+        fullstack, idx = super().get_stack(f, t)
         self.fullstack = fullstack
         return self.compute_stack(fullstack, idx)
 
@@ -658,7 +627,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 self.curindex = i
                 break
         else:
-            self.curindex = len(self.stack)-1
+            self.curindex = len(self.stack) - 1
             self.curframe = self.stack[-1][0]
             self.print_current_stack_entry()
 
@@ -672,7 +641,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def forget(self):
         if not getattr(local, "_pdbpp_completing", False):
-            super(Pdb, self).forget()
+            super().forget()
 
     @classmethod
     def _get_all_completions(cls, complete, text):
@@ -707,7 +676,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         try:
             return self._complete(text, state)
         except Exception as exc:
-            self.error("error during completion: {}".format(exc))
+            self.error(f"error during completion: {exc}")
             if self.config.show_traceback_on_error:
                 __import__("traceback").print_exc(file=self.stdout)
 
@@ -725,17 +694,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             completions = self._get_all_completions(completer.complete, text)
 
             if self.fancycompleter.config.use_colors:
-                clean_fancy_completions = set([
-                    RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS.sub("", x)
-                    for x in completions
-                ])
+                clean_fancy_completions = set(
+                    [
+                        RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS.sub("", x)
+                        for x in completions
+                    ]
+                )
             else:
                 clean_fancy_completions = completions
 
             # Get completions from original pdb.
             pdb_completions = []
             with self._patch_readline_for_pyrepl():
-                real_pdb = super(Pdb, self)
+                real_pdb = super()
                 for x in self._get_all_completions(real_pdb.complete, text):
                     if x not in clean_fancy_completions:
                         pdb_completions.append(x)
@@ -748,18 +719,17 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             self._completions = completions
             if pdb_completions:
                 pdb_prefix = fancycompleter.commonprefix(pdb_completions)
-                if '.' in text and pdb_prefix and len(pdb_completions) > 1:
+                if "." in text and pdb_prefix and len(pdb_completions) > 1:
                     # Remove prefix for attr_matches from pdb completions.
-                    dotted = text.split('.')
-                    prefix = '.'.join(dotted[:-1]) + '.'
+                    dotted = text.split(".")
+                    prefix = ".".join(dotted[:-1]) + "."
                     prefix_len = len(prefix)
                     pdb_completions = [
                         x[prefix_len:] if x.startswith(prefix) else x
                         for x in pdb_completions
                     ]
-                if len(completions) == 1 and "." in completions[0]:
-                    if pdb_prefix:
-                        pdb_completions = []
+                if len(completions) == 1 and "." in completions[0] and pdb_prefix:
+                    pdb_completions = []
 
                 for x in pdb_completions:
                     if x not in clean_fancy_completions:
@@ -790,21 +760,17 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
         if text[-1:] != "_":
             self._completions = [
-                x
-                for x in self._completions
-                if RE_COLOR_ESCAPES.sub("", x)[:1] != "_"
+                x for x in self._completions if RE_COLOR_ESCAPES.sub("", x)[:1] != "_"
             ]
         elif text[-2:] != "__":
             self._completions = [
-                x
-                for x in self._completions
-                if RE_COLOR_ESCAPES.sub("", x)[:2] != "__"
+                x for x in self._completions if RE_COLOR_ESCAPES.sub("", x)[:2] != "__"
             ]
 
-    stack_entry_regexp = re.compile(r'(.*?)\(([0-9]+?)\)(.*)', re.DOTALL)
+    stack_entry_regexp = re.compile(r"(.*?)\(([0-9]+?)\)(.*)", re.DOTALL)
 
-    def format_stack_entry(self, frame_lineno, lprefix=': '):
-        entry = super(Pdb, self).format_stack_entry(frame_lineno, lprefix)
+    def format_stack_entry(self, frame_lineno, lprefix=": "):
+        entry = super().format_stack_entry(frame_lineno, lprefix)
         entry = self.try_to_decode(entry)
         if self.config.highlight:
             match = self.stack_entry_regexp.match(entry)
@@ -812,7 +778,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 filename, lineno, other = match.groups()
                 filename = Color.set(self.config.filename_color, filename)
                 lineno = Color.set(self.config.line_number_color, lineno)
-                entry = '%s(%s)%s' % (filename, lineno, other)
+                entry = f"{filename}({lineno}){other}"
         if self.config.use_pygments is not False:
             loc, _, source = entry.rpartition(lprefix)
             if _:
@@ -845,9 +811,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         try:
             pygments_formatter = self._get_pygments_formatter()
         except Exception as exc:
-            self.message("pdb++: could not setup Pygments, disabling: {}".format(
-                exc
-            ))
+            self.message(f"pdb++: could not setup Pygments, disabling: {exc}")
             return False
 
         lexer = pygments.lexers.PythonLexer(stripnl=False)
@@ -858,7 +822,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return syntax_highlight
 
     def _get_pygments_formatter(self):
-        if hasattr(self.config, 'formatter'):
+        if hasattr(self.config, "formatter"):
             # Deprecated, never documented.
             # Not optimal, since it involves creating the formatter in
             # the config already, although it might never be used.
@@ -868,7 +832,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             from importlib import import_module
 
             def import_string(dotted_path):
-                module_path, class_name = dotted_path.rsplit('.', 1)
+                module_path, class_name = dotted_path.rsplit(".", 1)
                 module = import_module(module_path)
                 return getattr(module, class_name)
 
@@ -922,36 +886,36 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         return self._highlight(src)
 
     def _format_line(self, lineno, marker, line, lineno_width):
-        lineno = ('%%%dd' % lineno_width) % lineno
+        lineno = ("%%%dd" % lineno_width) % lineno
         if self.config.highlight:
             lineno = Color.set(self.config.line_number_color, lineno)
-        line = '%s  %2s %s' % (lineno, marker, line)
+        line = "%s  %2s %s" % (lineno, marker, line)
         return line
 
     def execRcLines(self):
         self._pdbpp_executing_rc_lines = True
         try:
-            return super(Pdb, self).execRcLines()
+            return super().execRcLines()
         finally:
             del self._pdbpp_executing_rc_lines
 
     def parseline(self, line):
         if getattr(self, "_pdbpp_executing_rc_lines", False):
-            return super(Pdb, self).parseline(line)
+            return super().parseline(line)
 
-        if line.startswith('!!'):
+        if line.startswith("!!"):
             # Force the "standard" behaviour, i.e. first check for the
             # command, then for the variable name to display.
             line = line[2:]
-            cmd, arg, newline = super(Pdb, self).parseline(line)
+            cmd, arg, newline = super().parseline(line)
             return cmd, arg, "!!" + newline
 
-        if line.endswith('?') and not line.startswith("!"):
-            arg = line.split('?', 1)[0]
-            if line.endswith('??'):
+        if line.endswith("?") and not line.startswith("!"):
+            arg = line.split("?", 1)[0]
+            if line.endswith("??"):
                 cmd = "inspect_with_source"
-            elif arg == '' or (
-                hasattr(self, 'do_' + arg)
+            elif arg == "" or (
+                hasattr(self, "do_" + arg)
                 and arg not in self.curframe.f_globals
                 and arg not in self.curframe_locals
             ):
@@ -963,7 +927,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         # pdb++ "smart command mode": don't execute commands if a variable
         # with the name exists in the current context;
         # This prevents pdb to quit if you type e.g. 'r[0]' by mistake.
-        cmd, arg, newline = super(Pdb, self).parseline(line)
+        cmd, arg, newline = super().parseline(line)
 
         if cmd:
             # prefixed strings.
@@ -1022,42 +986,36 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
             return
 
         data = OrderedDict()
-        data['Type'] = type(obj).__name__
-        data['String Form'] = str(obj).strip()
+        data["Type"] = type(obj).__name__
+        data["String Form"] = str(obj).strip()
+        with contextlib.suppress(TypeError):
+            data["Length"] = str(len(obj))
         try:
-            data['Length'] = str(len(obj))
-        except TypeError:
-            pass
-        try:
-            data['File'] = inspect.getabsfile(obj)
+            data["File"] = inspect.getabsfile(obj)
         except TypeError:
             pass
         else:
-            try:
-                data['File'] += ":" + str(obj.__code__.co_firstlineno)
-            except AttributeError:
-                pass
+            with contextlib.suppress(AttributeError):
+                data["File"] += ":" + str(obj.__code__.co_firstlineno)
 
-        if (isinstance(obj, type)
-                and hasattr(obj, '__init__')
-                and getattr(obj, '__module__') != '__builtin__'):
+        if (
+            isinstance(obj, type)
+            and hasattr(obj, "__init__")
+            and obj.__module__ != "__builtin__"
+        ):
             # Class - show definition and docstring for constructor
-            data['Docstring'] = inspect.getdoc(obj)
-            data['Constructor information'] = ''
-            try:
-                data['  Definition'] = '%s%s' % (arg, signature(obj))
-            except ValueError:
-                pass
-            data['  Docstring'] = inspect.getdoc(obj.__init__)
+            data["Docstring"] = inspect.getdoc(obj)
+            data["Constructor information"] = ""
+            with contextlib.suppress(ValueError):
+                data["  Definition"] = f"{arg}{signature(obj)}"
+            data["  Docstring"] = inspect.getdoc(obj.__init__)
         else:
-            try:
-                data['Definition'] = '%s%s' % (arg, signature(obj))
-            except (TypeError, ValueError):
-                pass
-            data['Docstring'] = inspect.getdoc(obj)
+            with contextlib.suppress(TypeError, ValueError):
+                data["Definition"] = f"{arg}{signature(obj)}"
+            data["Docstring"] = inspect.getdoc(obj)
 
         for key, value in data.items():
-            formatted_key = Color.set(Color.red, key + ':')
+            formatted_key = Color.set(Color.red, key + ":")
             if value is None:
                 continue
             if value:
@@ -1066,12 +1024,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
                 if lines:
                     indent = " " * 16
                     formatted_value += "\n" + "\n".join(
-                        indent + line
-                        for line in lines.splitlines()
+                        indent + line for line in lines.splitlines()
                     )
             else:
                 formatted_value = ""
-            self.stdout.write('%-28s %s\n' % (formatted_key, formatted_value))
+            self.stdout.write("%-28s %s\n" % (formatted_key, formatted_value))
 
         if with_source:
             self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
@@ -1088,13 +1045,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
         Fixes https://bugs.python.org/issue21161.
         """
         self.history.append(line)
-        if line[:1] == '!':
+        if line[:1] == "!":
             line = line[1:]
         locals = self.curframe_locals
         ns = self.curframe.f_globals.copy()
         ns.update(locals)
         try:
-            code = compile(line + '\n', '<stdin>', 'single')
+            code = compile(line + "\n", "<stdin>", "single")
             save_stdout = sys.stdout
             save_stdin = sys.stdin
             save_displayhook = sys.displayhook
@@ -1113,14 +1070,15 @@ class Pdb(pdb.Pdb, ConfigurableClass, object):
 
     def do_help(self, arg):
         try:
-            return super(Pdb, self).do_help(arg)
+            return super().do_help(arg)
         except AttributeError:
-            print("*** No help for '{command}'".format(command=arg),
-                  file=self.stdout)
+            print(f"*** No help for '{arg}'", file=self.stdout)
+
     do_help.__doc__ = pdb.Pdb.do_help.__doc__
 
     def help_hidden_frames(self):
-        print("""\
+        print(
+            """\
 Some frames might be marked as "hidden": by default, hidden frames are not
 shown in the stack trace, and cannot be reached using ``up`` and ``down``.
 You can use ``hf_unhide`` to tell pdb++ to ignore the hidden status (i.e., to
@@ -1142,7 +1100,9 @@ Frames can be marked as hidden in the following ways:
 
 Note that the initial frame where ``set_trace`` was called from is not hidden,
 except for when using the function decorator.
-""", file=self.stdout)
+""",
+            file=self.stdout,
+        )
 
     def do_hf_unhide(self, arg):
         """
@@ -1163,8 +1123,9 @@ except for when using the function decorator.
 
     def do_hf_list(self, arg):
         for frame_lineno in self._hidden_frames:
-            print(self.format_stack_entry(frame_lineno, pdb.line_prefix),
-                  file=self.stdout)
+            print(
+                self.format_stack_entry(frame_lineno, pdb.line_prefix), file=self.stdout
+            )
 
     def do_longlist(self, arg):
         """
@@ -1179,14 +1140,14 @@ except for when using the function decorator.
         If the 'highlight' config option is set and pygments is
         installed, the source code is colorized.
         """
-        self.lastcmd = 'longlist'
+        self.lastcmd = "longlist"
         self._printlonglist(max_lines=False)
 
     do_ll = do_longlist
 
     def _printlonglist(self, linerange=None, max_lines=None):
         try:
-            if self.curframe.f_code.co_name == '<module>':
+            if self.curframe.f_code.co_name == "<module>":
                 # inspect.getsourcelines is buggy in this case: if we just
                 # pass the frame, it returns the source for the first function
                 # defined in the module.  Instead, we want the full source
@@ -1197,17 +1158,19 @@ except for when using the function decorator.
                 try:
                     lines, lineno = inspect.getsourcelines(self.curframe)
                 except Exception as e:
-                    print('** Error in inspect.getsourcelines: %s **' %
-                          e, file=self.stdout)
+                    print(
+                        "** Error in inspect.getsourcelines: %s **" % e,
+                        file=self.stdout,
+                    )
                     return
-        except IOError as e:
-            print('** Error: %s **' % e, file=self.stdout)
+        except OSError as e:
+            print("** Error: %s **" % e, file=self.stdout)
             return
         if linerange:
             start, end = linerange
             start = max(start, lineno)
-            end = min(end, lineno+len(lines))
-            lines = lines[start-lineno:end-lineno]
+            end = min(end, lineno + len(lines))
+            lines = lines[start - lineno : end - lineno]
             lineno = start
         self._print_lines_pdbpp(lines, lineno, max_lines=max_lines)
 
@@ -1241,7 +1204,7 @@ except for when using the function decorator.
         else:
             assert maxlength - total_visible_len > 0
             rest = s[m_end:]
-            ret += rest[:maxlength - total_visible_len]
+            ret += rest[: maxlength - total_visible_len]
 
         # Keep reset sequence (in last match).
         if len(ret) != len(s):
@@ -1255,7 +1218,7 @@ except for when using the function decorator.
         return ret
 
     def _cut_lines(self, lines, lineno, max_lines):
-        max_lines = max(6, len(lines) if not max_lines else max_lines)
+        max_lines = max(6, max_lines if max_lines else len(lines))
         if len(lines) <= max_lines:
             for i, line in enumerate(lines, lineno):
                 yield i, line
@@ -1267,10 +1230,9 @@ except for when using the function decorator.
         # Keeps decorators, but not functions, which are displayed at the top
         # already (stack information).
         # TODO: check behavior with lambdas.
-        COLOR_OR_SPACE = r'(?:\x1b[^m]+m|\s)'
+        COLOR_OR_SPACE = r"(?:\x1b[^m]+m|\s)"
         keep_pat = re.compile(
-            r'(?:^{col}*@)'
-            r'|(?<!\w)lambda(?::|{col})'.format(col=COLOR_OR_SPACE)
+            rf"(?:^{COLOR_OR_SPACE}*@)" rf"|(?<!\w)lambda(?::|{COLOR_OR_SPACE})"
         )
         keep_head = 0
         while keep_pat.match(lines[keep_head]):
@@ -1278,17 +1240,17 @@ except for when using the function decorator.
 
         if keep_head > 3:
             yield lineno, lines[0]
-            yield None, '...'
-            yield lineno + keep_head, lines[keep_head-1]
+            yield None, "..."
+            yield lineno + keep_head, lines[keep_head - 1]
             cutoff -= keep_head - 3
         else:
             for i, line in enumerate(lines[:keep_head]):
                 yield lineno + i, line
 
         exc_lineno = self.tb_lineno.get(self.curframe, None)
-        last_marker_line = max(
-            self.curframe.f_lineno,
-            exc_lineno if exc_lineno else 0) - lineno
+        last_marker_line = (
+            max(self.curframe.f_lineno, exc_lineno if exc_lineno else 0) - lineno
+        )
 
         # Place marker / current line in first third of available lines.
         cut_before = min(
@@ -1306,29 +1268,29 @@ except for when using the function decorator.
             if cut_before:
                 cut_before -= 1
                 if cut_before == 0:
-                    yield None, '...'
+                    yield None, "..."
                 else:
                     assert cut_before > 0, cut_before
                 continue
             elif cut_after and i >= len(lines) - cut_after:
-                yield None, '...'
+                yield None, "..."
                 break
             yield lineno + i, line
 
     def _print_lines_pdbpp(self, lines, lineno, print_markers=True, max_lines=None):
         lines = [line[:-1] for line in lines]  # remove the trailing '\n'
-        lines = [line.replace('\t', '    ')
-                 for line in lines]  # force tabs to 4 spaces
+        lines = [line.replace("\t", "    ") for line in lines]  # force tabs to 4 spaces
         width, height = self.get_terminal_size()
 
         if self.config.use_pygments is not False:
-            src = self.format_source('\n'.join(lines))
+            src = self.format_source("\n".join(lines))
             lines = src.splitlines()
 
         if self.config.truncate_long_lines:
             maxlength = max(width - 9, 16)
-            lines = [self._truncate_to_visible_length(line, maxlength)
-                     for line in lines]
+            lines = [
+                self._truncate_to_visible_length(line, maxlength) for line in lines
+            ]
 
         lineno_width = len(str(lineno + len(lines)))
         exc_lineno = self.tb_lineno.get(self.curframe, None)
@@ -1336,18 +1298,18 @@ except for when using the function decorator.
         new_lines = []
         if print_markers:
             set_bg = self.config.highlight and self.config.current_line_color
-            for lineno, line in self._cut_lines(lines, lineno, max_lines):
-                if lineno is None:
+            for line_no, line in self._cut_lines(lines, lineno, max_lines):
+                if line_no is None:
                     new_lines.append(line)
                     continue
 
-                if lineno == self.curframe.f_lineno:
-                    marker = '->'
-                elif lineno == exc_lineno:
-                    marker = '>>'
+                if line_no == self.curframe.f_lineno:
+                    marker = "->"
+                elif line_no == exc_lineno:
+                    marker = ">>"
                 else:
-                    marker = ''
-                line = self._format_line(lineno, marker, line, lineno_width)
+                    marker = ""
+                line = self._format_line(line_no, marker, line, lineno_width)
 
                 if marker == "->" and set_bg:
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
@@ -1355,10 +1317,10 @@ except for when using the function decorator.
                     line = setbgcolor(line, self.config.current_line_color)
                 new_lines.append(line)
         else:
-            for i, line in enumerate(lines):
-                new_lines.append(self._format_line(lineno, '', line, lineno_width))
+            for _i, line in enumerate(lines):
+                new_lines.append(self._format_line(lineno, "", line, lineno_width))
                 lineno += 1
-        print('\n'.join(new_lines), file=self.stdout)
+        print("\n".join(new_lines), file=self.stdout)
 
     def _format_color_prefixes(self, lines):
         if not lines:
@@ -1372,7 +1334,7 @@ except for when using the function decorator.
         src_lines = []
 
         for x in lines:
-            prefix, _, src = x.partition('\t')
+            prefix, _, src = x.partition("\t")
             prefixes.append(prefix)
             src_lines.append(src)
 
@@ -1381,15 +1343,12 @@ except for when using the function decorator.
             prefixes = [
                 RE_LNUM_PREFIX.sub(
                     lambda m: Color.set(self.config.line_number_color, m.group(0)),
-                    prefix
+                    prefix,
                 )
                 for prefix in prefixes
             ]
 
-        return [
-            "%s\t%s" % (prefix, src)
-            for (prefix, src) in zip(prefixes, src_lines)
-        ]
+        return [f"{prefix}\t{src}" for (prefix, src) in zip(prefixes, src_lines)]
 
     @contextlib.contextmanager
     def _patch_linecache_for_source_highlight(self):
@@ -1399,9 +1358,6 @@ except for when using the function decorator.
             """Wrap linecache.getlines to highlight source (for do_list)."""
             lines = orig(filename, globals)
             source = self.format_source("".join(lines))
-
-            if sys.version_info < (3,):
-                source = self.try_to_encode(source)
 
             return source.splitlines(True)
 
@@ -1415,13 +1371,12 @@ except for when using the function decorator.
     def do_list(self, arg):
         """Enhance original do_list with highlighting."""
         if not (self.config.use_pygments is not False or self.config.highlight):
-            return super(Pdb, self).do_list(arg)
+            return super().do_list(arg)
 
         with self._patch_linecache_for_source_highlight():
-
             oldstdout = self.stdout
             self.stdout = StringIO()
-            ret = super(Pdb, self).do_list(arg)
+            ret = super().do_list(arg)
             orig_pdb_lines = self.stdout.getvalue().splitlines()
             self.stdout = oldstdout
 
@@ -1442,12 +1397,13 @@ except for when using the function decorator.
         self.lineno = None
 
     def do_continue(self, arg):
-        if arg != '':
+        if arg != "":
             self._seen_error = False
             self.do_tbreak(arg)
             if self._seen_error:
                 return 0
-        return super(Pdb, self).do_continue('')
+        return super().do_continue("")
+
     do_continue.__doc__ = pdb.Pdb.do_continue.__doc__
     do_c = do_cont = do_continue
 
@@ -1478,13 +1434,14 @@ except for when using the function decorator.
             try:
                 width, _ = self.get_terminal_size()
             except Exception as exc:
-                self.message("warning: could not get terminal size ({})".format(exc))
+                self.message(f"warning: could not get terminal size ({exc})")
                 width = None
         try:
             pprint.pprint(val, self.stdout, width=width)
         except:
             exc_info = sys.exc_info()[:2]
             self.error(traceback.format_exception_only(*exc_info)[-1].strip())
+
     do_pp.__doc__ = pdb.Pdb.do_pp.__doc__
 
     def do_debug(self, arg):
@@ -1503,7 +1460,7 @@ except for when using the function decorator.
         class PdbppWithConfig(self.__class__):
             def __init__(self_withcfg, *args, **kwargs):
                 kwargs.setdefault("Config", Config)
-                super(PdbppWithConfig, self_withcfg).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
                 # Backport of fix for bpo-31078 (not yet merged).
                 self_withcfg.use_rawinput = self.use_rawinput
@@ -1513,7 +1470,7 @@ except for when using the function decorator.
 
         prev_pdb = local.GLOBAL_PDB
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
-        p._prompt = "({}) ".format(self._prompt.strip())
+        p._prompt = f"({self._prompt.strip()}) "
         self.message("ENTERING RECURSIVE DEBUGGER")
         self._flush_sticky_messages()
         try:
@@ -1554,8 +1511,9 @@ except for when using the function decorator.
         try:
             from rpython.translator.tool.reftracker import track
         except ImportError:
-            print('** cannot import pypy.translator.tool.reftracker **',
-                  file=self.stdout)
+            print(
+                "** cannot import pypy.translator.tool.reftracker **", file=self.stdout
+            )
             return
         try:
             val = self._getval(arg)
@@ -1569,8 +1527,7 @@ except for when using the function decorator.
 
     def _getval_or_undefined(self, arg):
         try:
-            return eval(arg, self.curframe.f_globals,
-                        self.curframe_locals)
+            return eval(arg, self.curframe.f_globals, self.curframe_locals)
         except NameError:
             return undefined
 
@@ -1601,7 +1558,7 @@ except for when using the function decorator.
         try:
             del self._get_display_list()[arg]
         except KeyError:
-            print('** %s not in the display list **' % arg, file=self.stdout)
+            print("** %s not in the display list **" % arg, file=self.stdout)
 
     def _print_if_sticky(self):
         if self.sticky and not self.commands_defining:
@@ -1623,7 +1580,7 @@ except for when using the function decorator.
                         # Handled below.
                         continue
                     if msg.startswith("--") and msg.endswith("--"):
-                        s += ", {}".format(msg)
+                        s += f", {msg}"
                     else:
                         top_lines.append(msg)
                 self._sticky_messages = []
@@ -1638,8 +1595,8 @@ except for when using the function decorator.
             sticky_range = self.sticky_ranges.get(self.curframe, None)
 
             after_lines = []
-            if '__exception__' in frame.f_locals:
-                s = self._format_exc_for_sticky(frame.f_locals['__exception__'])
+            if "__exception__" in frame.f_locals:
+                s = self._format_exc_for_sticky(frame.f_locals["__exception__"])
                 if s:
                     after_lines.append(s)
 
@@ -1648,16 +1605,16 @@ except for when using the function decorator.
                 if s:
                     after_lines.append(s)
 
-            elif '__return__' in frame.f_locals:
-                rv = frame.f_locals['__return__']
+            elif "__return__" in frame.f_locals:
+                rv = frame.f_locals["__return__"]
                 try:
                     s = repr(rv)
                 except KeyboardInterrupt:
                     raise
                 except:
-                    s = '(unprintable return value)'
+                    s = "(unprintable return value)"
 
-                s = ' return ' + s
+                s = " return " + s
                 if self.config.highlight:
                     s = Color.set(self.config.line_number_color, s)
                 after_lines.append(s)
@@ -1682,31 +1639,31 @@ except for when using the function decorator.
 
     def _format_exc_for_sticky(self, exc):
         if len(exc) != 2:
-            return "pdbpp: got unexpected __exception__: %r" % (exc,)
+            return f"pdbpp: got unexpected __exception__: {exc!r}"
 
         exc_type, exc_value = exc
-        s = ''
+        s = ""
         try:
             try:
                 s = exc_type.__name__
             except AttributeError:
                 s = str(exc_type)
             if exc_value is not None:
-                s += ': '
+                s += ": "
                 s += str(exc_value)
         except KeyboardInterrupt:
             raise
         except Exception as exc:
             try:
-                s += '(unprintable exception: %r)' % (exc,)
+                s += f"(unprintable exception: {exc!r})"
             except:
-                s += '(unprintable exception)'
+                s += "(unprintable exception)"
         else:
             # Use first line only, limited to terminal width.
             s = s.replace("\r", r"\r").replace("\n", r"\n")
             width, _ = self.get_terminal_size()
             if len(s) > width:
-                s = s[:width - 1] + "…"
+                s = s[: width - 1] + "…"
 
         if self.config.highlight:
             s = Color.set(self.config.line_number_color, s)
@@ -1731,11 +1688,10 @@ except for when using the function decorator.
             try:
                 start, end = map(int, arg.split())
             except ValueError:
-                print('** Error when parsing argument: %s **' % arg,
-                      file=self.stdout)
+                print("** Error when parsing argument: %s **" % arg, file=self.stdout)
                 return
             self.sticky = True
-            self.sticky_ranges[self.curframe] = start, end+1
+            self.sticky_ranges[self.curframe] = start, end + 1
         else:
             self.sticky = not self.sticky
             self.sticky_range = None
@@ -1753,10 +1709,9 @@ except for when using the function decorator.
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
-        if self.sticky:
+        if self.sticky and sys._getframe(1).f_code.co_name == "bp_commands":
             # Skip display of current frame when sticky mode display it later.
-            if sys._getframe(1).f_code.co_name == "bp_commands":
-                return
+            return
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
@@ -1766,10 +1721,7 @@ except for when using the function decorator.
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
         frame, lineno = frame_lineno
-        if frame is self.curframe:
-            marker = "> "
-        else:
-            marker = "  "
+        marker = "> " if frame is self.curframe else "  "
 
         frame_prefix_width = len(str(len(self.stack)))
         if frame_index is None:
@@ -1804,8 +1756,7 @@ except for when using the function decorator.
             # whose fields are changed to be displayed
             if newvalue is not oldvalue or newvalue != oldvalue:
                 display_list[expr] = newvalue
-                print('%s: %r --> %r' % (expr, oldvalue, newvalue),
-                      file=self.stdout)
+                print(f"{expr}: {oldvalue!r} --> {newvalue!r}", file=self.stdout)
 
     def _get_position_of_arg(self, arg, quiet=False):
         try:
@@ -1814,7 +1765,7 @@ except for when using the function decorator.
             if not quiet:
                 exc_info = sys.exc_info()[:2]
                 error = traceback.format_exception_only(*exc_info)[-1].strip()
-                self.error("failed to eval: {}".format(error))
+                self.error(f"failed to eval: {error}")
             return None, None, None
         try:
             return self._get_position_of_obj(obj, quiet=quiet)
@@ -1850,9 +1801,9 @@ except for when using the function decorator.
         try:
             filename = inspect.getabsfile(obj)
             lines, lineno = inspect.getsourcelines(obj)
-        except (IOError, TypeError) as e:
+        except (OSError, TypeError) as e:
             if not quiet:
-                self.error('could not get obj: {}'.format(e))
+                self.error(f"could not get obj: {e}")
             return None, None, None
         return filename, lineno, lines
 
@@ -1876,11 +1827,10 @@ except for when using the function decorator.
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print(
-                '*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if abs(arg) >= len(self.stack):
-            print('*** Out of range', file=self.stdout)
+            print("*** Out of range", file=self.stdout)
             return
         if arg >= 0:
             self.curindex = arg
@@ -1890,60 +1840,63 @@ except for when using the function decorator.
         self.curframe_locals = self.curframe.f_locals
         self.print_current_stack_entry()
         self.lineno = None
+
     do_f = do_frame
 
-    def do_up(self, arg='1'):
-        arg = '1' if arg == '' else arg
+    def do_up(self, arg="1"):
+        arg = "1" if arg == "" else arg
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print(
-                '*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if self.curindex - arg < 0:
-            print('*** Oldest frame', file=self.stdout)
+            print("*** Oldest frame", file=self.stdout)
         else:
             self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+
     do_up.__doc__ = pdb.Pdb.do_up.__doc__
     do_u = do_up
 
-    def do_down(self, arg='1'):
-        arg = '1' if arg == '' else arg
+    def do_down(self, arg="1"):
+        arg = "1" if arg == "" else arg
         try:
             arg = int(arg)
         except (ValueError, TypeError):
-            print(
-                '*** Expected a number, got "{0}"'.format(arg), file=self.stdout)
+            print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
         if self.curindex + arg >= len(self.stack):
-            print('*** Newest frame', file=self.stdout)
+            print("*** Newest frame", file=self.stdout)
         else:
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
+
     do_down.__doc__ = pdb.Pdb.do_down.__doc__
     do_d = do_down
 
     def do_top(self, arg):
         """Go to top (oldest) frame."""
         if self.curindex == 0:
-            self.error('Oldest frame')
+            self.error("Oldest frame")
             return
         self._select_frame(0)
+
     do_top = do_top
 
     def do_bottom(self, arg):
         """Go to bottom (newest) frame."""
         if self.curindex + 1 == len(self.stack):
-            self.error('Newest frame')
+            self.error("Newest frame")
             return
         self._select_frame(len(self.stack) - 1)
+
     do_bottom = do_bottom
 
     @staticmethod
@@ -1953,16 +1906,17 @@ except for when using the function decorator.
             from shutil import get_terminal_size
         except ImportError:
             try:
-                import termios
                 import fcntl
                 import struct
-                call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00"*8)
+                import termios
+
+                call = fcntl.ioctl(0, termios.TIOCGWINSZ, "\x00" * 8)
                 height, width = struct.unpack("hhhh", call)[:2]
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
-                width = int(os.environ.get('COLUMNS', fallback[0]))
-                height = int(os.environ.get('COLUMNS', fallback[1]))
+                width = int(os.environ.get("COLUMNS", fallback[0]))
+                height = int(os.environ.get("COLUMNS", fallback[1]))
             # Work around above returning width, height = 0, 0 in Emacs
             width = width if width != 0 else fallback[0]
             height = height if height != 0 else fallback[1]
@@ -1980,16 +1934,8 @@ except for when using the function decorator.
         filename = os.path.abspath(frame.f_code.co_filename)
         return filename, lineno
 
-    def _quote_filename(self, filename):
-        try:
-            from shlex import quote
-        except ImportError:
-            from pipes import quote
-
-        return quote(filename)
-
     def _format_editcmd(self, editor, filename, lineno):
-        filename = self._quote_filename(filename)
+        filename = shlex.quote(filename)
 
         if "{filename}" in editor:
             return editor.format(filename=filename, lineno=lineno)
@@ -1999,8 +1945,9 @@ except for when using the function decorator.
             return "%s +%d %s" % (editor, lineno, filename)
 
         # Replace %s with filename, %d with lineno; %% becomes %.
-        return editor.replace("%%", "%").replace("%s", filename).replace(
-            "%d", str(lineno))
+        return (
+            editor.replace("%%", "%").replace("%s", filename).replace("%d", str(lineno))
+        )
 
     def _get_editor_cmd(self, filename, lineno):
         editor = self.config.editor
@@ -2016,12 +1963,14 @@ except for when using the function decorator.
                 if editor is None:
                     editor = which("vi")
             if not editor:
-                raise RuntimeError("Could not detect editor. Configure it or set $EDITOR.")  # noqa: E501
+                raise RuntimeError(
+                    "Could not detect editor. Configure it or set $EDITOR."
+                )  # noqa: E501
         return self._format_editcmd(editor, filename, lineno)
 
     def do_edit(self, arg):
         "Open an editor visiting the current file at the current line"
-        if arg == '':
+        if arg == "":
             filename, lineno = self._get_current_position()
         else:
             filename, lineno = self._get_fnamelineno_for_arg(arg)
@@ -2030,7 +1979,7 @@ except for when using the function decorator.
                 return
         # this case handles code generated with py.code.Source()
         # filename is something like '<0-codegen foo.py:18>'
-        match = re.match(r'.*<\d+-codegen (.*):(\d+)>', filename)
+        match = re.match(r".*<\d+-codegen (.*):(\d+)>", filename)
         if match:
             filename = match.group(1)
             lineno = int(match.group(2))
@@ -2047,23 +1996,27 @@ except for when using the function decorator.
 
     def _get_history_text(self):
         import linecache
+
         line = linecache.getline(self.start_filename, self.start_lineno)
         nspaces = len(line) - len(line.lstrip())
-        indent = ' ' * nspaces
+        indent = " " * nspaces
         history = [indent + s for s in self._get_history()]
-        return '\n'.join(history) + '\n'
+        return "\n".join(history) + "\n"
 
     def _open_stdin_paste(self, stdin_paste, lineno, filename, text):
-        proc = subprocess.Popen([stdin_paste, '+%d' % lineno, filename],
-                                stdin=subprocess.PIPE)
+        proc = subprocess.Popen(
+            [stdin_paste, "+%d" % lineno, filename], stdin=subprocess.PIPE
+        )
         proc.stdin.write(text)
         proc.stdin.close()
 
     def _put(self, text):
         stdin_paste = self.config.stdin_paste
         if stdin_paste is None:
-            print('** Error: the "stdin_paste" option is not configured **',
-                  file=self.stdout)
+            print(
+                '** Error: the "stdin_paste" option is not configured **',
+                file=self.stdout,
+            )
         filename = self.start_filename
         lineno = self.start_lineno
         self._open_stdin_paste(stdin_paste, lineno, filename, text)
@@ -2086,20 +2039,22 @@ except for when using the function decorator.
         """Use set_next() via set_trace() when re-using Pdb instance.
 
         But call set_step() before still for handling of frame_returning."""
-        super(Pdb, self).set_step()
+        super().set_step()
         if hasattr(self, "_set_trace_use_next"):
             del self._set_trace_use_next
             self.set_next(self._via_set_trace_frame)
 
     def stop_here(self, frame):
         # Always stop at starting frame (https://bugs.python.org/issue38806).
-        if self.stopframe is None:
-            if getattr(self, "_via_set_trace_frame", None) == frame:
-                if not self._stopped_for_set_trace:
-                    self._stopped_for_set_trace = True
-                    return True
+        if (
+            (self.stopframe is None)
+            and (getattr(self, "_via_set_trace_frame", None) == frame)
+            and (not self._stopped_for_set_trace)
+        ):
+            self._stopped_for_set_trace = True
+            return True
         if Pdb is not None:
-            return super(Pdb, self).stop_here(frame)
+            return super().stop_here(frame)
 
     def set_trace(self, frame=None):
         """Remember starting frame.
@@ -2121,7 +2076,7 @@ except for when using the function decorator.
         self.start_filename = frame.f_code.co_filename
         self.start_lineno = frame.f_lineno
 
-        return super(Pdb, self).set_trace(frame)
+        return super().set_trace(frame)
 
     def is_skipped_module(self, module_name):
         """Backport for https://bugs.python.org/issue36130.
@@ -2130,7 +2085,7 @@ except for when using the function decorator.
         """
         if module_name is None:
             return False
-        return super(Pdb, self).is_skipped_module(module_name)
+        return super().is_skipped_module(module_name)
 
     def message(self, msg):
         if self.sticky:
@@ -2192,20 +2147,21 @@ except for when using the function decorator.
 
 # simplified interface
 
-if hasattr(pdb, 'Restart'):
+if hasattr(pdb, "Restart"):
     Restart = pdb.Restart
 
-if hasattr(pdb, '_usage'):
+if hasattr(pdb, "_usage"):
     _usage = pdb._usage
 
 # copy some functions from pdb.py, but rebind the global dictionary
-for name in 'run runeval runctx runcall main set_trace'.split():
+for name in "run runeval runctx runcall main set_trace".split():
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())
 del name, func
 
 
 # Post-Mortem interface
+
 
 def post_mortem(t=None, Pdb=Pdb):
     # handling the default
@@ -2214,8 +2170,9 @@ def post_mortem(t=None, Pdb=Pdb):
         # being handled, otherwise it returns None
         t = sys.exc_info()[2]
     if t is None:
-        raise ValueError("A valid traceback must be passed if no "
-                         "exception is being handled")
+        raise ValueError(
+            "A valid traceback must be passed if no " "exception is being handled"
+        )
 
     p = Pdb()
     p.reset()
@@ -2229,6 +2186,7 @@ def pm(Pdb=Pdb):
 def cleanup():
     local.GLOBAL_PDB = None
     local._pdbpp_completing = False
+
 
 # pdb++ specific interface
 
@@ -2264,7 +2222,7 @@ disable.set_trace = lambda frame=None, Pdb=Pdb: None
 
 
 def set_tracex():
-    print('PDB!')
+    print("PDB!")
 
 
 set_tracex._dont_inline_ = True
@@ -2276,26 +2234,7 @@ def hideframe(func):
     c = func.__code__
     new_co_consts = c.co_consts + (_HIDE_FRAME,)
 
-    if hasattr(c, "replace"):
-        # Python 3.8.
-        c = c.replace(co_consts=new_co_consts)
-    elif sys.version_info < (3, ):
-        c = types.CodeType(
-            c.co_argcount, c.co_nlocals, c.co_stacksize,
-            c.co_flags, c.co_code,
-            new_co_consts,
-            c.co_names, c.co_varnames, c.co_filename,
-            c.co_name, c.co_firstlineno, c.co_lnotab,
-            c.co_freevars, c.co_cellvars)
-    else:
-        # Python 3 takes an additional arg -- kwonlyargcount.
-        c = types.CodeType(
-            c.co_argcount, c.co_kwonlyargcount, c.co_nlocals, c.co_stacksize,
-            c.co_flags, c.co_code,
-            c.co_consts + (_HIDE_FRAME,),
-            c.co_names, c.co_varnames, c.co_filename,
-            c.co_name, c.co_firstlineno, c.co_lnotab,
-            c.co_freevars, c.co_cellvars)
+    c = c.replace(co_consts=new_co_consts)
 
     func.__code__ = c
     return func
@@ -2318,11 +2257,14 @@ def break_on_setattr(attrname, condition=always, Pdb=Pdb):
                 pdb_.stopframe = frame
                 pdb_.interaction(frame, None)
             old___setattr__(self, attr, value)
+
         cls.__setattr__ = __setattr__
         return cls
+
     return decorator
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pdbpp
+
     pdbpp.main()

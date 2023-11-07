@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
-
+# noqa: B011
 import bdb
 import inspect
 import io
@@ -12,24 +10,14 @@ import sys
 import textwrap
 import traceback
 from io import BytesIO
+from itertools import zip_longest
+from shlex import quote
 
 import pdbpp
-import py
 import pytest
 from pdbpp import DefaultConfig, Pdb, StringIO
 
 from .conftest import skip_with_missing_pth_file
-
-try:
-    from shlex import quote
-except ImportError:
-    from pipes import quote
-
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest
-
 
 # Windows support
 # The basic idea is that paths on Windows are dumb because of backslashes.
@@ -96,10 +84,7 @@ class PdbTest(pdbpp.Pdb):
         readrc = kwds.pop("readrc", False)
         nosigint = kwds.pop("nosigint", True)
         kwds.setdefault('Config', ConfigTest)
-        if sys.version_info >= (3, 6):
-            super(PdbTest, self).__init__(*args, readrc=readrc, **kwds)
-        else:
-            super(PdbTest, self).__init__(*args, **kwds)
+        super().__init__(*args, readrc=readrc, **kwds)
         # Do not install sigint_handler in do_continue by default.
         self.nosigint = nosigint
 
@@ -134,7 +119,7 @@ def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
 
     class PdbForFrame(Pdb):
         def set_trace(self, _frame, *args, **kwargs):
-            super(PdbForFrame, self).set_trace(frame, *args, **kwargs)
+            super().set_trace(frame, *args, **kwargs)
 
     newglobals = pdbpp.set_trace.__globals__.copy()
     newglobals['Pdb'] = PdbForFrame
@@ -164,10 +149,6 @@ def runpdb(func, input, terminal_size=None):
     # Use __dict__ to avoid class descriptor (staticmethod).
     old_get_terminal_size = pdbpp.Pdb.__dict__["get_terminal_size"]
 
-    if sys.version_info < (3, ):
-        text_type = unicode  # noqa: F821
-    else:
-        text_type = str
 
     class MyBytesIO(BytesIO):
         """write accepts unicode or bytes"""
@@ -178,9 +159,9 @@ def runpdb(func, input, terminal_size=None):
             self.encoding = encoding
 
         def write(self, msg):
-            if isinstance(msg, text_type):
+            if isinstance(msg, str):
                 msg = msg.encode(self.encoding)
-            super(MyBytesIO, self).write(msg)
+            super().write(msg)
 
         def get_unicode_value(self):
             return self.getvalue().decode(self.encoding).replace(
@@ -301,32 +282,16 @@ class InnerTestException(Exception):
 
 
 trans_trn_dict = {"\n": r"\n", "\r": r"\r", "\t": r"\t"}
-if sys.version_info >= (3,):
-    trans_trn_table = str.maketrans(trans_trn_dict)
-
-    def trans_trn(string):
-        return string.translate(trans_trn_table)
+trans_trn_table = str.maketrans(trans_trn_dict)
 
 
-else:
-
-    def trans_trn(string):
-        for k, v in trans_trn_dict.items():
-            string = string.replace(k, v)
-        return string
+def trans_trn(string):
+    return string.translate(trans_trn_table)
 
 
 def check(func, expected, terminal_size=None):
     expected, lines = run_func(func, expected, terminal_size)
-    if expected:
-        maxlen = max(map(len, expected))
-        if sys.version_info < (3,):
-            # Ensure same type for comparison.
-            expected = [
-                x.decode("utf8") if isinstance(x, bytes) else x for x in expected
-            ]
-    else:
-        maxlen = 0
+    maxlen = max(map(len, expected)) if expected else 0
     all_ok = True
     print()
     for pattern, string in zip_longest(expected, lines):
@@ -337,8 +302,7 @@ def check(func, expected, terminal_size=None):
                 try:
                     ok = re.match(pattern, string)
                 except re.error as exc:
-                    raise ValueError("re.match failed for {!r}: {!r}".format(
-                        pattern, exc))
+                    raise ValueError(f"re.match failed for {pattern!r}: {exc!r}")  # noqa: B904
         else:
             ok = False
             if pattern is None:
@@ -620,7 +584,7 @@ def test_forget_with_new_pdb():
         class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                return super(NewPdb, self).set_trace(*args)
+                return super().set_trace(*args)
 
         new_pdb = NewPdb()
         new_pdb.set_trace()
@@ -633,7 +597,7 @@ def test_forget_with_new_pdb():
 new_set_trace
 --Return--
 [NUM] .*set_trace()->None
--> return super(NewPdb, self).set_trace(\\*args)
+-> return super().set_trace(\\*args)
    5 frames hidden .*
 # l
 NUM .*
@@ -660,7 +624,7 @@ def test_global_pdb_with_classmethod():
             def set_trace(self, *args):
                 print("new_set_trace")
                 assert pdbpp.local.GLOBAL_PDB is self
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
@@ -686,14 +650,14 @@ def test_global_pdb_via_new_class_in_init_method():
         first = pdbpp.local.GLOBAL_PDB
         assert isinstance(pdbpp.local.GLOBAL_PDB, PdbTest)
 
-        class PdbLikePytest(object):
+        class PdbLikePytest:
             @classmethod
             def init_pdb(cls):
 
                 class NewPdb(PdbTest, pdbpp.Pdb):
                     def set_trace(self, frame):
                         print("new_set_trace")
-                        super(NewPdb, self).set_trace(frame)
+                        super().set_trace(frame)
 
                 return NewPdb()
 
@@ -738,9 +702,9 @@ def test_global_pdb_via_existing_class_in_init_method():
         class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, frame):
                 print("new_set_trace")
-                super(NewPdb, self).set_trace(frame)
+                super().set_trace(frame)
 
-        class PdbViaClassmethod(object):
+        class PdbViaClassmethod:
             @classmethod
             def init_pdb(cls):
                 return NewPdb()
@@ -787,7 +751,7 @@ def test_global_pdb_can_be_skipped():
             def set_trace(self, *args):
                 print("new_set_trace")
                 assert pdbpp.local.GLOBAL_PDB is not self
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 assert pdbpp.local.GLOBAL_PDB is not self
                 return ret
 
@@ -828,7 +792,7 @@ def test_global_pdb_can_be_skipped_unit(monkeypatch_pdb_methods):
             def set_trace(self, *args):
                 print("new_set_trace")
                 assert pdbpp.local.GLOBAL_PDB is not self
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 assert pdbpp.local.GLOBAL_PDB is not self
                 return ret
 
@@ -857,7 +821,7 @@ def test_global_pdb_can_be_skipped_but_set():
             def set_trace(self, *args):
                 print("new_set_trace")
                 assert pdbpp.local.GLOBAL_PDB is self
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
@@ -898,7 +862,7 @@ def test_global_pdb_can_be_skipped_but_set_unit(monkeypatch_pdb_methods):
             def set_trace(self, *args):
                 print("new_set_trace")
                 assert pdbpp.local.GLOBAL_PDB is self
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 assert pdbpp.local.GLOBAL_PDB is self
                 return ret
 
@@ -923,7 +887,7 @@ def test_global_pdb_only_reused_for_same_class(monkeypatch_pdb_methods):
         class NewPdb(PdbTest, pdbpp.Pdb):
             def set_trace(self, *args):
                 print("new_set_trace")
-                ret = super(NewPdb, self).set_trace(*args)
+                ret = super().set_trace(*args)
                 return ret
 
         new_pdb = NewPdb()
@@ -994,7 +958,7 @@ def test_single_question_mark():
         c = 3
         return a+b+c
 
-    check(fn, r"""
+    check(fn, fr"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
@@ -1003,22 +967,18 @@ def test_single_question_mark():
 # f2?
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-^[[31;01mFile:^[[00m           {filename}:{lnum_f2}
+^[[31;01mFile:^[[00m           {RE_THIS_FILE_CANONICAL}:{fn.__code__.co_firstlineno + 4}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
 # nodoc?
 .*Type:.*function
 .*String Form:.*<function .*nodoc at .*>
-^[[31;01mFile:^[[00m           {filename}:{lnum_nodoc}
+^[[31;01mFile:^[[00m           {RE_THIS_FILE_CANONICAL}:{fn.__code__.co_firstlineno + 1}
 ^[[31;01mDefinition:^[[00m     nodoc()
 # doesnotexist?
 \*\*\* NameError.*
 # c
-    """.format(
-        filename=RE_THIS_FILE_CANONICAL,
-        lnum_nodoc=fn.__code__.co_firstlineno + 1,
-        lnum_f2=fn.__code__.co_firstlineno + 4,
-    ))
+    """)
 
 
 def test_double_question_mark():
@@ -1039,7 +999,7 @@ def test_double_question_mark():
         c = 3
         return a+b+c
 
-    check(fn, r"""
+    check(fn, fr"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
@@ -1048,7 +1008,7 @@ def test_double_question_mark():
 # f2??
 .*Type:.*function
 .*String Form:.*<function .*f2 at .*>
-^[[31;01mFile:^[[00m           {filename}
+^[[31;01mFile:^[[00m           {RE_THIS_FILE_CANONICAL}
 .*Definition:.*f2(x, y)
 .*Docstring:.*Return product of x and y
 .*Source:.*
@@ -1064,9 +1024,7 @@ def test_double_question_mark():
 ^[[31;01mDocstring:^[[00m      shortened
 ^[[31;01mSource:^[[00m         -
 # c
-    """.format(
-        filename=RE_THIS_FILE_CANONICAL,
-    ))
+    """)
 
 
 def test_question_mark_unit(capsys, LineMatcher):
@@ -1184,31 +1142,26 @@ def test_frame():
         set_trace()
         return
 
-    check(a, """
+    check(a, f"""
 [NUM] > .*c()
 -> return
    5 frames hidden .*
-# f {frame_num_a}
+# f {count_frames() + 2 - 5}
 [NUM] > .*a()
 -> b()
 # f
-[{frame_num_a}] > .*a()
+[{count_frames() + 2 - 5}] > .*a()
 -> b()
 # f 0
 [ 0] > .*()
 -> .*
 # f -1
-[{stack_len}] > .*c()
+[{len(traceback.extract_stack())}] > .*c()
 -> return
 # c
-    """.format(
-        frame_num_a=count_frames() + 2 - 5,
-        stack_len=len(traceback.extract_stack())
-    ))
+    """)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6),
-                    reason="only with f-strings")
 def test_fstrings(monkeypatch):
     def mocked_inspect(self, arg):
         print("mocked_inspect: %r" % arg)
@@ -1259,7 +1212,7 @@ mocked_inspect: 'r"foo"'
 # u"foo"?
 mocked_inspect: 'u"foo"'
 # c
-""".format(bytestring=b"string", unicodestring=u"string"))
+""".format(bytestring=b"string", unicodestring="string"))
 
 
 def test_up_down_arg():
@@ -1328,7 +1281,7 @@ def test_top_bottom():
         return
 
     check(
-        a, """
+        a, f"""
 [NUM] > .*c()
 -> return
    5 frames hidden .*
@@ -1336,16 +1289,16 @@ def test_top_bottom():
 [ 0] > .*()
 -> .*
 # bottom
-[{stack_len}] > .*c()
+[{len(traceback.extract_stack())}] > .*c()
 -> return
 # c
-""".format(stack_len=len(traceback.extract_stack())))
+""")
 
 
 def test_top_bottom_frame_post_mortem():
     def fn():
         def throws():
-            0 / 0
+            0 / 0 # noqa: B018
 
         def f():
             throws()
@@ -1625,17 +1578,17 @@ def test_shortlist():
         set_trace(Config=ConfigTest)
         return a
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> return a
    5 frames hidden .*
-# l {line_num}, 3
+# l {fn.__code__.co_firstlineno}, 3
 NUM +\t    def fn():
 NUM +\t        a = 1
 NUM +\t        set_trace(Config=ConfigTest)
 NUM +->	        return a
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_with_pygments_and_EOF():
@@ -1644,14 +1597,14 @@ def test_shortlist_with_pygments_and_EOF():
         set_trace(Config=ConfigWithPygments)
         return a
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
-# l {line_num}, 3
+# l {100000}, 3
 [EOF]
 # c
-""".format(line_num=100000))
+""")
 
 
 def test_shortlist_with_highlight_and_EOF():
@@ -1660,14 +1613,19 @@ def test_shortlist_with_highlight_and_EOF():
         set_trace(Config=ConfigWithHighlight)
         return a
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> return a
    5 frames hidden .*
-# l {line_num}, 3
+# l {100000}, 3
 [EOF]
 # c
-""".format(line_num=100000))
+""",
+    )
+
+# a lot of the following tests are sensitive to formatting,
+# so let's avoid formatting to avoid headaches
+# fmt: off
 
 
 @pytest.mark.parametrize('config', [ConfigWithPygments, ConfigWithPygmentsNone])
@@ -1693,11 +1651,11 @@ def test_shortlist_with_pygments(config, monkeypatch):
 
     monkeypatch.setattr(pdbpp.Pdb, "_get_source_highlight_function", check_calls)
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> ^[[38;5;28;01mreturn^[[39;00m a
    5 frames hidden .*
-# l {line_num}, 5
+# l {fn.__code__.co_firstlineno - 1}, 5
 NUM +\t$
 NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
 NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
@@ -1705,7 +1663,7 @@ NUM +\t        set_trace(Config^[[38;5;241m=^[[39mconfig)
 NUM +\t$
 NUM +->\t        ^[[38;5;28;01mreturn^[[39;00m a
 # c
-""".format(line_num=fn.__code__.co_firstlineno - 1))
+""")
     assert len(calls) == 3, calls
 
 
@@ -1757,7 +1715,7 @@ def test_truncated_source_with_pygments():
 # l {line_num}, 5
 NUM +\t$
 NUM +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +\t        ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
+NUM +\t^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
 NUM +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +\t$
@@ -1766,13 +1724,13 @@ NUM +\t$
 [NUM] > .*fn(), 5 frames hidden
 
 NUM +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-NUM +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
+NUM +^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines^[[39.*m
 NUM +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 NUM +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygments)
 NUM +$
 NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
 # c
-""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501,UP032
 
 
 def test_truncated_source_with_pygments_and_highlight():
@@ -1791,7 +1749,7 @@ def test_truncated_source_with_pygments_and_highlight():
 # l {line_num}, 5
 <COLORNUM> +\t$
 <COLORNUM> +\t    ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +\t        ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
+<COLORNUM> +\t^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines, which is 80\"\"\"^[[39.*m
 <COLORNUM> +\t        a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +\t        set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +\t$
@@ -1800,13 +1758,13 @@ def test_truncated_source_with_pygments_and_highlight():
 [NUM] > .*fn(), 5 frames hidden
 
 <COLORNUM> +       ^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():
-<COLORNUM> +           ^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines<PYGMENTSRESET>
+<COLORNUM> +^[[38;5;250m        ^[[39m^[[38;5;124.*m\"\"\"some docstring longer than maxlength for truncate_long_lines<PYGMENTSRESET>
 <COLORNUM> +           a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
 <COLORNUM> +           set_trace(Config^[[38;5;241m=^[[39mConfigWithPygmentsAndHighlight)
 <COLORNUM> +$
 <COLORCURLINE> +->         ^[[38;5;28;01;44mreturn<PYGMENTSRESET> a                                                       ^[[00m
 # c
-""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501
+""".format(line_num=fn.__code__.co_firstlineno - 1))  # noqa: E501,UP032
 
 
 def test_shortlist_with_highlight():
@@ -1817,18 +1775,18 @@ def test_shortlist_with_highlight():
 
         return a
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> return a
    5 frames hidden .*
-# l {line_num}, 4
+# l {fn.__code__.co_firstlineno}, 4
 <COLORNUM> +\t    def fn():
 <COLORNUM> +\t        a = 1
 <COLORNUM> +\t        set_trace(Config=ConfigWithHighlight)
 <COLORNUM> +\t$
 <COLORNUM> +->\t        return a
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_without_arg():
@@ -1864,11 +1822,11 @@ def test_shortlist_heuristic():
         set_trace(Config=ConfigTest)
         return a
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> return a
    5 frames hidden .*
-# list {line_num}, 3
+# list {fn.__code__.co_firstlineno}, 3
 NUM \t    def fn():
 NUM \t        a = 1
 NUM \t        set_trace(Config=ConfigTest)
@@ -1876,7 +1834,7 @@ NUM ->	        return a
 # list(range(4))
 [0, 1, 2, 3]
 # c
-""".format(line_num=fn.__code__.co_firstlineno))
+""")
 
 
 def test_shortlist_with_second_set_trace_resets_lineno():
@@ -1887,16 +1845,16 @@ def test_shortlist_with_second_set_trace_resets_lineno():
         set_trace()
         f1()
 
-    check(fn, r"""
+    check(fn, fr"""
 [NUM] > .*fn()
 -> f1()
    5 frames hidden .*
-# l {line_num}, 2
+# l {fn.__code__.co_firstlineno}, 2
 NUM \t    def fn():
 NUM \t        def f1():
 NUM \t            set_trace(cleanup=False)
 # import pdb; pdbpp.local.GLOBAL_PDB.lineno
-{set_lineno}
+{fn.__code__.co_firstlineno + 2}
 # c
 --Return--
 [NUM] > .*f1()->None
@@ -1904,10 +1862,7 @@ NUM \t            set_trace(cleanup=False)
    5 frames hidden .*
 # import pdb; pdbpp.local.GLOBAL_PDB.lineno
 # c
-    """.format(
-        line_num=fn.__code__.co_firstlineno,
-        set_lineno=fn.__code__.co_firstlineno + 2,
-    ))
+    """)
 
 
 def test_longlist():
@@ -2351,7 +2306,7 @@ def test_sticky_dunder_exception():
         set_trace()
         raises()
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> raises()
    5 frames hidden (try 'help hidden_frames')
@@ -2362,7 +2317,7 @@ def test_sticky_dunder_exception():
    5 frames hidden .*
 # sticky
 <CLEARSCREEN>
-[NUM] > {filename}(NUM)fn(), 5 frames hidden
+[NUM] > {RE_THIS_FILE_CANONICAL}(NUM)fn(), 5 frames hidden
 
 NUM         def fn():
 NUM             def raises():
@@ -2372,9 +2327,7 @@ NUM             set_trace(.*)
 NUM  ->         raises()
 InnerTestException:
 # c
-    """.format(
-        filename=RE_THIS_FILE_CANONICAL,
-    ))
+    """)
 
 
 def test_sticky_dunder_exception_with_highlight():
@@ -2453,7 +2406,7 @@ def test_sticky_dunder_return():
         set_trace()
         returns()
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> returns()
    5 frames hidden (try 'help hidden_frames')
@@ -2472,7 +2425,7 @@ NUM                 return 40 \\+ 2
 \\*\\*\\* Not yet returned!
 # r
 <CLEARSCREEN><PY27_MSG>
-[NUM] > {filename}(NUM)returns()->42, 5 frames hidden
+[NUM] > {RE_THIS_FILE_CANONICAL}(NUM)returns()->42, 5 frames hidden
 
 NUM             def returns():
 NUM  ->             return 40 \\+ 2
@@ -2480,9 +2433,7 @@ NUM  ->             return 40 \\+ 2
 # retval
 42
 # c
-    """.format(
-        filename=RE_THIS_FILE_CANONICAL,
-    ))
+    """)
 
 
 def test_sticky_with_user_exception():
@@ -2882,11 +2833,11 @@ def test_exception_lineno():
         except AssertionError:
             xpm()
 
-    check(fn, """
+    check(fn, f"""
 Traceback (most recent call last):
-  File "{filename}", line NUM, in fn
+  File "{RE_THIS_FILE}", line NUM, in fn
     bar()
-  File "{filename}", line NUM, in bar
+  File "{RE_THIS_FILE}", line NUM, in bar
     assert False
 AssertionError.*
 
@@ -2904,9 +2855,7 @@ NUM                 b = 2
 NUM             except AssertionError:
 NUM  ->             xpm()
 # c
-    """.format(
-        filename=RE_THIS_FILE,
-    ))
+    """)
 
 
 def test_postmortem_noargs():
@@ -2914,7 +2863,7 @@ def test_postmortem_noargs():
     def fn():
         try:
             a = 1  # noqa: F841
-            1/0
+            1/0  # noqa: B018
         except ZeroDivisionError:
             pdbpp.post_mortem(Pdb=PdbTest)
 
@@ -2936,16 +2885,16 @@ def test_exception_through_generator():
 
     def fn():
         try:
-            for i in gen():
+            for _ in gen():
                 pass
         except AssertionError:
             xpm()
 
-    check(fn, """
+    check(fn, f"""
 Traceback (most recent call last):
-  File "{filename}", line NUM, in fn
-    for i in gen():
-  File "{filename}", line NUM, in gen
+  File "{RE_THIS_FILE}", line NUM, in fn
+    for _ in gen():
+  File "{RE_THIS_FILE}", line NUM, in gen
     assert False
 AssertionError.*
 
@@ -2953,34 +2902,9 @@ AssertionError.*
 -> assert False
 # u
 [NUM] > .*fn()
--> for i in gen():
+-> for _ in gen():
 # c
-    """.format(
-        filename=RE_THIS_FILE,
-    ))
-
-
-def test_py_code_source():  # noqa: F821
-    src = py.code.Source("""
-    def fn():
-        x = 42
-        set_trace()
-        return x
     """)
-
-    exec(src.compile(), globals())
-    check(fn,  # noqa: F821
-          """
-[NUM] > .*fn()
--> return x
-   5 frames hidden .*
-# ll
-NUM     def fn():
-NUM         x = 42
-NUM         set_trace()
-NUM  ->     return x
-# c
-""")
 
 
 def test_source():
@@ -3162,28 +3086,6 @@ RUN emacs \+1 {os_fname}
 """.format(fname=__file__,
            fname_edit=RE_THIS_FILE_QUOTED,
            os_fname=re.escape(quote(os.__file__.rstrip("c")))))
-
-
-def test_edit_py_code_source():
-    src = py.code.Source("""
-    def bar():
-        set_trace()
-        return 42
-    """)
-    _, base_lineno = inspect.getsourcelines(test_edit_py_code_source)
-    dic = {'set_trace': set_trace}
-    exec(src.compile(), dic)  # 8th line from the beginning of the function
-    bar = dic['bar']
-    src_compile_lineno = base_lineno + 8
-
-    check(bar, r"""
-[NUM] > .*bar()
--> return 42
-   5 frames hidden .*
-# edit bar
-RUN emacs \+%d %s
-# c
-""" % (src_compile_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
 
 
 def test_put():
@@ -3517,13 +3419,17 @@ def test_hidden_pytest_frames_f_local_nondict():
         exec("print(1)", {}, m)
         assert m.values == [('__return__', None)]
 
-    check(fn, r"""
+    # 3.11 shows the exec frame as <string>(0), while 3.8 shows <string>(1)
+    # See https://docs.python.org/3/whatsnew/3.11.html#inspect
+    line_no = 0 if sys.version_info >= (3, 11) else 1
+
+    check(fn, fr"""
 [NUM] > .*fn()
--> exec("print(1)", {}, m)
+-> exec("print(1)", {{}}, m)
    5 frames hidden (try 'help hidden_frames')
 # s
 --Call--
-[NUM] > <string>(1)<module>()
+[NUM] > <string>({line_no})<module>()
    5 frames hidden (try 'help hidden_frames')
 # n
 [NUM] > <string>(1)<module>()
@@ -3535,6 +3441,7 @@ def test_hidden_pytest_frames_f_local_nondict():
    5 frames hidden (try 'help hidden_frames')
 # c
     """)
+
 
 
 def test_hidden_unittest_frames():
@@ -3612,10 +3519,9 @@ def test_disable_hidden_frames():
 
 
 def test_break_on_setattr():
-    # we don't use a class decorator to keep 2.5 compatibility
-    class Foo(object):
+    @pdbpp.break_on_setattr('x', Pdb=PdbTest)
+    class Foo:
         pass
-    Foo = pdbpp.break_on_setattr('x', Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -3645,9 +3551,9 @@ def test_break_on_setattr_without_hidden_frames():
             class Config(ConfigTest):
                 enable_hidden_frames = False
 
-            super(PdbWithConfig, self).__init__(*args, Config=Config, **kwargs)
+            super().__init__(*args, Config=Config, **kwargs)
 
-    class Foo(object):
+    class Foo:
         pass
     Foo = pdbpp.break_on_setattr('x', Pdb=PdbWithConfig)(Foo)
 
@@ -3674,10 +3580,9 @@ def test_break_on_setattr_condition():
     def mycond(obj, value):
         return value == 42
 
-    class Foo(object):
+    @pdbpp.break_on_setattr('x', condition=mycond, Pdb=PdbTest)
+    class Foo:
         pass
-    # we don't use a class decorator to keep 2.5 compatibility
-    Foo = pdbpp.break_on_setattr('x', condition=mycond, Pdb=PdbTest)(Foo)
 
     def fn():
         obj = Foo()
@@ -3702,7 +3607,7 @@ def test_break_on_setattr_condition():
 
 
 def test_break_on_setattr_non_decorator():
-    class Foo(object):
+    class Foo:
         pass
 
     def fn():
@@ -3725,11 +3630,10 @@ def test_break_on_setattr_non_decorator():
 
 
 def test_break_on_setattr_overridden():
-    # we don't use a class decorator to keep 2.5 compatibility
-    class Foo(object):
+    @pdbpp.break_on_setattr('x', Pdb=PdbTest)
+    class Foo:
         def __setattr__(self, attr, value):
-            object.__setattr__(self, attr, value+1)
-    Foo = pdbpp.break_on_setattr('x', Pdb=PdbTest)(Foo)
+            super().__setattr__(attr, value+1)
 
     def fn():
         obj = Foo()
@@ -3781,7 +3685,7 @@ def test_utf8():
     # we cannot easily use "check" because the output is full of ANSI escape
     # sequences
     expected, lines = run_func(fn, '# ll\n# c')
-    assert u'тест' in lines[5]
+    assert 'тест' in lines[5]
 
 
 def test_debug_normal():
@@ -3878,14 +3782,14 @@ LEAVING RECURSIVE DEBUGGER
 
 
 def test_debug_with_overridden_continue():
-    class CustomPdb(PdbTest, object):
+    class CustomPdb(PdbTest):
         """CustomPdb that overrides do_continue like with pytest's wrapper."""
 
         def do_continue(self, arg):
             global count_continue
             count_continue += 1
             print("do_continue_%d" % count_continue)
-            return super(CustomPdb, self).do_continue(arg)
+            return super().do_continue(arg)
 
         do_c = do_cont = do_continue
 
@@ -3969,9 +3873,6 @@ def test_unicode_bug():
 # c
 """
 
-    if sys.version_info < (3, ):
-        check_output = check_output.decode('utf-8')
-
     check(fn, check_output)
 
 
@@ -3985,21 +3886,18 @@ def test_continue_arg():
     _, lineno = inspect.getsourcelines(fn)
     line_z = lineno+4
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> x = 1
    5 frames hidden .*
-# c {break_lnum}
-Breakpoint NUM at {filename}:{break_lnum}
+# c {line_z}
+Breakpoint NUM at {RE_THIS_FILE_CANONICAL}:{line_z}
 Deleted breakpoint NUM
 [NUM] > .*fn()
 -> z = 3
    5 frames hidden .*
 # c
-    """.format(
-        break_lnum=line_z,
-        filename=RE_THIS_FILE_CANONICAL,
-    ))
+    """)
 
 
 # On Windows, it seems like this file is handled as cp1252-encoded instead
@@ -4037,26 +3935,22 @@ def test_continue_arg_with_error():
     _, lineno = inspect.getsourcelines(fn)
     line_z = lineno + 4
 
-    check(fn, r"""
+    check(fn, fr"""
 [NUM] > .*fn()
 -> x = 1
    5 frames hidden .*
 # c.foo
 \*\*\* The specified object '.foo' is not a function or was not found along sys.path.
-# c {break_lnum}
-Breakpoint NUM at {filename}:{break_lnum}
+# c {line_z}
+Breakpoint NUM at {RE_THIS_FILE_CANONICAL}:{line_z}
 Deleted breakpoint NUM
 [NUM] > .*fn()
 -> z = 3
    5 frames hidden .*
 # c
-    """.format(
-        break_lnum=line_z,
-        filename=RE_THIS_FILE_CANONICAL,
-    ))
+    """)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="header kwarg is 3.7+")
 def test_set_trace_header():
     """Handler header kwarg added with Python 3.7 in pdb.set_trace."""
     def fn():
@@ -4100,17 +3994,17 @@ def test_frame_cmd_changes_locals():
         set_trace()
         return
 
-    check(a, """
+    check(a, f"""
 [NUM] > .*fn()
 -> return
    5 frames hidden .*
-# f {frame_num_a}
+# f {count_frames() + 2 - 5}
 [NUM] > .*a()
 -> b()
 # p list(sorted(locals().keys()))
 ['b', 'x']
 # c
-""".format(frame_num_a=count_frames() + 2 - 5))
+""")
 
 
 @pytest.mark.skipif(not hasattr(pdbpp.pdb.Pdb, "_cmdloop"),
@@ -4248,12 +4142,12 @@ def test_break_after_set_trace():
 
     _, lineno = inspect.getsourcelines(fn)
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> print(1)
    5 frames hidden .*
-# break {lineno}
-Breakpoint . at .*:{lineno}
+# break {lineno + 3}
+Breakpoint . at .*:{lineno + 3}
 # c
 1
 [NUM] > .*fn()
@@ -4262,7 +4156,7 @@ Breakpoint . at .*:{lineno}
 # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
 # c
 2
-""".format(lineno=lineno + 3))
+""")
 
 
 def test_break_with_inner_set_trace():
@@ -4276,12 +4170,12 @@ def test_break_with_inner_set_trace():
 
     _, lineno = inspect.getsourcelines(fn)
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> inner()
    5 frames hidden .*
-# break {lineno}
-Breakpoint . at .*:{lineno}
+# break {lineno + 8}
+Breakpoint . at .*:{lineno + 8}
 # c
 --Return--
 [NUM] > .*inner()->None
@@ -4290,12 +4184,9 @@ Breakpoint . at .*:{lineno}
 # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
 # c
 1
-""".format(lineno=lineno + 8))
+""")
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3,), reason="no support for exit from interaction with pdbrc"
-)
 def test_pdbrc_continue(tmpdirhome):
     """Test that interaction is skipped with continue in pdbrc."""
     assert os.getcwd() == str(tmpdirhome)
@@ -4335,7 +4226,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     monkeypatch.setenv("PDBPP_HIJACK_PDB", str(PDBPP_HIJACK_PDB))
 
     f = tmpdir.ensure("test.py")
-    f.write(textwrap.dedent("""
+    f.write(textwrap.dedent(f"""
         import inspect
         import os
         import pdb
@@ -4346,7 +4237,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
         else:
             assert fname in ('pdb.py', 'pdb.pyc'), (fname, pdb, pdb.Pdb)
         pdb.set_trace()
-    """.format(PDBPP_HIJACK_PDB=PDBPP_HIJACK_PDB)))
+    """))
 
     p = subprocess.Popen(
         [sys.executable, "-m", "pdb", str(f)],
@@ -4362,9 +4253,7 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
     if PDBPP_HIJACK_PDB:
         assert "(Pdb)" not in out
         assert "(Pdb++)" in out
-        if sys.platform == "win32" and (
-            sys.version_info < (3,) or sys.version_info >= (3, 5)
-        ):
+        if sys.platform == "win32":
             assert out.endswith("\n(Pdb++) " + os.linesep)
         else:
             assert out.endswith("\n(Pdb++) \n")
@@ -4390,7 +4279,7 @@ def get_completions(text):
 
 def test_set_trace_in_completion(monkeypatch_readline):
     def fn():
-        class CompleteMe(object):
+        class CompleteMe:
             attr_called = 0
 
             @property
@@ -4435,24 +4324,23 @@ def test_completes_from_pdb(monkeypatch_readline):
             monkeypatch_readline("wher", 0, 4)
             assert get_completions("wher") == ["where"]
 
-            if sys.version_info > (3, ):
-                # Patch readline to return expected results for "disable ".
-                monkeypatch_readline("disable", 8, 8)
+            # Patch readline to return expected results for "disable ".
+            monkeypatch_readline("disable", 8, 8)
 
-                # NOTE: number depends on bpb.Breakpoint class state, just ensure that
-                #       is a number.
-                completion = pdbpp.local.GLOBAL_PDB.complete("", 0)
-                assert int(completion) > 0
+            # NOTE: number depends on bpb.Breakpoint class state, just ensure that
+            #       is a number.
+            completion = pdbpp.local.GLOBAL_PDB.complete("", 0)
+            assert int(completion) > 0
 
-                # Patch readline to return expected results for "p ".
-                monkeypatch_readline("p ", 2, 2)
-                comps = get_completions("")
-                assert "where" in comps
+            # Patch readline to return expected results for "p ".
+            monkeypatch_readline("p ", 2, 2)
+            comps = get_completions("")
+            assert "where" in comps
 
-                # Dunder members get completed only on second invocation.
-                assert "__name__" not in comps
-                comps = get_completions("")
-                assert "__name__" in comps
+            # Dunder members get completed only on second invocation.
+            assert "__name__" not in comps
+            comps = get_completions("")
+            assert "__name__" in comps
 
             # Patch readline to return expected results for "help ".
             monkeypatch_readline("help ", 5, 5)
@@ -4470,7 +4358,7 @@ def test_completes_from_pdb(monkeypatch_readline):
     else:
         pre_py310_output = "\n'There are no breakpoints'"
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 .*
    5 frames hidden .*
@@ -4485,7 +4373,7 @@ Breakpoint NUM at .*
 True
 # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks(){pre_py310_output}
 # c
-""".format(lineno=lineno, pre_py310_output=pre_py310_output))
+""")
 
 
 def test_completion_uses_tab_from_fancycompleter(monkeypatch_readline):
@@ -4542,7 +4430,7 @@ def test_complete_removes_duplicates_with_coloring(
             if readline_param == "pyrepl":
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 comps = get_completions("helpvar.")
-                assert type(helpvar.denominator) == int
+                assert isinstance(helpvar.denominator, int)
                 assert any(
                     re.match(r"\x1b\[\d\d\d;00m\x1b\[33;01mdenominator\x1b\[00m", x)
                     for x in comps
@@ -4686,7 +4574,6 @@ True
 """)
 
 
-@pytest.mark.skipif(sys.version_info < (3, ), reason="py2: no completion for break")
 def test_completion_removes_tab_from_fancycompleter(monkeypatch_readline):
     def fn():
         def check_completions():
@@ -4829,7 +4716,7 @@ def test_nested_completer(testdir):
                 prefer_pyrepl = False
             """))
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
-    child = testdir.spawn("{} {}".format(quote(sys.executable), str(p1)))
+    child = testdir.spawn(f"{quote(sys.executable)} {str(p1)}")
     child.send("completeme\t")
     child.expect_exact("\r\n(Pdb++) completeme_outer")
     child.send("\nimport pdbpp; _p = pdbpp.Pdb(); _p.reset()")
@@ -4852,26 +4739,10 @@ def test_ensure_file_can_write_unicode():
 
     assert p.stdout.stream is out
 
-    p.stdout.write(u"test äöüß")
+    p.stdout.write("test äöüß")
     out.seek(0)
-    assert out.read().decode("utf-8") == u"test äöüß"
+    assert out.read().decode("utf-8") == "test äöüß"
 
-
-@pytest.mark.skipif(sys.version_info >= (3, 0),
-                    reason="test is python2 specific")
-def test_py2_ensure_file_can_write_unicode():
-    import StringIO
-
-    stdout = StringIO.StringIO()
-    stdout.encoding = 'ascii'
-
-    p = Pdb(Config=DefaultConfig, stdout=stdout)
-
-    assert p.stdout.stream is stdout
-
-    p.stdout.write(u"test äöüß")
-    stdout.seek(0)
-    assert stdout.read().decode('utf-8') == u"test äöüß"
 
 
 def test_signal_in_nonmain_thread_with_interaction():
@@ -5054,14 +4925,13 @@ def test_chained_syntaxerror_with_traceback():
 
         set_trace()
 
-    if sys.version_info > (3,):
-        if sys.version_info >= (3, 10, 0, "final") and sys.version_info <= (3, 10, 1):
-            # changed after rc2 (bpo-45249), fixed in 3.10.1.
-            caret_line = "           $"
-        else:
-            caret_line = "    .*^"
+    if sys.version_info >= (3, 10, 0, "final") and sys.version_info <= (3, 10, 1):
+        # changed after rc2 (bpo-45249), fixed in 3.10.1.
+        caret_line = "           $"
+    else:
+        caret_line = "    .*^"
 
-        check(fn, """
+    check(fn, f"""
 --Return--
 [NUM] > .*fn()
 -> set_trace()
@@ -5075,7 +4945,7 @@ Traceback (most recent call last):
     compile.*
   File "<stdin>", line 1
     invalid(
-""" + caret_line + """
+{caret_line}
 SyntaxError: .*
 
 During handling of the above exception, another exception occurred:
@@ -5083,21 +4953,7 @@ During handling of the above exception, another exception occurred:
 Traceback (most recent call last):
   File .*, in error
     raise AttributeError
-# c
-""")
-    else:
-        check(fn, """
---Return--
-[NUM] > .*fn()
--> set_trace()
-   5 frames hidden .*
-# error()
-\\*\\*\\* AttributeError.*
-Traceback (most recent call last):
-  File .*, in error
-    raise AttributeError
-# c
-""")
+# c""")
 
 
 def test_error_with_traceback_disabled():
@@ -5402,8 +5258,6 @@ def test_usage_error_with_commands():
 """)
 
 
-@pytest.mark.skipif(sys.version_info < (3,),
-                    reason="py2 has no support for kwonly")
 def test_rebind_globals_kwonly():
     exec("def func(*args, header=None): pass", globals())
     func = globals()["func"]
@@ -5414,20 +5268,15 @@ def test_rebind_globals_kwonly():
     assert str(inspect.signature(new)) == sig
 
 
-@pytest.mark.skipif(sys.version_info < (3,),
-                    reason="py2 has no support for annotations")
 def test_rebind_globals_annotations():
     exec("def func(ann: str = None): pass", globals())
     func = globals()["func"]
 
     sig = str(inspect.signature(func))
-    if sys.version_info < (3, 5):
-        assert sig == "(ann:str=None)"
-    else:
-        assert sig in (
-             "(ann: str = None)",
-             "(ann:str=None)",
-        )
+    assert sig in (
+         "(ann: str = None)",
+         "(ann:str=None)",
+    )
     new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig
 
@@ -5532,7 +5381,7 @@ def test_do_bt():
         set_trace()
 
     expected_bt = []
-    for i, entry in enumerate(traceback.extract_stack()[:-3]):
+    for i, _entry in enumerate(traceback.extract_stack()[:-3]):
         expected_bt.append("  [%2d] .*" % i)
         expected_bt.append("  .*")
 
@@ -5556,7 +5405,7 @@ def test_do_bt_highlight():
         set_trace(Config=ConfigWithHighlight)
 
     expected_bt = []
-    for i, entry in enumerate(traceback.extract_stack()[:-3]):
+    for i, _entry in enumerate(traceback.extract_stack()[:-3]):
         expected_bt.append("  [%2d] .*" % i)
         expected_bt.append("  .*")
 
@@ -5580,7 +5429,7 @@ def test_do_bt_pygments():
         set_trace(Config=ConfigWithPygments)
 
     expected_bt = []
-    for i, entry in enumerate(traceback.extract_stack()[:-3]):
+    for i, _entry in enumerate(traceback.extract_stack()[:-3]):
         expected_bt.append("  [%2d] .*" % i)
         expected_bt.append("  .*")
 
@@ -5644,7 +5493,7 @@ def test_set_trace_in_default_code():
             assert before is pdbpp.local.GLOBAL_PDB
         set_trace()
 
-    check(fn, r"""
+    check(fn, fr"""
 --Return--
 [NUM] > .*fn()->None
 -> set_trace()
@@ -5652,14 +5501,12 @@ def test_set_trace_in_default_code():
 # f()
 # import pdbpp; pdbpp.local.GLOBAL_PDB.curframe is not None
 True
-# l {line_num}, 2
+# l {fn.__code__.co_firstlineno}, 2
 NUM \t    def fn():
 NUM \t        def f():
 NUM \t            before = pdbpp.local.GLOBAL_PDB
 # c
-    """.format(
-        line_num=fn.__code__.co_firstlineno,
-    ))
+    """)
 
 
 def test_error_with_pp():
@@ -5893,10 +5740,7 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
     """Check that self.stdout is re-configured with global pdb."""
     def fn():
         import sys
-        if sys.version_info > (3,):
-            from io import StringIO
-        else:
-            from StringIO import StringIO
+        from io import StringIO
 
         patched_stdout = StringIO()
 
@@ -5907,11 +5751,8 @@ def test_stdout_reconfigured(pass_stdout, monkeypatch):
                 def __init__(
                     self, completekey="tab", stdin=None, stdout=None, *args, **kwargs
                 ):
-                    if pass_stdout:
-                        stdout = sys.stdout
-                    else:
-                        stdout = None
-                    super(_PdbTestKeepRawInput, self).__init__(
+                    stdout = sys.stdout if pass_stdout else None
+                    super().__init__(
                         completekey, stdin, stdout, *args, **kwargs
                     )
                     # Keep this, which gets set to 0 with stdin being passed in.
@@ -5966,7 +5807,7 @@ def test_set_trace_in_skipped_module(testdir):
         class SkippingPdbTest(PdbTest):
             def __init__(self, *args, **kwargs):
                 kwargs["skip"] = ["testing.test_pdb"]
-                super(SkippingPdbTest, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
                 self.calls = []
 
@@ -5974,7 +5815,7 @@ def test_set_trace_in_skipped_module(testdir):
                 self.calls.append(module_name)
                 if len(self.calls) == 1:
                     print("is_skipped_module?", module_name)
-                    ret = super(SkippingPdbTest, self).is_skipped_module(module_name)
+                    ret = super().is_skipped_module(module_name)
                     assert module_name == "testing.test_pdb"
                     assert ret is True
                     return True
@@ -6022,9 +5863,6 @@ def test_exception_info_main(testdir):
         ln.replace(pdbpp.CLEARSCREEN, "<CLEARSCREEN>") for ln in result.stdout.lines
     ]
     assert result.stdout.str().count("<CLEARSCREEN>") == 2
-    if (3,) <= sys.version_info <= (3, 5):
-        # NOTE: skipping explicit check for slighty different output with py34.
-        return
     result.stdout.fnmatch_lines(
         [
             "(Pdb++) 'sticky'",
