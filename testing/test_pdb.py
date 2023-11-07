@@ -3419,13 +3419,17 @@ def test_hidden_pytest_frames_f_local_nondict():
         exec("print(1)", {}, m)
         assert m.values == [('__return__', None)]
 
-    check(fn, r"""
+    # 3.11 shows the exec frame as <string>(0), while 3.8 shows <string>(1)
+    # See https://docs.python.org/3/whatsnew/3.11.html#inspect
+    line_no = 0 if sys.version_info >= (3, 11) else 1
+
+    check(fn, fr"""
 [NUM] > .*fn()
--> exec("print(1)", {}, m)
+-> exec("print(1)", {{}}, m)
    5 frames hidden (try 'help hidden_frames')
 # s
 --Call--
-[NUM] > <string>(1)<module>()
+[NUM] > <string>({line_no})<module>()
    5 frames hidden (try 'help hidden_frames')
 # n
 [NUM] > <string>(1)<module>()
