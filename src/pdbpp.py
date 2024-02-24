@@ -100,9 +100,14 @@ def import_from_stdlib(name):
 
     stdlibdir, _ = os.path.split(code.__file__)
     pyfile = os.path.join(stdlibdir, name + '.py')
-    with open(pyfile) as f:
-        src = f.read()
-    co_module = compile(src, pyfile, 'exec', dont_inherit=True)
+    if os.path.isdir(stdlibdir):
+        with open(pyfile) as f:
+            src = f.read()
+        co_module = compile(src, pyfile, 'exec', dont_inherit=True)
+    if os.path.isfile(stdlibdir):
+        import zipimport
+        zi = zipimport.zipimporter(stdlibdir)
+        co_module = zi.get_code(name)
     exec(co_module, result.__dict__)
 
     return result
